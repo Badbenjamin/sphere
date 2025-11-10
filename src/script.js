@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import GUI from 'lil-gui'
+import { GodRaysCombineShader } from 'three/examples/jsm/Addons.js'
 
 /**
  * Base
@@ -29,39 +30,64 @@ let points = 100
 const radius = 3 
 const goldenRatio = (1 + Math.sqrt(5)) / 2;
 
+// 
 const goldenAngle = Math.PI * 2 * goldenRatio;
-console.log(goldenAngle)
+function radiansToDegrees(radians){
+    return radians * (180/Math.PI)
+}
+function degreesToRadians(degrees){
+    return degrees * (Math.PI/180)
+}
 // for each point, we need 3 positions, so positions is 3x points. 
 const positions = new Float32Array(points * 3) // each point requires xyz cordinates
 const colors = new Float32Array(points * 3) // each point requires rbg values
 let pointCount = 0
-// i incriments to length of posltions array (3x count) because each position is a 3D vector (xyz) so we need 3x i for each position
+
+// incriment by number of points in sphere
 for (let i = 0; i <= points; i++){
     
     // normalize scale from point 0 to last point to 0 through 1
+    // this will be used to calculate polar angle, which uses arcosine to return an angle IN RADIANS from 0Pi to 2Pi
     const t = ((i / (points)));
     
-    // arccosine takes a ratio (adjacent/hypotenuse) and returns an angle 
-    // 1 - 2 * t = 1 to -1, with 1 occurning when i & t are zero
-    // when i is halfway through and t is 0.5, the input is 0
-    // when i is = points, and t is = 1, the input is -1 
-  
+   
+    
+    
     // Math.acos(1) = 0, when the ration of adj leg to hyp is 1/1
     // Math.acos(0) = Pi/2, when ratio of adj leg to hyp 0/1
     // Math.acos(-1) = Pi, when ratio of  adj leg to hyp is -1/1
     // as cosine moves from 1, to 0, to -1, acos moves from 0 to Pi
     // this Pi value is a radian (angle where arc length equals radius)
     // 0*r = angle 0, Pi/4*r = 45 deg, Pi/2*r = 90 deg, Pi*r = 180 deg, 2Pi*r = 360 deg
-    // JS trig ratios use radians, not degrees
+    
+    // cosine takes an angle IN RADIANS, and returns the ratio of adjacent/hypotinuse
+    // arccosine takes a ratio  adjacent/hypotenuse) and returns an angle IN RADIANS
     const polarAngle = Math.acos((1 - 2 * t));
-    // const polarAngle = t * Math.PI
-    console.log('pa',polarAngle)
+    console.log('pa',radiansToDegrees(polarAngle))
+    // normalize from 1 to -1, the values that arccosine accepts
+    // 1 - (2 * 0) = 1 (start)
+    // 1 - (2*.5) = 0. (halfway)
+    // 1 -(2*1) = -1 (finish)
+
+    // sin and cos are always between 1 and -1, tan between neg infinity and infinity
+    // RADIANS 0*r = angle 0, Pi/4*r = 45 deg, Pi/2*r = 90 deg, Pi*r = 180 deg, 2Pi*r = 360 deg
+    // COS in degreees: cos(0) = 1, cos(90) = 0, cos(180) = -1
+
+    // INVERSE COSINE
+    // Math.acos is inverse cosine. Takes ratio, and returns RADIANS (only accepts values between -1 and 1)
+    // Math.acos(1) = 0. When ratio of adj/hyp = 1 (1/1), angle is 0 deg|0 radians
+    // Math.acos(0) = 1.57. When ratio of adj/hyp = 0 (0/1), angle is 90 deg|Pi/2 radians
+    // Math.acos(-1) = Pi. When ratio of adj/hyp  = -1 (-1/1), angle is 180 deg|Pi radians
+
+
+    
+    
     
     // azimuth is longitudinal rotation
     // while polarAngle goes from 0 to 180, azimuth wraps around the sphere many times
     // 
     const azimuth = goldenAngle * i;
-    console.log('az',azimuth)
+    console.log('az',radiansToDegrees(azimuth))
 
     // console.log('i', i)
     // i*3 lets us set 3 valuses each iteration (x,y,z)
