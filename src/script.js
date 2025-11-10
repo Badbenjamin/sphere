@@ -26,18 +26,23 @@ const particleTexture = textureLoader.load('/textures/particles/9.png')
  */
 // const particlesGeometry = new THREE.SphereGeometry(1,32,32)
 const fibSphereGeometry = new THREE.BufferGeometry()
-let points = 100
+let points = 10000
 const radius = 3 
 const goldenRatio = (1 + Math.sqrt(5)) / 2;
-
+console.log(goldenRatio)
 // 
-const goldenAngle = Math.PI * 2 * goldenRatio;
+// const goldenAngleRadians = Math.PI * 2 * goldenRatio;
+const goldenAngleRadians = Math.PI * 2 / (goldenRatio * goldenRatio)
+console.log(goldenAngleRadians)
 function radiansToDegrees(radians){
     return radians * (180/Math.PI)
 }
+console.log(radiansToDegrees(goldenAngleRadians))
 function degreesToRadians(degrees){
     return degrees * (Math.PI/180)
 }
+
+console.log('ga deg',radiansToDegrees(goldenAngleRadians))
 // for each point, we need 3 positions, so positions is 3x points. 
 const positions = new Float32Array(points * 3) // each point requires xyz cordinates
 const colors = new Float32Array(points * 3) // each point requires rbg values
@@ -63,7 +68,7 @@ for (let i = 0; i <= points; i++){
     // cosine takes an angle IN RADIANS, and returns the ratio of adjacent/hypotinuse
     // arccosine takes a ratio  adjacent/hypotenuse) and returns an angle IN RADIANS
     const polarAngle = Math.acos((1 - 2 * t));
-    console.log('pa',radiansToDegrees(polarAngle))
+    // console.log('pa',radiansToDegrees(polarAngle))
     // normalize from 1 to -1, the values that arccosine accepts
     // 1 - (2 * 0) = 1 (start)
     // 1 - (2*.5) = 0. (halfway)
@@ -79,17 +84,13 @@ for (let i = 0; i <= points; i++){
     // Math.acos(0) = 1.57. When ratio of adj/hyp = 0 (0/1), angle is 90 deg|Pi/2 radians
     // Math.acos(-1) = Pi. When ratio of adj/hyp  = -1 (-1/1), angle is 180 deg|Pi radians
 
-
-    
-    
-    
-    // azimuth is longitudinal rotation
-    // while polarAngle goes from 0 to 180, azimuth wraps around the sphere many times
-    // 
-    const azimuth = goldenAngle * i;
+    // AZIMUTH is longitudinal rotation
+    // azimuth wraps around the sphere many times
+    // golden angle ensures that point in radial rotation is always placed in optimal position between closest two points
+    const azimuth = goldenAngleRadians * i;
     console.log('az',radiansToDegrees(azimuth))
 
-    // console.log('i', i)
+    
     // i*3 lets us set 3 valuses each iteration (x,y,z)
     let i3 = i * 3
     positions[i3] = Math.sin(polarAngle) * Math.cos(azimuth) * radius;     // x
