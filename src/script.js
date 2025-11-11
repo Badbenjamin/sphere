@@ -27,13 +27,14 @@ const particleTexture = textureLoader.load('/textures/particles/9.png')
 // const particlesGeometry = new THREE.SphereGeometry(1,32,32)
 const fibSphereGeometry = new THREE.BufferGeometry()
 let points = 10000
-const radius = 3 
+const radius = 2 
 const goldenRatio = (1 + Math.sqrt(5)) / 2;
 console.log(goldenRatio)
 // 
 // const goldenAngleRadians = Math.PI * 2 * goldenRatio;
 const goldenAngleRadians = Math.PI * 2 / (goldenRatio * goldenRatio)
 console.log(goldenAngleRadians)
+
 function radiansToDegrees(radians){
     return radians * (180/Math.PI)
 }
@@ -42,11 +43,9 @@ function degreesToRadians(degrees){
     return degrees * (Math.PI/180)
 }
 
-console.log('ga deg',radiansToDegrees(goldenAngleRadians))
 // for each point, we need 3 positions, so positions is 3x points. 
 const positions = new Float32Array(points * 3) // each point requires xyz cordinates
 const colors = new Float32Array(points * 3) // each point requires rbg values
-let pointCount = 0
 
 // incriment by number of points in sphere
 for (let i = 0; i <= points; i++){
@@ -54,9 +53,6 @@ for (let i = 0; i <= points; i++){
     // normalize scale from point 0 to last point to 0 through 1
     // this will be used to calculate polar angle, which uses arcosine to return an angle IN RADIANS from 0Pi to 2Pi
     const t = ((i / (points)));
-    
-   
-    
     
     // Math.acos(1) = 0, when the ration of adj leg to hyp is 1/1
     // Math.acos(0) = Pi/2, when ratio of adj leg to hyp 0/1
@@ -88,23 +84,46 @@ for (let i = 0; i <= points; i++){
     // azimuth wraps around the sphere many times
     // golden angle ensures that point in radial rotation is always placed in optimal position between closest two points
     const azimuth = goldenAngleRadians * i;
-    console.log('az',radiansToDegrees(azimuth))
+    // console.log('az rotations',(radiansToDegrees(azimuth)/360))
 
-    
+    // SPHERICAL TO CARTESIAN COORDINATES
     // i*3 lets us set 3 valuses each iteration (x,y,z)
     let i3 = i * 3
     positions[i3] = Math.sin(polarAngle) * Math.cos(azimuth) * radius;     // x
-    // console.log('x',Math.sin(polarAngle) * Math.cos(azimuth) * radius)
+    console.log('x', Math.sin(polarAngle) * Math.cos(azimuth) * radius,'sin pa', Math.sin(polarAngle), 'cos az', Math.cos(azimuth), 'pa', polarAngle, 'az', azimuth)
+    // Cosine of azimuth oscilates along x axis. Sine of polar angle modifies to account for height on y axis.
+    // start: PA 0, AZ 0. sin(0)=0. cos(0) = 1. 0*1*r = 0. x = 0
+    // midpoint: PA PI/2, AZ 13k. sin(PI/2) = 1. Cos(13k) = 1. 1*1*r = radius
+    // end: PA Pi, AZ 24k,  sin(pi)= 0. cos(24k) = -0.19. 0*0.19*r = 0
     positions[i3 + 1] = Math.sin(polarAngle) * Math.sin(azimuth) * radius; // y
+    // DO THIS NEXT
     // console.log('y', Math.sin(polarAngle) * Math.sin(azimuth) * radius)
     positions[i3 + 2] = Math.cos(polarAngle) * radius; // z
-    // console.log('z', Math.cos(polarAngle) * radius)
+    // start: PA = 0, Cos(0) = 1. First point full length of radius.
+    // midpoint: PA = 90 | Pi/2, cos(Pi/2) = 0. Middle point at zero.
+    // end: PA = 180 | Pi, cos(Pi) = -1. endpoint radial length to negative z. 
+    // console.log('z', Math.cos(polarAngle) * radius,'cos', Math.cos(polarAngle), 'pa', polarAngle)
     
-    colors[i3] = 1.0
-    colors[i3 + 1] = 1.0
-    colors[i3 + 2] = 1.0
+    // MULTIPLES OF 3,4,5,6,7 are found throughout the fibonacci sequence 
+    // if (i % 11 == 0){
+    //     // red
+    //     colors[i3] = 1.0
+    //     colors[i3 + 1] = 0.0
+    //     colors[i3 + 2] = 0.0
+    // }
+    if (i % 7 == 0){
+        // red
+        colors[i3] = 1.0
+        colors[i3 + 1] = 0.0
+        colors[i3 + 2] = 0.0
+    } else {
+        colors[i3] = 1.0
+        colors[i3 + 1] = 1.0
+        colors[i3 + 2] = 1.0
+    }
+    
 }
-console.log(pointCount)
+
 fibSphereGeometry.setAttribute(
     'position',
     // specify that there are 3 values for each position
