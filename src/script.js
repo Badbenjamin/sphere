@@ -205,7 +205,10 @@ const tick = () =>
         const polarAngle = Math.acos((1 - 2 * t));
         const azimuth = goldenAngleRadians * i;
 
-        let newRadius = radius + (Math.sin(elapsedTime + i / 2)) /2
+        const numberOfWaves = 2 // number of peaks and valleys in wave
+        const depthOfWaves = 1 // 1 is full depth, decreasing as number gets higher
+        const speedOfWaves = .2
+        let newRadius = radius + (Math.sin((elapsedTime*(speedOfWaves) + i) * numberOfWaves)) / depthOfWaves
 
         let i3 = i * 3
         if (i % 1 == 0){
