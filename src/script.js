@@ -7,7 +7,7 @@ import { GodRaysCombineShader } from 'three/examples/jsm/Addons.js'
  * Base
  */
 // Debug
-const gui = new GUI()
+// const gui = new GUI()
 
 // Canvas
 const canvas = document.querySelector('canvas.webgl')
@@ -19,6 +19,7 @@ const scene = new THREE.Scene()
  * Textures
  */
 const textureLoader = new THREE.TextureLoader()
+// 1, 4, 
 const particleTexture = textureLoader.load('/textures/particles/4.png')
 
 /**
@@ -27,10 +28,10 @@ const particleTexture = textureLoader.load('/textures/particles/4.png')
 // const particlesGeometry = new THREE.SphereGeometry(1,32,32)
 const fibSphereGeometry = new THREE.BufferGeometry()
 
-let points = 10000
+let points = 100000
 
 const radius = 2 
-const goldenRatio = (1 + Math.sqrt(5)) / 2;
+const goldenRatio = (1 + Math.sqrt(5)) / 20;
 console.log(goldenRatio)
 // 
 const goldenAngleRadians = Math.PI * 2 * goldenRatio;
@@ -89,27 +90,27 @@ for (let i = 0; i <= points; i++){
 
     // SPHERICAL TO CARTESIAN COORDINATES
     // i*3 lets us set 3 valuses each iteration (x,y,z)
-    if (i % 9 == 0){
-        let i3 = i * 3
-        positions[i3] = Math.sin(polarAngle) * Math.cos(azimuth) * radius;     // x
-        console.log('x', Math.sin(polarAngle) * Math.cos(azimuth) * radius,'sin pa', Math.sin(polarAngle), 'cos az', Math.cos(azimuth), 'pa', polarAngle, 'az', azimuth)
-        // Cosine of azimuth oscilates along x axis. Sine of polar angle modifies to account for height on y axis.
-        // start: PA 0, AZ 0. sin(0)=0. cos(0) = 1. 0*1*r = 0. x = 0
-        // midpoint: PA PI/2, AZ 13k. sin(PI/2) = 1. Cos(13k) = 1. 1*1*r = radius
-        // end: PA Pi, AZ 24k,  sin(pi)= 0. cos(24k) = -0.19. 0*0.19*r = 0
-        positions[i3 + 1] = Math.sin(polarAngle) * Math.sin(azimuth) * radius; // y
-        // DO THIS NEXT
-        // console.log('y', Math.sin(polarAngle) * Math.sin(azimuth) * radius)
-        positions[i3 + 2] = Math.cos(polarAngle) * radius; // z
-        // start: PA = 0, Cos(0) = 1. First point full length of radius.
-        // midpoint: PA = 90 | Pi/2, cos(Pi/2) = 0. Middle point at zero.
-        // end: PA = 180 | Pi, cos(Pi) = -1. endpoint radial length to negative z. 
-        // console.log('z', Math.cos(polarAngle) * radius,'cos', Math.cos(polarAngle), 'pa', polarAngle)
+    // if (i % 9 == 0){
+    //     let i3 = i * 3
+    //     positions[i3] = Math.sin(polarAngle) * Math.cos(azimuth) * radius;     // x
+    //     console.log('x', Math.sin(polarAngle) * Math.cos(azimuth) * radius,'sin pa', Math.sin(polarAngle), 'cos az', Math.cos(azimuth), 'pa', polarAngle, 'az', azimuth)
+    //     // Cosine of azimuth oscilates along x axis. Sine of polar angle modifies to account for height on y axis.
+    //     // start: PA 0, AZ 0. sin(0)=0. cos(0) = 1. 0*1*r = 0. x = 0
+    //     // midpoint: PA PI/2, AZ 13k. sin(PI/2) = 1. Cos(13k) = 1. 1*1*r = radius
+    //     // end: PA Pi, AZ 24k,  sin(pi)= 0. cos(24k) = -0.19. 0*0.19*r = 0
+    //     positions[i3 + 1] = Math.sin(polarAngle) * Math.sin(azimuth) * radius; // y
+    //     // DO THIS NEXT
+    //     // console.log('y', Math.sin(polarAngle) * Math.sin(azimuth) * radius)
+    //     positions[i3 + 2] = Math.cos(polarAngle) * radius; // z
+    //     // start: PA = 0, Cos(0) = 1. First point full length of radius.
+    //     // midpoint: PA = 90 | Pi/2, cos(Pi/2) = 0. Middle point at zero.
+    //     // end: PA = 180 | Pi, cos(Pi) = -1. endpoint radial length to negative z. 
+    //     // console.log('z', Math.cos(polarAngle) * radius,'cos', Math.cos(polarAngle), 'pa', polarAngle)
         
-        colors[i3] = 1.0
-        colors[i3+1] = 1.0
-        colors[i3+2] = 1.0
-    }
+    //     colors[i3] = 1.0
+    //     colors[i3+1] = 1.0
+    //     colors[i3+2] = 1.0
+    // }
     
     
 }
@@ -134,6 +135,7 @@ particlesMaterial.transparent = true
 particlesMaterial.alphaMap = particleTexture
 particlesMaterial.depthWrite = false
 particlesMaterial.vertexColors = true
+particlesMaterial.blendAlpha = false
 
 
 // Points
@@ -194,6 +196,8 @@ const tick = () =>
 {
     const elapsedTime = clock.getElapsedTime()
    
+    
+
     particles.rotation.z = elapsedTime * 0.1    
     for (let i = 0; i <= points; i++){
         const t = ((i / (points)));
@@ -201,16 +205,18 @@ const tick = () =>
         const polarAngle = Math.acos((1 - 2 * t));
         const azimuth = goldenAngleRadians * i;
 
-        let i3 = i * 3
-        if (i % 9 == 0){
-            // positions[i3] = Math.sin(polarAngle) * Math.cos(azimuth) * radius;     // x
-            // positions[i3 + 1] = Math.sin(polarAngle) * Math.sin(azimuth) * radius; // y
-            // positions[i3 + 2] = Math.cos(polarAngle) * radius ; // z
+        let newRadius = radius + (Math.sin(elapsedTime + i / 2)) /2
 
+        let i3 = i * 3
+        if (i % 1 == 0){
+            positions[i3] = Math.sin(polarAngle) * Math.cos(azimuth) * (newRadius);     // x
+            positions[i3 + 1] = Math.sin(polarAngle) * Math.sin(azimuth) * newRadius; // y
+            positions[i3 + 2] = Math.cos(polarAngle) * newRadius ; // z
+
+            // look into WHY z axis addition works and looks good
             colors[i3] = 1.0 * (Math.sin(elapsedTime + positions[i3+2])) // r
-            // console.log(colors[i3])
-            colors[i3+1] = 1.0 * (Math.cos(elapsedTime + positions[i3+2])) // g
-            colors[i3+2] = 1.0 // b
+            colors[i3+1] = 1.0 * (Math.cos(elapsedTime + positions[i3+2]))// g
+            colors[i3+2] = 1.0 * Math.sin(i + positions[i3 + 2])// b
         } 
     
     }
