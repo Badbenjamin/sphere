@@ -7,7 +7,7 @@ import { GodRaysCombineShader } from 'three/examples/jsm/Addons.js'
  * Base
  */
 // Debug
-// const gui = new GUI()
+const gui = new GUI()
 
 // Canvas
 const canvas = document.querySelector('canvas.webgl')
@@ -30,13 +30,26 @@ const fibSphereGeometry = new THREE.BufferGeometry()
 
 let points = 100000
 
-const radius = 2 
+let radius = 5
 const goldenRatio = (1 + Math.sqrt(5)) / 20;
-console.log(goldenRatio)
+// console.log(radius)
 // 
 const goldenAngleRadians = Math.PI * 2 * goldenRatio;
 // const goldenAngleRadians = Math.PI * 2 / (goldenRatio * goldenRatio)
 // console.log(goldenAngleRadians)
+
+// GUI PARAMS
+// const guiParams = {radius: 1}
+// gui.add( radius, 'radius', .5, 5, .1 )
+const guiParams = {
+	innerRadius : 5,
+}
+
+gui.add( guiParams, 'innerRadius', .1, 10, .1 ).onChange(value =>{
+    radius = value
+}); 	// radius 
+
+
 
 function radiansToDegrees(radians){
     return radians * (180/Math.PI)
@@ -205,16 +218,16 @@ const tick = () =>
         const polarAngle = Math.acos((1 - 2 * t));
         const azimuth = goldenAngleRadians * i;
 
-        const numberOfWaves = 2 // number of peaks and valleys in wave
+        const numberOfWaves = 3 // number of peaks and valleys in wave
         const depthOfWaves = 1 // 1 is full depth, decreasing as number gets higher
         const speedOfWaves = .2
-        let newRadius = radius + (Math.sin((elapsedTime*(speedOfWaves) + i) * numberOfWaves)) / depthOfWaves
+        let outerRadius = radius + (Math.sin((elapsedTime*(speedOfWaves) + i) * numberOfWaves)) / depthOfWaves
 
         let i3 = i * 3
         if (i % 1 == 0){
-            positions[i3] = Math.sin(polarAngle) * Math.cos(azimuth) * (newRadius);     // x
-            positions[i3 + 1] = Math.sin(polarAngle) * Math.sin(azimuth) * newRadius; // y
-            positions[i3 + 2] = Math.cos(polarAngle) * newRadius ; // z
+            positions[i3] = Math.sin(polarAngle) * Math.cos(azimuth) * (outerRadius);     // x
+            positions[i3 + 1] = Math.sin(polarAngle) * Math.sin(azimuth) * (outerRadius); // y
+            positions[i3 + 2] = Math.cos(polarAngle) * outerRadius ; // z
 
             // look into WHY z axis addition works and looks good
             colors[i3] = 1.0 * (Math.sin(elapsedTime + positions[i3+2])) // r
