@@ -35,22 +35,32 @@ const goldenRatio = (1 + Math.sqrt(5)) / 20;
 const goldenAngleRadians = Math.PI * 2 * goldenRatio;
 
 let numberOfWaves = 3 // number of peaks and valleys in wave
-const depthOfWaves = 1 // 1 is full depth, decreasing as number gets higher
-const speedOfWaves = .2
+let depthOfWaves = 1 // 1 is full depth, decreasing as number gets higher
+let speedOfWaves = .2
 
 
 // GUI PARAMS
 const guiParams = {
 	innerRadius : 5,
     numberOfWaves: 3,
+    depthOfWaves : 1,
+    speedOfWaves: .2,
 }
 
 gui.add( guiParams, 'innerRadius', .1, 10, .1 ).onChange(value =>{
     radius = value
 }); 	
-gui.add( guiParams, 'numberOfWaves', 1, 13, .05 ).onChange(value =>{
+gui.add( guiParams, 'numberOfWaves', 1, 13, .01 ).onChange(value =>{
     numberOfWaves = value
 }); 
+gui.add( guiParams, 'depthOfWaves', .1, 10, .1 ).onChange(value =>{
+    numberOfWaves = value
+}); 
+gui.add( guiParams, 'speedOfWaves', 0, 1, .01 ).onChange(value =>{
+    speedOfWaves = value
+});
+
+
 
 function radiansToDegrees(radians){
     return radians * (180/Math.PI)
