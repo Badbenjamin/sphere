@@ -32,32 +32,30 @@ let points = 100000
 
 let radius = 5
 const goldenRatio = (1 + Math.sqrt(5)) / 20;
-// console.log(radius)
-// 
 const goldenAngleRadians = Math.PI * 2 * goldenRatio;
-// const goldenAngleRadians = Math.PI * 2 / (goldenRatio * goldenRatio)
-// console.log(goldenAngleRadians)
+
+let numberOfWaves = 3 // number of peaks and valleys in wave
+const depthOfWaves = 1 // 1 is full depth, decreasing as number gets higher
+const speedOfWaves = .2
+
 
 // GUI PARAMS
-// const guiParams = {radius: 1}
-// gui.add( radius, 'radius', .5, 5, .1 )
 const guiParams = {
 	innerRadius : 5,
+    numberOfWaves: 3,
 }
 
 gui.add( guiParams, 'innerRadius', .1, 10, .1 ).onChange(value =>{
     radius = value
-}); 	// radius 
-
-
+}); 	
+gui.add( guiParams, 'numberOfWaves', 1, 13, .05 ).onChange(value =>{
+    numberOfWaves = value
+}); 
 
 function radiansToDegrees(radians){
     return radians * (180/Math.PI)
 }
 console.log(radiansToDegrees(goldenAngleRadians))
-function degreesToRadians(degrees){
-    return degrees * (Math.PI/180)
-}
 
 // for each point, we need 3 positions, so positions is 3x points. 
 const positions = new Float32Array(points * 3) // each point requires xyz cordinates
@@ -103,27 +101,27 @@ for (let i = 0; i <= points; i++){
 
     // SPHERICAL TO CARTESIAN COORDINATES
     // i*3 lets us set 3 valuses each iteration (x,y,z)
-    // if (i % 9 == 0){
-    //     let i3 = i * 3
-    //     positions[i3] = Math.sin(polarAngle) * Math.cos(azimuth) * radius;     // x
-    //     console.log('x', Math.sin(polarAngle) * Math.cos(azimuth) * radius,'sin pa', Math.sin(polarAngle), 'cos az', Math.cos(azimuth), 'pa', polarAngle, 'az', azimuth)
-    //     // Cosine of azimuth oscilates along x axis. Sine of polar angle modifies to account for height on y axis.
-    //     // start: PA 0, AZ 0. sin(0)=0. cos(0) = 1. 0*1*r = 0. x = 0
-    //     // midpoint: PA PI/2, AZ 13k. sin(PI/2) = 1. Cos(13k) = 1. 1*1*r = radius
-    //     // end: PA Pi, AZ 24k,  sin(pi)= 0. cos(24k) = -0.19. 0*0.19*r = 0
-    //     positions[i3 + 1] = Math.sin(polarAngle) * Math.sin(azimuth) * radius; // y
-    //     // DO THIS NEXT
-    //     // console.log('y', Math.sin(polarAngle) * Math.sin(azimuth) * radius)
-    //     positions[i3 + 2] = Math.cos(polarAngle) * radius; // z
-    //     // start: PA = 0, Cos(0) = 1. First point full length of radius.
-    //     // midpoint: PA = 90 | Pi/2, cos(Pi/2) = 0. Middle point at zero.
-    //     // end: PA = 180 | Pi, cos(Pi) = -1. endpoint radial length to negative z. 
-    //     // console.log('z', Math.cos(polarAngle) * radius,'cos', Math.cos(polarAngle), 'pa', polarAngle)
+    if (i % 9 == 0){
+        let i3 = i * 3
+        positions[i3] = Math.sin(polarAngle) * Math.cos(azimuth) * radius;     // x
+        console.log('x', Math.sin(polarAngle) * Math.cos(azimuth) * radius,'sin pa', Math.sin(polarAngle), 'cos az', Math.cos(azimuth), 'pa', polarAngle, 'az', azimuth)
+        // Cosine of azimuth oscilates along x axis. Sine of polar angle modifies to account for height on y axis.
+        // start: PA 0, AZ 0. sin(0)=0. cos(0) = 1. 0*1*r = 0. x = 0
+        // midpoint: PA PI/2, AZ 13k. sin(PI/2) = 1. Cos(13k) = 1. 1*1*r = radius
+        // end: PA Pi, AZ 24k,  sin(pi)= 0. cos(24k) = -0.19. 0*0.19*r = 0
+        positions[i3 + 1] = Math.sin(polarAngle) * Math.sin(azimuth) * radius; // y
+        // DO THIS NEXT
+        // console.log('y', Math.sin(polarAngle) * Math.sin(azimuth) * radius)
+        positions[i3 + 2] = Math.cos(polarAngle) * radius; // z
+        // start: PA = 0, Cos(0) = 1. First point full length of radius.
+        // midpoint: PA = 90 | Pi/2, cos(Pi/2) = 0. Middle point at zero.
+        // end: PA = 180 | Pi, cos(Pi) = -1. endpoint radial length to negative z. 
+        // console.log('z', Math.cos(polarAngle) * radius,'cos', Math.cos(polarAngle), 'pa', polarAngle)
         
-    //     colors[i3] = 1.0
-    //     colors[i3+1] = 1.0
-    //     colors[i3+2] = 1.0
-    // }
+        colors[i3] = 1.0
+        colors[i3+1] = 1.0
+        colors[i3+2] = 1.0
+    }
     
     
 }
@@ -218,9 +216,7 @@ const tick = () =>
         const polarAngle = Math.acos((1 - 2 * t));
         const azimuth = goldenAngleRadians * i;
 
-        const numberOfWaves = 3 // number of peaks and valleys in wave
-        const depthOfWaves = 1 // 1 is full depth, decreasing as number gets higher
-        const speedOfWaves = .2
+        
         let outerRadius = radius + (Math.sin((elapsedTime*(speedOfWaves) + i) * numberOfWaves)) / depthOfWaves
 
         let i3 = i * 3
@@ -237,11 +233,8 @@ const tick = () =>
     
     }
    
-    // console.log(randomGeometry.attributes)
     fibSphereGeometry.attributes.position.needsUpdate = true
     fibSphereGeometry.attributes.color.needsUpdate = true
-    // randomGeometry.attributes = true
-    // Update controls
     controls.update()
 
     // Render
