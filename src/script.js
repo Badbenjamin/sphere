@@ -37,6 +37,7 @@ const goldenAngleRadians = Math.PI * 2 * goldenRatio;
 let numberOfWaves = 3 // number of peaks and valleys in wave
 let depthOfWaves = 1 // 1 is full depth, decreasing as number gets higher
 let speedOfWaves = .2
+let rotationSpeed = .1
 
 
 // GUI PARAMS
@@ -45,21 +46,24 @@ const guiParams = {
     numberOfWaves: 3,
     depthOfWaves : 1,
     speedOfWaves: .2,
+    rotationSpeed: .1
 }
 
 gui.add( guiParams, 'innerRadius', .1, 10, .1 ).onChange(value =>{
     radius = value
 }); 	
-gui.add( guiParams, 'numberOfWaves', 1, 13, .01 ).onChange(value =>{
+gui.add( guiParams, 'numberOfWaves', 1, 13, .001 ).onChange(value =>{
     numberOfWaves = value
 }); 
-gui.add( guiParams, 'depthOfWaves', .1, 10, .1 ).onChange(value =>{
-    numberOfWaves = value
+gui.add( guiParams, 'depthOfWaves', .01, 10, .01 ).onChange(value =>{
+    depthOfWaves = value
 }); 
 gui.add( guiParams, 'speedOfWaves', 0, 1, .01 ).onChange(value =>{
     speedOfWaves = value
 });
-
+gui.add( guiParams, 'rotationSpeed', 0, 1, .01 ).onChange(value =>{
+    rotationSpeed = value
+});
 
 
 function radiansToDegrees(radians){
@@ -72,69 +76,69 @@ const positions = new Float32Array(points * 3) // each point requires xyz cordin
 const colors = new Float32Array(points * 3) // each point requires rbg values
 
 // incriment by number of points in sphere
-for (let i = 0; i <= points; i++){
+// for (let i = 0; i <= points; i++){
     
-    // normalize scale from point 0 to last point to 0 through 1
-    // this will be used to calculate polar angle, which uses arcosine to return an angle IN RADIANS from 0Pi to 2Pi
-    const t = ((i / (points)));
+//     // normalize scale from point 0 to last point to 0 through 1
+//     // this will be used to calculate polar angle, which uses arcosine to return an angle IN RADIANS from 0Pi to 2Pi
+//     const t = ((i / (points)));
     
-    // Math.acos(1) = 0, when the ration of adj leg to hyp is 1/1
-    // Math.acos(0) = Pi/2, when ratio of adj leg to hyp 0/1
-    // Math.acos(-1) = Pi, when ratio of  adj leg to hyp is -1/1
-    // as cosine moves from 1, to 0, to -1, acos moves from 0 to Pi
-    // this Pi value is a radian (angle where arc length equals radius)
-    // 0*r = angle 0, Pi/4*r = 45 deg, Pi/2*r = 90 deg, Pi*r = 180 deg, 2Pi*r = 360 deg
+//     // Math.acos(1) = 0, when the ration of adj leg to hyp is 1/1
+//     // Math.acos(0) = Pi/2, when ratio of adj leg to hyp 0/1
+//     // Math.acos(-1) = Pi, when ratio of  adj leg to hyp is -1/1
+//     // as cosine moves from 1, to 0, to -1, acos moves from 0 to Pi
+//     // this Pi value is a radian (angle where arc length equals radius)
+//     // 0*r = angle 0, Pi/4*r = 45 deg, Pi/2*r = 90 deg, Pi*r = 180 deg, 2Pi*r = 360 deg
     
-    // cosine takes an angle IN RADIANS, and returns the ratio of adjacent/hypotinuse
-    // arccosine takes a ratio  adjacent/hypotenuse) and returns an angle IN RADIANS
-    const polarAngle = Math.acos((1 - 2 * t));
-    // console.log('pa',radiansToDegrees(polarAngle))
-    // normalize from 1 to -1, the values that arccosine accepts
-    // 1 - (2 * 0) = 1 (start)
-    // 1 - (2*.5) = 0. (halfway)
-    // 1 -(2*1) = -1 (finish)
+//     // cosine takes an angle IN RADIANS, and returns the ratio of adjacent/hypotinuse
+//     // arccosine takes a ratio  adjacent/hypotenuse) and returns an angle IN RADIANS
+//     const polarAngle = Math.acos((1 - 2 * t));
+//     // console.log('pa',radiansToDegrees(polarAngle))
+//     // normalize from 1 to -1, the values that arccosine accepts
+//     // 1 - (2 * 0) = 1 (start)
+//     // 1 - (2*.5) = 0. (halfway)
+//     // 1 -(2*1) = -1 (finish)
 
-    // sin and cos are always between 1 and -1, tan between neg infinity and infinity
-    // RADIANS 0*r = angle 0, Pi/4*r = 45 deg, Pi/2*r = 90 deg, Pi*r = 180 deg, 2Pi*r = 360 deg
-    // COS in degreees: cos(0) = 1, cos(90) = 0, cos(180) = -1
+//     // sin and cos are always between 1 and -1, tan between neg infinity and infinity
+//     // RADIANS 0*r = angle 0, Pi/4*r = 45 deg, Pi/2*r = 90 deg, Pi*r = 180 deg, 2Pi*r = 360 deg
+//     // COS in degreees: cos(0) = 1, cos(90) = 0, cos(180) = -1
 
-    // INVERSE COSINE
-    // Math.acos is inverse cosine. Takes ratio, and returns RADIANS (only accepts values between -1 and 1)
-    // Math.acos(1) = 0. When ratio of adj/hyp = 1 (1/1), angle is 0 deg|0 radians
-    // Math.acos(0) = 1.57. When ratio of adj/hyp = 0 (0/1), angle is 90 deg|Pi/2 radians
-    // Math.acos(-1) = Pi. When ratio of adj/hyp  = -1 (-1/1), angle is 180 deg|Pi radians
+//     // INVERSE COSINE
+//     // Math.acos is inverse cosine. Takes ratio, and returns RADIANS (only accepts values between -1 and 1)
+//     // Math.acos(1) = 0. When ratio of adj/hyp = 1 (1/1), angle is 0 deg|0 radians
+//     // Math.acos(0) = 1.57. When ratio of adj/hyp = 0 (0/1), angle is 90 deg|Pi/2 radians
+//     // Math.acos(-1) = Pi. When ratio of adj/hyp  = -1 (-1/1), angle is 180 deg|Pi radians
 
-    // AZIMUTH is longitudinal rotation
-    // golden angle ensures that point in radial rotation is always placed in optimal position between closest two points
-    const azimuth = goldenAngleRadians * i;
-    // console.log('az rotations',(radiansToDegrees(azimuth)/360))
+//     // AZIMUTH is longitudinal rotation
+//     // golden angle ensures that point in radial rotation is always placed in optimal position between closest two points
+//     const azimuth = goldenAngleRadians * i;
+//     // console.log('az rotations',(radiansToDegrees(azimuth)/360))
 
-    // SPHERICAL TO CARTESIAN COORDINATES
-    // i*3 lets us set 3 valuses each iteration (x,y,z)
-    if (i % 9 == 0){
-        let i3 = i * 3
-        positions[i3] = Math.sin(polarAngle) * Math.cos(azimuth) * radius;     // x
-        console.log('x', Math.sin(polarAngle) * Math.cos(azimuth) * radius,'sin pa', Math.sin(polarAngle), 'cos az', Math.cos(azimuth), 'pa', polarAngle, 'az', azimuth)
-        // Cosine of azimuth oscilates along x axis. Sine of polar angle modifies to account for height on y axis.
-        // start: PA 0, AZ 0. sin(0)=0. cos(0) = 1. 0*1*r = 0. x = 0
-        // midpoint: PA PI/2, AZ 13k. sin(PI/2) = 1. Cos(13k) = 1. 1*1*r = radius
-        // end: PA Pi, AZ 24k,  sin(pi)= 0. cos(24k) = -0.19. 0*0.19*r = 0
-        positions[i3 + 1] = Math.sin(polarAngle) * Math.sin(azimuth) * radius; // y
-        // DO THIS NEXT
-        // console.log('y', Math.sin(polarAngle) * Math.sin(azimuth) * radius)
-        positions[i3 + 2] = Math.cos(polarAngle) * radius; // z
-        // start: PA = 0, Cos(0) = 1. First point full length of radius.
-        // midpoint: PA = 90 | Pi/2, cos(Pi/2) = 0. Middle point at zero.
-        // end: PA = 180 | Pi, cos(Pi) = -1. endpoint radial length to negative z. 
-        // console.log('z', Math.cos(polarAngle) * radius,'cos', Math.cos(polarAngle), 'pa', polarAngle)
+//     // SPHERICAL TO CARTESIAN COORDINATES
+//     // i*3 lets us set 3 valuses each iteration (x,y,z)
+//     if (i % 9 == 0){
+//         let i3 = i * 3
+//         positions[i3] = Math.sin(polarAngle) * Math.cos(azimuth) * radius;     // x
+//         console.log('x', Math.sin(polarAngle) * Math.cos(azimuth) * radius,'sin pa', Math.sin(polarAngle), 'cos az', Math.cos(azimuth), 'pa', polarAngle, 'az', azimuth)
+//         // Cosine of azimuth oscilates along x axis. Sine of polar angle modifies to account for height on y axis.
+//         // start: PA 0, AZ 0. sin(0)=0. cos(0) = 1. 0*1*r = 0. x = 0
+//         // midpoint: PA PI/2, AZ 13k. sin(PI/2) = 1. Cos(13k) = 1. 1*1*r = radius
+//         // end: PA Pi, AZ 24k,  sin(pi)= 0. cos(24k) = -0.19. 0*0.19*r = 0
+//         positions[i3 + 1] = Math.sin(polarAngle) * Math.sin(azimuth) * radius; // y
+//         // DO THIS NEXT
+//         // console.log('y', Math.sin(polarAngle) * Math.sin(azimuth) * radius)
+//         positions[i3 + 2] = Math.cos(polarAngle) * radius; // z
+//         // start: PA = 0, Cos(0) = 1. First point full length of radius.
+//         // midpoint: PA = 90 | Pi/2, cos(Pi/2) = 0. Middle point at zero.
+//         // end: PA = 180 | Pi, cos(Pi) = -1. endpoint radial length to negative z. 
+//         // console.log('z', Math.cos(polarAngle) * radius,'cos', Math.cos(polarAngle), 'pa', polarAngle)
         
-        colors[i3] = 1.0
-        colors[i3+1] = 1.0
-        colors[i3+2] = 1.0
-    }
+//         colors[i3] = 1.0
+//         colors[i3+1] = 1.0
+//         colors[i3+2] = 1.0
+//     }
     
     
-}
+// }
 
 fibSphereGeometry.setAttribute(
     'position',
@@ -217,9 +221,10 @@ const tick = () =>
 {
     const elapsedTime = clock.getElapsedTime()
    
-    
+    // elapsed time is only avail here
+    // maybe i could be isolated outside of function
 
-    particles.rotation.z = elapsedTime * 0.1    
+    particles.rotation.z = elapsedTime * rotationSpeed   
     for (let i = 0; i <= points; i++){
         const t = ((i / (points)));
         
@@ -227,22 +232,26 @@ const tick = () =>
         const azimuth = goldenAngleRadians * i;
 
         
+        // let outerRadius = radius + (Math.sin((elapsedTime*(speedOfWaves) + i) * numberOfWaves)) / depthOfWaves
+        // what is going on here? 
+        // this is 
+        //  i think numberOfWaves is the important variable. Why does it have such interesting effects?
         let outerRadius = radius + (Math.sin((elapsedTime*(speedOfWaves) + i) * numberOfWaves)) / depthOfWaves
-
+        // console.log(outerRadius)
         let i3 = i * 3
-        if (i % 1 == 0){
-            positions[i3] = Math.sin(polarAngle) * Math.cos(azimuth) * (outerRadius);     // x
-            positions[i3 + 1] = Math.sin(polarAngle) * Math.sin(azimuth) * (outerRadius); // y
-            positions[i3 + 2] = Math.cos(polarAngle) * outerRadius ; // z
+        
+        positions[i3] = Math.sin(polarAngle) * Math.cos(azimuth) * (outerRadius);     // x
+        positions[i3 + 1] = Math.sin(polarAngle) * Math.sin(azimuth) * (outerRadius); // y
+        positions[i3 + 2] = Math.cos(polarAngle) * outerRadius ; // z
 
-            // look into WHY z axis addition works and looks good
-            colors[i3] = 1.0 * (Math.sin(elapsedTime + positions[i3+2])) // r
-            colors[i3+1] = 1.0 * (Math.cos(elapsedTime + positions[i3+2]))// g
-            colors[i3+2] = 1.0 * Math.sin(i + positions[i3 + 2])// b
-        } 
+        // look into WHY z axis addition works and looks good
+        colors[i3] = 1.0 * (Math.sin(elapsedTime + positions[i3+2])) // r
+        colors[i3+1] = 1.0 * (Math.cos(elapsedTime + positions[i3+2]))// g
+        colors[i3+2] = 1.0 * Math.sin(i + positions[i3 + 2])// b
+        
     
     }
-   
+    console.log( 'or2',numberOfWaves / depthOfWaves)
     fibSphereGeometry.attributes.position.needsUpdate = true
     fibSphereGeometry.attributes.color.needsUpdate = true
     controls.update()
