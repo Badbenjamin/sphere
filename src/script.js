@@ -27,53 +27,77 @@ const particleTexture = textureLoader.load('/textures/particles/4.png')
  */
 // const particlesGeometry = new THREE.SphereGeometry(1,32,32)
 const fibSphereGeometry = new THREE.BufferGeometry()
+const lineGeometry = new THREE.BufferGeometry()
 
 let points = 100000
 
 let radius = 5
 const goldenRatio = (1 + Math.sqrt(5)) / 20;
 const goldenAngleRadians = Math.PI * 2 * goldenRatio;
+// console.log(goldenRatio)
 
-let numberOfWaves = 3 // number of peaks and valleys in wave
+// INTERESTING NUMBERS : WHAT RANGE TO SET? WHAT INCRIMENTS?
+// 3.005 : two spheres shrinking and growing from each pole
+// 1.2 : 5 pointed star-sphere
+// 1.047 : large, bulbous waves moving from pole to pole
+// 1.2566 : multipe spheres shrinking and growing along z axis
+// 3.45 : 4 pointed deep spiral
+// 3.311 : large, bulbous waves moving from pole to pole
+let amplitude = 1 // number of peaks and valleys in wave
 let depthOfWaves = 1 // 1 is full depth, decreasing as number gets higher
 let speedOfWaves = .2
 let rotationSpeed = .1
+let iMultiply = 1
+
+// NEXT STEPS
+// figure out frequency 
+// gradient between colors
+// color params
+// tone.js
 
 
 // GUI PARAMS
 const guiParams = {
 	innerRadius : 5,
-    numberOfWaves: 3,
+    amplitude: 1,
     depthOfWaves : 1,
     speedOfWaves: .2,
-    rotationSpeed: .1
+    rotationSpeed: .1,
+    iMultiply : 1,
 }
 
 gui.add( guiParams, 'innerRadius', .1, 10, .1 ).onChange(value =>{
     radius = value
 }); 	
-gui.add( guiParams, 'numberOfWaves', 1, 13, .001 ).onChange(value =>{
-    numberOfWaves = value
+gui.add( guiParams, 'amplitude', 0, 3.5, .0001 ).onChange(value =>{
+    amplitude = value
 }); 
-gui.add( guiParams, 'depthOfWaves', .01, 10, .01 ).onChange(value =>{
+gui.add( guiParams, 'depthOfWaves', 0, 50, .01 ).onChange(value =>{
     depthOfWaves = value
 }); 
-gui.add( guiParams, 'speedOfWaves', 0, 1, .01 ).onChange(value =>{
+gui.add( guiParams, 'speedOfWaves', 0, 10, .1 ).onChange(value =>{
     speedOfWaves = value
 });
 gui.add( guiParams, 'rotationSpeed', 0, 1, .01 ).onChange(value =>{
     rotationSpeed = value
 });
+gui.add( guiParams, 'iMultiply', 0, 10, .01 ).onChange(value =>{
+    iMultiply = value
+});
+
 
 
 function radiansToDegrees(radians){
     return radians * (180/Math.PI)
 }
-console.log(radiansToDegrees(goldenAngleRadians))
+// console.log(radiansToDegrees(goldenAngleRadians))
+
 
 // for each point, we need 3 positions, so positions is 3x points. 
 const positions = new Float32Array(points * 3) // each point requires xyz cordinates
+const linePositions = new Float32Array(points * 3)
 const colors = new Float32Array(points * 3) // each point requires rbg values
+const lineColor = new Float32Array(points * 3)
 
 // incriment by number of points in sphere
 // for (let i = 0; i <= points; i++){
@@ -146,9 +170,19 @@ fibSphereGeometry.setAttribute(
     new THREE.BufferAttribute(positions, 3)
 )
 
+lineGeometry.setAttribute(
+    'position',
+    new THREE.BufferAttribute(linePositions, 3)
+)
+
 fibSphereGeometry .setAttribute(
     'color',
     new THREE.BufferAttribute(colors, 3)
+)
+
+lineGeometry.setAttribute(
+    'color',
+    new THREE.BufferAttribute(lineColor, 3)
 )
 
 const particlesMaterial = new THREE.PointsMaterial({
@@ -166,7 +200,9 @@ particlesMaterial.blendAlpha = false
 // Points
 // same as mesh, geometry and material
 const particles = new THREE.Points(fibSphereGeometry , particlesMaterial)
+const linePartilces = new THREE.Points(lineGeometry, particlesMaterial)
 scene.add(particles)
+scene.add(linePartilces)
 
 /**
  * Sizes
@@ -216,28 +252,26 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
  * Animate
  */
 const clock = new THREE.Clock()
-// console.log(randomGeometry.attributes.position.array)
 const tick = () =>
 {
     const elapsedTime = clock.getElapsedTime()
-   
-    // elapsed time is only avail here
+    
     // maybe i could be isolated outside of function
-
+    
     particles.rotation.z = elapsedTime * rotationSpeed   
+    
     for (let i = 0; i <= points; i++){
         const t = ((i / (points)));
         
         const polarAngle = Math.acos((1 - 2 * t));
         const azimuth = goldenAngleRadians * i;
-
         
-        // let outerRadius = radius + (Math.sin((elapsedTime*(speedOfWaves) + i) * numberOfWaves)) / depthOfWaves
-        // what is going on here? 
-        // this is 
+        // what is going on here? I should visualize it on a line maybe?
         //  i think numberOfWaves is the important variable. Why does it have such interesting effects?
-        let outerRadius = radius + (Math.sin((elapsedTime*(speedOfWaves) + i) * numberOfWaves)) / depthOfWaves
-        // console.log(outerRadius)
+        // is number of waves the frequency? how do I tell when it aligns with a spiral for an intteresting pattern?
+        // how do i find the distance between peaks?
+        let outerRadius = radius + (Math.sin(((elapsedTime * speedOfWaves) + (i * iMultiply)) * amplitude)) // * depthOfWaves
+        
         let i3 = i * 3
         
         positions[i3] = Math.sin(polarAngle) * Math.cos(azimuth) * (outerRadius);     // x
@@ -245,15 +279,32 @@ const tick = () =>
         positions[i3 + 2] = Math.cos(polarAngle) * outerRadius ; // z
 
         // look into WHY z axis addition works and looks good
-        colors[i3] = 1.0 * (Math.sin(elapsedTime + positions[i3+2])) // r
-        colors[i3+1] = 1.0 * (Math.cos(elapsedTime + positions[i3+2]))// g
-        colors[i3+2] = 1.0 * Math.sin(i + positions[i3 + 2])// b
-        
+        if (true){
+            // colors[i3] = 1.0
+            // colors[i3+1] = 1.0
+            // colors[i3+2] = 1.0
+            colors[i3] = 1.0 * (Math.sin(elapsedTime + positions[i3+2])) // r
+            colors[i3+1] = 1.0 * (Math.cos(elapsedTime + positions[i3+2]))// g
+            colors[i3+2] = 1.0 * Math.sin(i + (positions[i3 + 2]))// b
+        } 
+
+        // line
+        linePositions[i3] = i /10//x
+        linePositions[i3 + 1] =((Math.sin((elapsedTime * speedOfWaves) + (i * iMultiply))) * amplitude) //y
+        linePositions[i3+2] = 0
+
+        lineColor[i3] = 1.0
+        lineColor[i3+1] = 1.0
+        lineColor[i3+2] = 1.0
     
     }
-    console.log( 'or2',numberOfWaves / depthOfWaves)
+   
     fibSphereGeometry.attributes.position.needsUpdate = true
     fibSphereGeometry.attributes.color.needsUpdate = true
+
+    lineGeometry.attributes.position.needsUpdate = true
+    lineGeometry.attributes.color.needsUpdate = true
+
     controls.update()
 
     // Render
@@ -262,5 +313,6 @@ const tick = () =>
     // Call tick again on the next frame
     window.requestAnimationFrame(tick)
 }
+// console.log(peaks)
 
 tick()
