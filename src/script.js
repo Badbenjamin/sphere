@@ -22,6 +22,7 @@ const textureLoader = new THREE.TextureLoader()
 // 1, 4, 
 const particleTexture = textureLoader.load('/textures/particles/4.png')
 
+
 /**
  * MATERIALS
  */
@@ -43,6 +44,7 @@ const goldenAngleRadians = Math.PI * 2 * goldenRatio;
 // 1.2566 : multipe spheres shrinking and growing along z axis
 // 3.45 : 4 pointed deep spiral
 // 3.311 : large, bulbous waves moving from pole to pole
+// ### 6.2832 : equivalent to 0???
 let amplitude = 1 // number of peaks and valleys in wave
 let depthOfWaves = 1 // 1 is full depth, decreasing as number gets higher
 let speedOfWaves = .2
@@ -69,7 +71,7 @@ const guiParams = {
 gui.add( guiParams, 'innerRadius', .1, 10, .1 ).onChange(value =>{
     radius = value
 }); 	
-gui.add( guiParams, 'amplitude', 0, 3.5, .0001 ).onChange(value =>{
+gui.add( guiParams, 'amplitude', -5, 5, .0001 ).onChange(value =>{
     amplitude = value
 }); 
 gui.add( guiParams, 'depthOfWaves', 0, 50, .01 ).onChange(value =>{
@@ -81,7 +83,7 @@ gui.add( guiParams, 'speedOfWaves', 0, 10, .1 ).onChange(value =>{
 gui.add( guiParams, 'rotationSpeed', 0, 1, .01 ).onChange(value =>{
     rotationSpeed = value
 });
-gui.add( guiParams, 'iMultiply', 0, 10, .01 ).onChange(value =>{
+gui.add( guiParams, 'iMultiply', 0, 6.2832, .00001 ).onChange(value =>{
     iMultiply = value
 });
 
@@ -186,7 +188,12 @@ lineGeometry.setAttribute(
 )
 
 const particlesMaterial = new THREE.PointsMaterial({
-    size : 0.1,
+    size : 0.15,
+    sizeAttenuation: true
+})
+
+const lineParticlesMaterial = new THREE.PointsMaterial({
+    size : 0.05,
     sizeAttenuation: true
 })
 // particlesMaterial.color = new THREE.Color('lightgreen')
@@ -196,11 +203,16 @@ particlesMaterial.depthWrite = false
 particlesMaterial.vertexColors = true
 particlesMaterial.blendAlpha = false
 
+lineParticlesMaterial.transparent = true
+lineParticlesMaterial.alphaMap = particleTexture
+lineParticlesMaterial.depthWrite = false
+lineParticlesMaterial.vertexColors = true
+lineParticlesMaterial.blendAlpha = false
 
 // Points
 // same as mesh, geometry and material
 const particles = new THREE.Points(fibSphereGeometry , particlesMaterial)
-const linePartilces = new THREE.Points(lineGeometry, particlesMaterial)
+const linePartilces = new THREE.Points(lineGeometry, lineParticlesMaterial)
 scene.add(particles)
 scene.add(linePartilces)
 
@@ -270,7 +282,7 @@ const tick = () =>
         //  i think numberOfWaves is the important variable. Why does it have such interesting effects?
         // is number of waves the frequency? how do I tell when it aligns with a spiral for an intteresting pattern?
         // how do i find the distance between peaks?
-        let outerRadius = radius + (Math.sin(((elapsedTime * speedOfWaves) + (i * iMultiply)) * amplitude)) // * depthOfWaves
+        let outerRadius = radius + (Math.sin(((elapsedTime * speedOfWaves) + (i * iMultiply)))) * amplitude // * depthOfWaves
         
         let i3 = i * 3
         
@@ -289,9 +301,10 @@ const tick = () =>
         } 
 
         // line
-        linePositions[i3] = i /10//x
-        linePositions[i3 + 1] =((Math.sin((elapsedTime * speedOfWaves) + (i * iMultiply))) * amplitude) //y
-        linePositions[i3+2] = 0
+        // map to scale of radius?
+        linePositions[i3] = 0//x
+        linePositions[i3 + 1] = ((Math.sin((elapsedTime * speedOfWaves) + (i * iMultiply))))  * amplitude //y
+        linePositions[i3+2] = i /500
 
         lineColor[i3] = 1.0
         lineColor[i3+1] = 1.0
