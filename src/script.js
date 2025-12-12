@@ -30,7 +30,7 @@ const particleTexture = textureLoader.load('/textures/particles/4.png')
 const fibSphereGeometry = new THREE.BufferGeometry()
 const lineGeometry = new THREE.BufferGeometry()
 
-let points = 100000
+let points = 10000
 
 let radius = 5
 const goldenRatio = (1 + Math.sqrt(5)) / 20;
@@ -46,14 +46,14 @@ const goldenAngleRadians = Math.PI * 2 * goldenRatio;
 // 3.311 : large, bulbous waves moving from pole to pole
 // ### 6.2832 : equivalent to 0???
 let amplitude = 1 // number of peaks and valleys in wave
-let depthOfWaves = 1 // 1 is full depth, decreasing as number gets higher
 let speedOfWaves = .2
 let rotationSpeed = .1
-let iMultiply = 1
+let waveLength = 1
 
 // NEXT STEPS
-// figure out frequency 
-// gradient between colors
+// get osciloscope feature that displays one or two wavelengths
+// square wave, triangle wave?
+// gradient between colors/color controll
 // color params
 // tone.js
 
@@ -62,20 +62,18 @@ let iMultiply = 1
 const guiParams = {
 	innerRadius : 5,
     amplitude: 1,
-    depthOfWaves : 1,
     speedOfWaves: .2,
     rotationSpeed: .1,
-    iMultiply : 1,
+    waveLength : 1,
+    scopeOnOff : true
 }
 
 gui.add( guiParams, 'innerRadius', .1, 10, .1 ).onChange(value =>{
     radius = value
 }); 	
-gui.add( guiParams, 'amplitude', -5, 5, .0001 ).onChange(value =>{
+gui.add( guiParams, 'amplitude', -50, 50, .1
+ ).onChange(value =>{
     amplitude = value
-}); 
-gui.add( guiParams, 'depthOfWaves', 0, 50, .01 ).onChange(value =>{
-    depthOfWaves = value
 }); 
 gui.add( guiParams, 'speedOfWaves', 0, 10, .1 ).onChange(value =>{
     speedOfWaves = value
@@ -83,9 +81,11 @@ gui.add( guiParams, 'speedOfWaves', 0, 10, .1 ).onChange(value =>{
 gui.add( guiParams, 'rotationSpeed', 0, 1, .01 ).onChange(value =>{
     rotationSpeed = value
 });
-gui.add( guiParams, 'iMultiply', 0, 6.2832, .00001 ).onChange(value =>{
-    iMultiply = value
+gui.add( guiParams, 'waveLength', 0, 2*(Math.PI), .00001 ).onChange(value =>{
+    waveLength = value
 });
+
+gui.add( guiParams, 'scopeOnOff' );
 
 
 
@@ -100,6 +100,185 @@ const positions = new Float32Array(points * 3) // each point requires xyz cordin
 const linePositions = new Float32Array(points * 3)
 const colors = new Float32Array(points * 3) // each point requires rbg values
 const lineColor = new Float32Array(points * 3)
+
+
+
+fibSphereGeometry.setAttribute(
+    'position',
+    // specify that there are 3 values for each position
+    new THREE.BufferAttribute(positions, 3)
+)
+
+lineGeometry.setAttribute(
+    'position',
+    new THREE.BufferAttribute(linePositions, 3)
+)
+
+fibSphereGeometry .setAttribute(
+    'color',
+    new THREE.BufferAttribute(colors, 3)
+)
+
+lineGeometry.setAttribute(
+    'color',
+    new THREE.BufferAttribute(lineColor, 3)
+)
+
+const particlesMaterial = new THREE.PointsMaterial({
+    size : 0.15,
+    sizeAttenuation: true
+})
+
+const lineParticlesMaterial = new THREE.PointsMaterial({
+    size : 0.2,
+    sizeAttenuation: true
+})
+// particlesMaterial.color = new THREE.Color('lightgreen')
+particlesMaterial.transparent = true
+particlesMaterial.alphaMap = particleTexture
+particlesMaterial.depthWrite = false
+particlesMaterial.vertexColors = true
+particlesMaterial.blendAlpha = false
+
+lineParticlesMaterial.transparent = true
+lineParticlesMaterial.alphaMap = particleTexture
+lineParticlesMaterial.depthWrite = false
+lineParticlesMaterial.vertexColors = true
+lineParticlesMaterial.blendAlpha = false
+
+// Points
+// same as mesh, geometry and material
+const sphereParticles= new THREE.Points(fibSphereGeometry , particlesMaterial)
+const lineParticles = new THREE.Points(lineGeometry, lineParticlesMaterial)
+scene.add(sphereParticles)
+scene.add(lineParticles)
+console.log(lineParticles.id)
+
+/**
+ * Sizes
+ */
+const sizes = {
+    width: window.innerWidth,
+    height: window.innerHeight
+}
+
+window.addEventListener('resize', () =>
+{
+    // Update sizes
+    sizes.width = window.innerWidth
+    sizes.height = window.innerHeight
+
+    // Update camera
+    camera.aspect = sizes.width / sizes.height
+    camera.updateProjectionMatrix()
+
+    // Update renderer
+    renderer.setSize(sizes.width, sizes.height)
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+})
+
+/**
+ * Camera
+ */
+// Base camera
+const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 0.1, 100)
+camera.position.z = 3
+scene.add(camera)
+
+// Controls
+const controls = new OrbitControls(camera, canvas)
+controls.enableDamping = true
+
+/**
+ * Renderer
+ */
+const renderer = new THREE.WebGLRenderer({
+    canvas: canvas
+})
+renderer.setSize(sizes.width, sizes.height)
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+
+/**
+ * Animate
+ */
+const clock = new THREE.Clock()
+const tick = () =>
+{
+    const elapsedTime = clock.getElapsedTime()
+    
+    // maybe i could be isolated outside of function
+    
+    sphereParticles.rotation.z = elapsedTime * rotationSpeed   
+    
+    for (let i = 0; i <= points; i++){
+        const t = ((i / (points)));
+        
+        const polarAngle = Math.acos((1 - 2 * t));
+        const azimuth = goldenAngleRadians * i;
+        
+        // 
+        let outerRadius = radius + (Math.sin(((elapsedTime * speedOfWaves) + (i * waveLength)))) * amplitude // * depthOfWaves
+        // console.log(outerRadius)
+        let i3 = i * 3
+        
+        positions[i3] = Math.sin(polarAngle) * Math.cos(azimuth) * (outerRadius);     // x
+        positions[i3 + 1] = Math.sin(polarAngle) * Math.sin(azimuth) * (outerRadius); // y
+        positions[i3 + 2] = Math.cos(polarAngle) * outerRadius ; // z
+
+        // look into WHY z axis addition works and looks good
+        if (true){
+            // colors[i3] = 1.0
+            // colors[i3+1] = 1.0
+            // colors[i3+2] = 1.0
+            colors[i3] = 1.0 * (Math.sin(elapsedTime + positions[i3+2])) // r
+            colors[i3+1] = 1.0 * (Math.cos(elapsedTime +  positions[i3+2]))// g
+            colors[i3+2] = 1.0 * Math.sin((i) + (positions[i3 + 2]))// b
+        } 
+
+        // line
+        // map to scale of radius?
+        // add to scene once when turned on. remove from scene once when turned off
+        
+        // if scope true, show and animate particles
+        if (guiParams.scopeOnOff == true){
+            scene.add(lineParticles)
+            linePositions[i3] = 0//x
+            linePositions[i3 + 1] = ((Math.sin((elapsedTime * speedOfWaves) + (i * waveLength))))  * amplitude //y
+            linePositions[i3+2] = i /500
+
+            lineColor[i3] = 1.0
+            lineColor[i3+1] = 1.0
+            lineColor[i3+2] = 1.0
+        } else if (guiParams.scopeOnOff == false) {
+            // console.log('i worked')
+            scene.remove(lineParticles)
+        }
+        
+    
+    }
+   
+    fibSphereGeometry.attributes.position.needsUpdate = true
+    fibSphereGeometry.attributes.color.needsUpdate = true
+
+    lineGeometry.attributes.position.needsUpdate = true
+    lineGeometry.attributes.color.needsUpdate = true
+
+   
+
+    controls.update()
+    console.log(Math.sin(waveLength))
+    // Render
+    renderer.render(scene, camera)
+
+    // Call tick again on the next frame
+    window.requestAnimationFrame(tick)
+}
+
+
+tick()
+
+
+// NOTES ON SPHERE
 
 // incriment by number of points in sphere
 // for (let i = 0; i <= points; i++){
@@ -165,167 +344,3 @@ const lineColor = new Float32Array(points * 3)
     
     
 // }
-
-fibSphereGeometry.setAttribute(
-    'position',
-    // specify that there are 3 values for each position
-    new THREE.BufferAttribute(positions, 3)
-)
-
-lineGeometry.setAttribute(
-    'position',
-    new THREE.BufferAttribute(linePositions, 3)
-)
-
-fibSphereGeometry .setAttribute(
-    'color',
-    new THREE.BufferAttribute(colors, 3)
-)
-
-lineGeometry.setAttribute(
-    'color',
-    new THREE.BufferAttribute(lineColor, 3)
-)
-
-const particlesMaterial = new THREE.PointsMaterial({
-    size : 0.15,
-    sizeAttenuation: true
-})
-
-const lineParticlesMaterial = new THREE.PointsMaterial({
-    size : 0.05,
-    sizeAttenuation: true
-})
-// particlesMaterial.color = new THREE.Color('lightgreen')
-particlesMaterial.transparent = true
-particlesMaterial.alphaMap = particleTexture
-particlesMaterial.depthWrite = false
-particlesMaterial.vertexColors = true
-particlesMaterial.blendAlpha = false
-
-lineParticlesMaterial.transparent = true
-lineParticlesMaterial.alphaMap = particleTexture
-lineParticlesMaterial.depthWrite = false
-lineParticlesMaterial.vertexColors = true
-lineParticlesMaterial.blendAlpha = false
-
-// Points
-// same as mesh, geometry and material
-const particles = new THREE.Points(fibSphereGeometry , particlesMaterial)
-const linePartilces = new THREE.Points(lineGeometry, lineParticlesMaterial)
-scene.add(particles)
-scene.add(linePartilces)
-
-/**
- * Sizes
- */
-const sizes = {
-    width: window.innerWidth,
-    height: window.innerHeight
-}
-
-window.addEventListener('resize', () =>
-{
-    // Update sizes
-    sizes.width = window.innerWidth
-    sizes.height = window.innerHeight
-
-    // Update camera
-    camera.aspect = sizes.width / sizes.height
-    camera.updateProjectionMatrix()
-
-    // Update renderer
-    renderer.setSize(sizes.width, sizes.height)
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-})
-
-/**
- * Camera
- */
-// Base camera
-const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 0.1, 100)
-camera.position.z = 3
-scene.add(camera)
-
-// Controls
-const controls = new OrbitControls(camera, canvas)
-controls.enableDamping = true
-
-/**
- * Renderer
- */
-const renderer = new THREE.WebGLRenderer({
-    canvas: canvas
-})
-renderer.setSize(sizes.width, sizes.height)
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-
-/**
- * Animate
- */
-const clock = new THREE.Clock()
-const tick = () =>
-{
-    const elapsedTime = clock.getElapsedTime()
-    
-    // maybe i could be isolated outside of function
-    
-    particles.rotation.z = elapsedTime * rotationSpeed   
-    
-    for (let i = 0; i <= points; i++){
-        const t = ((i / (points)));
-        
-        const polarAngle = Math.acos((1 - 2 * t));
-        const azimuth = goldenAngleRadians * i;
-        
-        // what is going on here? I should visualize it on a line maybe?
-        //  i think numberOfWaves is the important variable. Why does it have such interesting effects?
-        // is number of waves the frequency? how do I tell when it aligns with a spiral for an intteresting pattern?
-        // how do i find the distance between peaks?
-        let outerRadius = radius + (Math.sin(((elapsedTime * speedOfWaves) + (i * iMultiply)))) * amplitude // * depthOfWaves
-        
-        let i3 = i * 3
-        
-        positions[i3] = Math.sin(polarAngle) * Math.cos(azimuth) * (outerRadius);     // x
-        positions[i3 + 1] = Math.sin(polarAngle) * Math.sin(azimuth) * (outerRadius); // y
-        positions[i3 + 2] = Math.cos(polarAngle) * outerRadius ; // z
-
-        // look into WHY z axis addition works and looks good
-        if (true){
-            // colors[i3] = 1.0
-            // colors[i3+1] = 1.0
-            // colors[i3+2] = 1.0
-            colors[i3] = 1.0 * (Math.sin(elapsedTime + positions[i3+2])) // r
-            colors[i3+1] = 1.0 * (Math.cos(elapsedTime + positions[i3+2]))// g
-            colors[i3+2] = 1.0 * Math.sin(i + (positions[i3 + 2]))// b
-        } 
-
-        // line
-        // map to scale of radius?
-        linePositions[i3] = 0//x
-        linePositions[i3 + 1] = ((Math.sin((elapsedTime * speedOfWaves) + (i * iMultiply))))  * amplitude //y
-        linePositions[i3+2] = i /500
-
-        lineColor[i3] = 1.0
-        lineColor[i3+1] = 1.0
-        lineColor[i3+2] = 1.0
-    
-    }
-   
-    fibSphereGeometry.attributes.position.needsUpdate = true
-    fibSphereGeometry.attributes.color.needsUpdate = true
-
-    lineGeometry.attributes.position.needsUpdate = true
-    lineGeometry.attributes.color.needsUpdate = true
-
-    controls.update()
-
-    // Render
-    renderer.render(scene, camera)
-
-    // Call tick again on the next frame
-    window.requestAnimationFrame(tick)
-}
-// console.log(peaks)
-
-tick()
