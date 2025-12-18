@@ -7,7 +7,7 @@ import { GodRaysCombineShader } from 'three/examples/jsm/Addons.js'
  * Base
  */
 // Debug
-const gui = new GUI()
+const gui = new GUI({width : 800})
 
 // Canvas
 const canvas = document.querySelector('canvas.webgl')
@@ -30,7 +30,7 @@ const particleTexture = textureLoader.load('/textures/particles/4.png')
 const fibSphereGeometry = new THREE.BufferGeometry()
 const lineGeometry = new THREE.BufferGeometry()
 
-let points = 10000
+let points = 100000
 
 let radius = 5
 const goldenRatio = (1 + Math.sqrt(5)) / 20;
@@ -65,7 +65,7 @@ const guiParams = {
     speedOfWaves: .2,
     rotationSpeed: .1,
     waveLength : 1,
-    scopeOnOff : true
+    scopeOn : true
 }
 
 gui.add( guiParams, 'innerRadius', .1, 10, .1 ).onChange(value =>{
@@ -81,11 +81,11 @@ gui.add( guiParams, 'speedOfWaves', 0, 10, .1 ).onChange(value =>{
 gui.add( guiParams, 'rotationSpeed', 0, 1, .01 ).onChange(value =>{
     rotationSpeed = value
 });
-gui.add( guiParams, 'waveLength', 0, 2*(Math.PI), .00001 ).onChange(value =>{
+gui.add( guiParams, 'waveLength', 0,(Math.PI), .00005 ).onChange(value =>{
     waveLength = value
 });
 
-gui.add( guiParams, 'scopeOnOff' );
+gui.add( guiParams, 'scopeOn' );
 
 
 
@@ -150,9 +150,12 @@ lineParticlesMaterial.blendAlpha = false
 // same as mesh, geometry and material
 const sphereParticles= new THREE.Points(fibSphereGeometry , particlesMaterial)
 const lineParticles = new THREE.Points(lineGeometry, lineParticlesMaterial)
+sphereParticles.name = 'sphereParticles'
+lineParticles.name = 'lineParticles'
+console.log(lineParticles.name)
 scene.add(sphereParticles)
 scene.add(lineParticles)
-console.log(lineParticles.id)
+
 
 /**
  * Sizes
@@ -198,6 +201,18 @@ const renderer = new THREE.WebGLRenderer({
 renderer.setSize(sizes.width, sizes.height)
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 
+
+function checkForChildName(scene, name){
+    let childPresent = false
+    scene.children.map((child)=>{
+        // console.log(child['name'])
+        if (child['name'] == name){
+            childPresent = true
+        } 
+    })
+    return childPresent
+}
+
 /**
  * Animate
  */
@@ -236,23 +251,25 @@ const tick = () =>
         } 
 
         // line
-        // map to scale of radius?
-        // add to scene once when turned on. remove from scene once when turned off
-        
-        // if scope true, show and animate particles
-        if (guiParams.scopeOnOff == true){
-            scene.add(lineParticles)
+        if (guiParams.scopeOn == true ){
+           
             linePositions[i3] = 0//x
             linePositions[i3 + 1] = ((Math.sin((elapsedTime * speedOfWaves) + (i * waveLength))))  * amplitude //y
-            linePositions[i3+2] = i /500
+            linePositions[i3+2] = i /500 //z
 
             lineColor[i3] = 1.0
             lineColor[i3+1] = 1.0
             lineColor[i3+2] = 1.0
-        } else if (guiParams.scopeOnOff == false) {
+            if (!checkForChildName(scene, 'lineParticles')){
+                scene.add(lineParticles)
+            }
+
+        } else if (guiParams.scopeOn == false && checkForChildName(scene, 'lineParticles')){
             // console.log('i worked')
             scene.remove(lineParticles)
         }
+
+        
         
     
     }
@@ -273,7 +290,7 @@ const tick = () =>
     // Call tick again on the next frame
     window.requestAnimationFrame(tick)
 }
-
+console.log(scene.children)
 
 tick()
 
