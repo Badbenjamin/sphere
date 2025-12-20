@@ -152,7 +152,7 @@ const sphereParticles= new THREE.Points(fibSphereGeometry , particlesMaterial)
 const lineParticles = new THREE.Points(lineGeometry, lineParticlesMaterial)
 sphereParticles.name = 'sphereParticles'
 lineParticles.name = 'lineParticles'
-console.log(lineParticles.name)
+
 scene.add(sphereParticles)
 scene.add(lineParticles)
 
@@ -205,12 +205,36 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 function checkForChildName(scene, name){
     let childPresent = false
     scene.children.map((child)=>{
-        // console.log(child['name'])
         if (child['name'] == name){
             childPresent = true
         } 
     })
     return childPresent
+}
+
+function getWaveInfo(points, waveLength){
+    // return range between peak and trough when found
+    // return number of waves in points
+    let wavelengths = []
+    let count = 0
+   
+    for (let i = 1; i <= points - 1; i++){
+        // console.log(i-1)
+        const left = i - 1;
+        const middle = i;
+        const right = i + 1;
+
+        const leftSineValue = Math.sin(left * waveLength) 
+        const middleSineValue = Math.sin(middle * waveLength)
+        const rightSineValue = Math.sin(right * waveLength) 
+        
+        if((leftSineValue < middleSineValue) && (middleSineValue > rightSineValue)){
+            let currentPeak = middle;
+            count += 1;
+            wavelengths.push(currentPeak)
+        } 
+    }
+    return points / count
 }
 
 /**
@@ -224,16 +248,17 @@ const tick = () =>
     // maybe i could be isolated outside of function
     
     sphereParticles.rotation.z = elapsedTime * rotationSpeed   
-    
+    console.log(getWaveInfo(points, waveLength))
     for (let i = 0; i <= points; i++){
         const t = ((i / (points)));
         
         const polarAngle = Math.acos((1 - 2 * t));
         const azimuth = goldenAngleRadians * i;
         
+
         // 
         let outerRadius = radius + (Math.sin(((elapsedTime * speedOfWaves) + (i * waveLength)))) * amplitude // * depthOfWaves
-        // console.log(outerRadius)
+        // console.log((Math.sin(((elapsedTime * speedOfWaves) + (1 * waveLength)))))
         let i3 = i * 3
         
         positions[i3] = Math.sin(polarAngle) * Math.cos(azimuth) * (outerRadius);     // x
@@ -241,21 +266,18 @@ const tick = () =>
         positions[i3 + 2] = Math.cos(polarAngle) * outerRadius ; // z
 
         // look into WHY z axis addition works and looks good
-        if (true){
-            // colors[i3] = 1.0
-            // colors[i3+1] = 1.0
-            // colors[i3+2] = 1.0
-            colors[i3] = 1.0 * (Math.sin(elapsedTime + positions[i3+2])) // r
-            colors[i3+1] = 1.0 * (Math.cos(elapsedTime +  positions[i3+2]))// g
-            colors[i3+2] = 1.0 * Math.sin((i) + (positions[i3 + 2]))// b
-        } 
+        
+        colors[i3] = 1.0 * (Math.sin(elapsedTime + positions[i3+2])) // r
+        colors[i3+1] = 1.0 * (Math.cos(elapsedTime +  positions[i3+2]))// g
+        colors[i3+2] = 1.0 * Math.sin((i) + (positions[i3 + 2]))// b
+    
 
         // line
         if (guiParams.scopeOn == true ){
            
             linePositions[i3] = 0//x
             linePositions[i3 + 1] = ((Math.sin((elapsedTime * speedOfWaves) + (i * waveLength))))  * amplitude //y
-            linePositions[i3+2] = i /500 //z
+            linePositions[i3+2] = i / 50 //z
 
             lineColor[i3] = 1.0
             lineColor[i3+1] = 1.0
@@ -283,17 +305,22 @@ const tick = () =>
    
 
     controls.update()
-    console.log(Math.sin(waveLength))
+    // console.log(Math.sin(waveLength))
     // Render
     renderer.render(scene, camera)
 
     // Call tick again on the next frame
     window.requestAnimationFrame(tick)
 }
-console.log(scene.children)
+
 
 tick()
 
+
+
+
+
+getWaveInfo(points, waveLength)
 
 // NOTES ON SPHERE
 
