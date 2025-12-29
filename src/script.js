@@ -87,6 +87,9 @@ gui.add( guiParams, 'waveLength', 0,(Math.PI), .00005 ).onChange(value =>{
 
 gui.add( guiParams, 'scopeOn' );
 
+const waveLengthDiv = document.getElementsByClassName('wavelength')
+console.log(waveLengthDiv)
+
 
 
 function radiansToDegrees(radians){
@@ -248,7 +251,8 @@ const tick = () =>
     // maybe i could be isolated outside of function
     
     sphereParticles.rotation.z = elapsedTime * rotationSpeed   
-    console.log(getWaveInfo(points, waveLength))
+    waveLengthDiv.textContent = `${getWaveInfo(points, waveLength)}`;
+    // console.log(waveLengthDiv.textContent)
     for (let i = 0; i <= points; i++){
         const t = ((i / (points)));
         
