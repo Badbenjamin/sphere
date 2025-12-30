@@ -87,7 +87,7 @@ gui.add( guiParams, 'waveLength', 0,(Math.PI), .00005 ).onChange(value =>{
 
 gui.add( guiParams, 'scopeOn' );
 
-const waveLengthDiv = document.getElementsByClassName('wavelength')
+const waveLengthDiv = document.getElementById('wavelength')
 console.log(waveLengthDiv)
 
 
@@ -252,7 +252,7 @@ const tick = () =>
     
     sphereParticles.rotation.z = elapsedTime * rotationSpeed   
     waveLengthDiv.textContent = `${getWaveInfo(points, waveLength)}`;
-    // console.log(waveLengthDiv.textContent)
+    console.log('textContent',waveLengthDiv.textContent)
     for (let i = 0; i <= points; i++){
         const t = ((i / (points)));
         
