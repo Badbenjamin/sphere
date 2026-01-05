@@ -3,6 +3,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import GUI from 'lil-gui'
 import { GodRaysCombineShader } from 'three/examples/jsm/Addons.js'
 
+
 /**
  * Base
  */
@@ -81,7 +82,7 @@ gui.add( guiParams, 'speedOfWaves', 0, 10, .1 ).onChange(value =>{
 gui.add( guiParams, 'rotationSpeed', 0, 1, .01 ).onChange(value =>{
     rotationSpeed = value
 });
-gui.add( guiParams, 'waveLength', 0,(Math.PI), .00005 ).onChange(value =>{
+gui.add( guiParams, 'waveLength', 0,(Math.PI), .0001 ).onChange(value =>{
     waveLength = value
 });
 
@@ -240,6 +241,52 @@ function getWaveInfo(points, waveLength){
     return points / count
 }
 
+// SYNTH
+
+const audioContext = new AudioContext();
+
+const audioElement = document.querySelector("audio");
+
+const track = audioContext.createMediaElementSource(audioElement);
+
+const gainNode = audioContext.createGain();
+
+// const wave = new PeriodicWave(audioContext, {
+//   real: wavetable.real,
+//   imag: wavetable.imag,
+// });
+
+track.connect(gainNode).connect(audioContext.destination)
+
+const volumeControl = document.querySelector("#volume");
+
+volumeControl.addEventListener("input", () => {
+  gainNode.gain.value = volumeControl.value;
+});
+
+const playButton = document.querySelector('button')
+
+playButton.addEventListener("click", () => {
+  // Check if context is in suspended state (autoplay policy)
+  if (audioContext.state === "suspended") {
+    audioContext.resume();
+  }
+
+  // Play or pause track depending on state
+  if (playButton.dataset.playing === "false") {
+    audioElement.play();
+    playButton.dataset.playing = "true";
+  } else if (playButton.dataset.playing === "true") {
+    audioElement.pause();
+    playButton.dataset.playing = "false";
+  }
+});
+
+audioElement.addEventListener("ended", () => {
+  playButton.dataset.playing = "false";
+});
+
+
 /**
  * Animate
  */
@@ -252,7 +299,7 @@ const tick = () =>
     
     sphereParticles.rotation.z = elapsedTime * rotationSpeed   
     waveLengthDiv.textContent = `${getWaveInfo(points, waveLength)}`;
-    console.log('textContent',waveLengthDiv.textContent)
+    // console.log('textContent',waveLengthDiv.textContent)
     for (let i = 0; i <= points; i++){
         const t = ((i / (points)));
         

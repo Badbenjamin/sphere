@@ -28,3 +28,23 @@ body
     font-family: Arial, sans-serif;
     font-size: 18px;
 }
+
+.play-button{
+    z-index: 100;
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    color: white;
+    font-family: Arial, sans-serif;
+    font-size: 18px;
+}
+
+.range{
+    z-index: 100;
+    position: fixed;
+    bottom: 40px;
+    left: 40px;
+    color: white;
+    font-family: Arial, sans-serif;
+    font-size: 18px;
+}
