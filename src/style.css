@@ -39,12 +39,16 @@ body
     font-size: 18px;
 }
 
-.range{
+.gain-range{
     z-index: 100;
     position: fixed;
     bottom: 40px;
     left: 40px;
-    color: white;
-    font-family: Arial, sans-serif;
-    font-size: 18px;
+}
+
+.freq-range{
+    z-index: 100;
+    bottom: 90px;
+    left: 90px;
+    position: fixed;
 }

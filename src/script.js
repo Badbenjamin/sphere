@@ -89,9 +89,6 @@ gui.add( guiParams, 'waveLength', 0,(Math.PI), .0001 ).onChange(value =>{
 gui.add( guiParams, 'scopeOn' );
 
 const waveLengthDiv = document.getElementById('wavelength')
-console.log(waveLengthDiv)
-
-
 
 function radiansToDegrees(radians){
     return radians * (180/Math.PI)
@@ -245,46 +242,33 @@ function getWaveInfo(points, waveLength){
 
 const audioContext = new AudioContext();
 
-const audioElement = document.querySelector("audio");
-
-const track = audioContext.createMediaElementSource(audioElement);
+const osc1 = audioContext.createOscillator()
+osc1.type = 'sine'
+osc1.frequency.setValueAtTime('440', audioContext.currentTime)
 
 const gainNode = audioContext.createGain();
 
-// const wave = new PeriodicWave(audioContext, {
-//   real: wavetable.real,
-//   imag: wavetable.imag,
-// });
 
-track.connect(gainNode).connect(audioContext.destination)
-
+// THIS IS THE CHAIN
+osc1.connect(gainNode).connect(audioContext.destination)
+console.log(osc1)
 const volumeControl = document.querySelector("#volume");
+const freqControl = document.querySelector('#freq-range');
+console.log(freqControl)
 
 volumeControl.addEventListener("input", () => {
   gainNode.gain.value = volumeControl.value;
 });
 
+freqControl.addEventListener("input", ()=>{
+    osc1.frequency.value = freqControl.value
+})
+
 const playButton = document.querySelector('button')
-
-playButton.addEventListener("click", () => {
-  // Check if context is in suspended state (autoplay policy)
-  if (audioContext.state === "suspended") {
-    audioContext.resume();
-  }
-
-  // Play or pause track depending on state
-  if (playButton.dataset.playing === "false") {
-    audioElement.play();
-    playButton.dataset.playing = "true";
-  } else if (playButton.dataset.playing === "true") {
-    audioElement.pause();
-    playButton.dataset.playing = "false";
-  }
-});
-
-audioElement.addEventListener("ended", () => {
-  playButton.dataset.playing = "false";
-});
+console.log('initial state',osc1.context.state)
+playButton.addEventListener("click", ()=>{
+    osc1.start()
+})
 
 
 /**
