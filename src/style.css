@@ -52,3 +52,10 @@ body
     left: 90px;
     position: fixed;
 }
+
+.filter-range{
+    z-index: 100;
+    bottom: 110px;
+    left: 110px;
+    position: fixed;
+}

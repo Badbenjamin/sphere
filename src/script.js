@@ -244,24 +244,37 @@ const audioContext = new AudioContext();
 
 const osc1 = audioContext.createOscillator()
 osc1.type = 'sine'
-osc1.frequency.setValueAtTime('440', audioContext.currentTime)
+osc1.frequency.setValueAtTime('70', audioContext.currentTime)
+
+const filterNode = audioContext.createBiquadFilter();
+filterNode.type = 'lowpass'
+filterNode.gain.value = '80'
+
 
 const gainNode = audioContext.createGain();
 
 
+
 // THIS IS THE CHAIN
-osc1.connect(gainNode).connect(audioContext.destination)
-console.log(osc1)
+osc1.connect(filterNode).connect(gainNode).connect(audioContext.destination)
+
 const volumeControl = document.querySelector("#volume");
-const freqControl = document.querySelector('#freq-range');
-console.log(freqControl)
+// const freqControl = document.querySelector('#freq-range');
+const filterControl = document.querySelector('#filter-range')
+
 
 volumeControl.addEventListener("input", () => {
   gainNode.gain.value = volumeControl.value;
 });
 
-freqControl.addEventListener("input", ()=>{
-    osc1.frequency.value = freqControl.value
+// freqControl.addEventListener("input", ()=>{
+    
+//     osc1.frequency.value = freqControl.value
+//     console.log(freqControl.value)
+// })
+
+filterControl.addEventListener("input", ()=>{
+    filterNode.frequency.value = filterControl.value
 })
 
 const playButton = document.querySelector('button')
