@@ -2,6 +2,7 @@ import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import GUI from 'lil-gui'
 import { GodRaysCombineShader } from 'three/examples/jsm/Addons.js'
+import { element } from 'three/tsl'
 
 
 /**
@@ -248,15 +249,43 @@ osc1.frequency.setValueAtTime('70', audioContext.currentTime)
 
 const filterNode = audioContext.createBiquadFilter();
 filterNode.type = 'lowpass'
-filterNode.gain.value = '80'
+filterNode.Q.value = '8'
+console.log(filterNode)
+
+async function createReverb() {
+  let convolver = audioContext.createConvolver();
+
+  // load impulse response from file
+  let response = await fetch("./judsonMemorialChurch.wav");
+  let arraybuffer = await response.arrayBuffer();
+  convolver.buffer = await audioContext.decodeAudioData(arraybuffer);
+
+  return convolver;
+}
+let reverb = await createReverb();
+
+const distortion = audioContext.createWaveShaper();
+distortion.curve = makeWarmCurve();
+distortion.oversample = '4x'; // Reduces aliasing
+
+function makeWarmCurve() {
+  const samples = 1024;
+  const curve = new Float32Array(samples);
+  for (let i = 0; i < samples; i++) {
+    const x = (i / samples) * 2 - 1; // -1 to 1
+    // Soft clipping with tanh
+    curve[i] = Math.tanh(x * 5); // Adjust multiplier for more/less saturation
+  }
+  return curve;
+}
+
 
 
 const gainNode = audioContext.createGain();
 
 
-
 // THIS IS THE CHAIN
-osc1.connect(filterNode).connect(gainNode).connect(audioContext.destination)
+osc1.connect(distortion).connect(filterNode).connect(reverb).connect(gainNode).connect(audioContext.destination)
 
 const volumeControl = document.querySelector("#volume");
 // const freqControl = document.querySelector('#freq-range');
@@ -275,7 +304,14 @@ volumeControl.addEventListener("input", () => {
 
 filterControl.addEventListener("input", ()=>{
     filterNode.frequency.value = filterControl.value
+    console.log(filterNode.frequency.value)
 })
+// filterNode.frequency.value = null
+
+// set range of filter to good sounding min and max
+// map (Math.sin(elapsedTime)) to that range
+// have the innerRadius move to this fiter
+
 
 const playButton = document.querySelector('button')
 console.log('initial state',osc1.context.state)
@@ -292,7 +328,7 @@ const tick = () =>
 {
     const elapsedTime = clock.getElapsedTime()
     
-    // maybe i could be isolated outside of function
+    // console.log(Math.sin(elapsedTime))
     
     sphereParticles.rotation.z = elapsedTime * rotationSpeed   
     waveLengthDiv.textContent = `${getWaveInfo(points, waveLength)}`;
