@@ -75,7 +75,7 @@ gui.add( guiParams, 'speedOfWaves', 0, 10, .1 ).onChange(value =>{
 gui.add( guiParams, 'rotationSpeed', 0, 1, .01 ).onChange(value =>{
     rotationSpeed = value
 });
-gui.add( guiParams, 'waveLength', 0,(Math.PI), .0001 ).onChange(value =>{
+gui.add( guiParams, 'waveLength', 0,(Math.PI), .00005 ).onChange(value =>{
     waveLength = value
 });
 
@@ -244,7 +244,7 @@ filterNode.type = 'lowpass'
 filterNode.Q.value = '50'
 let filterMin = 30
 let filterMax = 60
-let filterSpeed = 2
+let filterSpeed = 1
 console.log(filterNode)
 
 async function createReverb() {
@@ -259,24 +259,19 @@ async function createReverb() {
 }
 let reverb = await createReverb();
 
+async function createReverb2() {
+  let convolver = audioContext.createConvolver();
 
-// https://stackoverflow.com/questions/22312841/waveshaper-node-in-webaudio-how-to-emulate-distortion
-// const DEG = Math.PI / 180;
+  // load impulse response from file
+  let response = await fetch("./plate IR.wav");
+  let arraybuffer = await response.arrayBuffer();
+  convolver.buffer = await audioContext.decodeAudioData(arraybuffer);
 
-// function makeDistortionCurve(k = 50) {
-//   const n_samples = 44100;
-//   const curve = new Float32Array(n_samples);
-//   curve.forEach((_, i) => {
-//     const x = (i * 2) / n_samples - 1;
-//     curve[i] = ((3 + k) * x * 20 * DEG) / (Math.PI + k * Math.abs(x));
-//   });
-//   return curve;
-// }
+  return convolver;
+}
+let reverb2 = await createReverb2();
 
-// const distortion = audioContext.createWaveShaper();
-// 
-// distortion.curve = makeDistortionCurve();
-// distortion.oversample = '4x'; // Reduces aliasing
+
 
 async function createConvolutionDistortion() {
   let convolver = audioContext.createConvolver();
@@ -290,17 +285,14 @@ async function createConvolutionDistortion() {
 }
 let convolutionDistortion = await createConvolutionDistortion();
 
-
-
 const gainNode = audioContext.createGain();
 
-
 // THIS IS THE CHAIN
-osc1.connect(convolutionDistortion).connect(filterNode).connect(reverb).connect(gainNode).connect(audioContext.destination)
+osc1.connect(convolutionDistortion).connect(filterNode).connect(reverb).connect(reverb2).connect(gainNode).connect(audioContext.destination)
 
 const volumeControl = document.querySelector("#volume");
 // const freqControl = document.querySelector('#freq-range');
-const filterControl = document.querySelector('#filter-range')
+// const filterControl = document.querySelector('#filter-range')
 
 console.log(gainNode.gain.value)
 volumeControl.addEventListener("input", () => {
@@ -337,15 +329,21 @@ const tick = () =>
     sphereParticles.rotation.z = elapsedTime * rotationSpeed   
     waveLengthDiv.textContent = `${getWaveInfo(points, waveLength)}`;
     // console.log('textContent',waveLengthDiv.textContent)
+
+    
+    let innerRadius2 = (((Math.sin(elapsedTime * filterSpeed) - 4.9) * .2) / 2) + 4.9
     for (let i = 0; i <= points; i++){
         const t = ((i / (points)));
         
         const polarAngle = Math.acos((1 - 2 * t));
         const azimuth = goldenAngleRadians * i;
+
+        
+
         
 
         // 
-        let outerRadius = innerRadius + (Math.sin(((elapsedTime * speedOfWaves) + (i * waveLength)))) * amplitude // * depthOfWaves
+        let outerRadius = innerRadius2 + (Math.sin(((elapsedTime * speedOfWaves) + (i * waveLength)))) * amplitude // * depthOfWaves
         // console.log((Math.sin(((elapsedTime * speedOfWaves) + (1 * waveLength)))))
         let i3 = i * 3
         
