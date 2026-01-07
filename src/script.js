@@ -34,7 +34,7 @@ const lineGeometry = new THREE.BufferGeometry()
 
 let points = 100000
 
-let radius = 5
+let innerRadius = 5
 const goldenRatio = (1 + Math.sqrt(5)) / 20;
 const goldenAngleRadians = Math.PI * 2 * goldenRatio;
 // console.log(goldenRatio)
@@ -52,14 +52,6 @@ let speedOfWaves = .2
 let rotationSpeed = .1
 let waveLength = 1
 
-// NEXT STEPS
-// get osciloscope feature that displays one or two wavelengths
-// square wave, triangle wave?
-// gradient between colors/color controll
-// color params
-// tone.js
-
-
 // GUI PARAMS
 const guiParams = {
 	innerRadius : 5,
@@ -71,7 +63,7 @@ const guiParams = {
 }
 
 gui.add( guiParams, 'innerRadius', .1, 10, .1 ).onChange(value =>{
-    radius = value
+    innerRadius = value
 }); 	
 gui.add( guiParams, 'amplitude', -50, 50, .1
  ).onChange(value =>{
@@ -244,12 +236,15 @@ function getWaveInfo(points, waveLength){
 const audioContext = new AudioContext();
 
 const osc1 = audioContext.createOscillator()
-osc1.type = 'sine'
-osc1.frequency.setValueAtTime('70', audioContext.currentTime)
+osc1.type = 'square'
+osc1.frequency.value = '19.45'
 
 const filterNode = audioContext.createBiquadFilter();
 filterNode.type = 'lowpass'
-filterNode.Q.value = '8'
+filterNode.Q.value = '50'
+let filterMin = 30
+let filterMax = 60
+let filterSpeed = 2
 console.log(filterNode)
 
 async function createReverb() {
@@ -264,20 +259,36 @@ async function createReverb() {
 }
 let reverb = await createReverb();
 
-const distortion = audioContext.createWaveShaper();
-distortion.curve = makeWarmCurve();
-distortion.oversample = '4x'; // Reduces aliasing
 
-function makeWarmCurve() {
-  const samples = 1024;
-  const curve = new Float32Array(samples);
-  for (let i = 0; i < samples; i++) {
-    const x = (i / samples) * 2 - 1; // -1 to 1
-    // Soft clipping with tanh
-    curve[i] = Math.tanh(x * 5); // Adjust multiplier for more/less saturation
-  }
-  return curve;
+// https://stackoverflow.com/questions/22312841/waveshaper-node-in-webaudio-how-to-emulate-distortion
+// const DEG = Math.PI / 180;
+
+// function makeDistortionCurve(k = 50) {
+//   const n_samples = 44100;
+//   const curve = new Float32Array(n_samples);
+//   curve.forEach((_, i) => {
+//     const x = (i * 2) / n_samples - 1;
+//     curve[i] = ((3 + k) * x * 20 * DEG) / (Math.PI + k * Math.abs(x));
+//   });
+//   return curve;
+// }
+
+// const distortion = audioContext.createWaveShaper();
+// 
+// distortion.curve = makeDistortionCurve();
+// distortion.oversample = '4x'; // Reduces aliasing
+
+async function createConvolutionDistortion() {
+  let convolver = audioContext.createConvolver();
+
+  // load impulse response from file
+  let response = await fetch("./Marshall1960A-G12Ms-SM57-Cone-12in.wav");
+  let arraybuffer = await response.arrayBuffer();
+  convolver.buffer = await audioContext.decodeAudioData(arraybuffer);
+
+  return convolver;
 }
+let convolutionDistortion = await createConvolutionDistortion();
 
 
 
@@ -285,39 +296,27 @@ const gainNode = audioContext.createGain();
 
 
 // THIS IS THE CHAIN
-osc1.connect(distortion).connect(filterNode).connect(reverb).connect(gainNode).connect(audioContext.destination)
+osc1.connect(convolutionDistortion).connect(filterNode).connect(reverb).connect(gainNode).connect(audioContext.destination)
 
 const volumeControl = document.querySelector("#volume");
 // const freqControl = document.querySelector('#freq-range');
 const filterControl = document.querySelector('#filter-range')
 
-
+console.log(gainNode.gain.value)
 volumeControl.addEventListener("input", () => {
   gainNode.gain.value = volumeControl.value;
+  console.log(gainNode.gain.value)
 });
 
-// freqControl.addEventListener("input", ()=>{
-    
-//     osc1.frequency.value = freqControl.value
-//     console.log(freqControl.value)
-// })
-
-filterControl.addEventListener("input", ()=>{
-    filterNode.frequency.value = filterControl.value
-    console.log(filterNode.frequency.value)
-})
-// filterNode.frequency.value = null
 
 // set range of filter to good sounding min and max
 // map (Math.sin(elapsedTime)) to that range
 // have the innerRadius move to this fiter
 
-
 const playButton = document.querySelector('button')
-console.log('initial state',osc1.context.state)
 playButton.addEventListener("click", ()=>{
     osc1.start()
-})
+});
 
 
 /**
@@ -328,7 +327,12 @@ const tick = () =>
 {
     const elapsedTime = clock.getElapsedTime()
     
-    // console.log(Math.sin(elapsedTime))
+    // filter range mapped to sin func
+    let sinRange = 2 // -1 to 1 is 2
+    
+    let filterRange = filterMax - filterMin // high and low points of filter sweep
+    let newFilterSweepValue = (((Math.sin(elapsedTime * filterSpeed) - (-1)) * filterRange) / sinRange ) + filterMin
+    filterNode.frequency.value = newFilterSweepValue
     
     sphereParticles.rotation.z = elapsedTime * rotationSpeed   
     waveLengthDiv.textContent = `${getWaveInfo(points, waveLength)}`;
@@ -341,7 +345,7 @@ const tick = () =>
         
 
         // 
-        let outerRadius = radius + (Math.sin(((elapsedTime * speedOfWaves) + (i * waveLength)))) * amplitude // * depthOfWaves
+        let outerRadius = innerRadius + (Math.sin(((elapsedTime * speedOfWaves) + (i * waveLength)))) * amplitude // * depthOfWaves
         // console.log((Math.sin(((elapsedTime * speedOfWaves) + (1 * waveLength)))))
         let i3 = i * 3
         
