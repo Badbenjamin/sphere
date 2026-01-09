@@ -2,7 +2,7 @@ import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import GUI from 'lil-gui'
 import { GodRaysCombineShader } from 'three/examples/jsm/Addons.js'
-import { element } from 'three/tsl'
+import { element, notEqual } from 'three/tsl'
 import {chorusStrings} from '../wavetables/Chorus_Strings.js'
 console.log(chorusStrings)
 /**
@@ -235,26 +235,35 @@ function getWaveInfo(points, waveLength){
 
 const audioContext = new AudioContext();
 
-
+const noteSequence = [622.55, 739.99, 830.61, 932.33, 1244.51]
+let noteIndex = 0
 const attackTime = .1
 const releaseTime = .5
 const sweepLength = attackTime + releaseTime
-function playLeadOsc(time) {
-    
+function playLeadOsc(time, noteSequence, currentNote) {
+    const notesLength = noteSequence.length
+    console.log(currentNote)
     const osc = new OscillatorNode(audioContext, {
-        frequency: 830.61,
-        type: "square",
+        frequency: noteSequence[currentNote],
+        type: "sine",
     });
 
     const sweepEnv = new GainNode(audioContext);
     sweepEnv.gain.cancelScheduledValues(time);
     sweepEnv.gain.setValueAtTime(0, time);
-    sweepEnv.gain.linearRampToValueAtTime(.1, time +attackTime);
+    sweepEnv.gain.linearRampToValueAtTime(.05, time +attackTime);
     sweepEnv.gain.linearRampToValueAtTime(0, time +(attackTime + releaseTime));
 
     osc.connect(convolutionDistortion).connect(sweepEnv).connect(judsonReverb).connect(plateReverb).connect(audioContext.destination);
     osc.start(time);
     osc.stop(time + sweepLength);
+
+    
+    if (noteIndex < notesLength - 1){
+        noteIndex = noteIndex + 1
+    } else {
+        noteIndex = 0
+    }
 }
 
 
@@ -335,10 +344,9 @@ playDroneButton.addEventListener("click", ()=>{
 });
 
 const playLeadButton = document.getElementById('play-lead-button')
-console.log(playLeadButton)
 playLeadButton.addEventListener("click", ()=>{
     console.log('i click')
-    playLeadOsc(clock.getElapsedTime())
+    playLeadOsc(clock.getElapsedTime(), noteSequence, noteIndex)
 });
 
 
