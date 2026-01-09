@@ -3,8 +3,8 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import GUI from 'lil-gui'
 import { GodRaysCombineShader } from 'three/examples/jsm/Addons.js'
 import { element } from 'three/tsl'
-
-
+import {chorusStrings} from '../wavetables/Chorus_Strings.js'
+console.log(chorusStrings)
 /**
  * Base
  */
@@ -235,19 +235,38 @@ function getWaveInfo(points, waveLength){
 
 const audioContext = new AudioContext();
 
-const osc1 = audioContext.createOscillator()
-osc1.type = 'square'
-osc1.frequency.value = '19.45'
+
+const attackTime = .1
+const releaseTime = .5
+const sweepLength = attackTime + releaseTime
+function playLeadOsc(time) {
+    
+    const osc = new OscillatorNode(audioContext, {
+        frequency: 830.61,
+        type: "square",
+    });
+
+    const sweepEnv = new GainNode(audioContext);
+    sweepEnv.gain.cancelScheduledValues(time);
+    sweepEnv.gain.setValueAtTime(0, time);
+    sweepEnv.gain.linearRampToValueAtTime(.1, time +attackTime);
+    sweepEnv.gain.linearRampToValueAtTime(0, time +(attackTime + releaseTime));
+
+    osc.connect(convolutionDistortion).connect(sweepEnv).connect(judsonReverb).connect(plateReverb).connect(audioContext.destination);
+    osc.start(time);
+    osc.stop(time + sweepLength);
+}
+
 
 const filterNode = audioContext.createBiquadFilter();
 filterNode.type = 'lowpass'
-filterNode.Q.value = '50'
+filterNode.Q.value = '30'
 let filterMin = 30
 let filterMax = 60
 let filterSpeed = 1
 console.log(filterNode)
 
-async function createReverb() {
+async function createJudsonReverb() {
   let convolver = audioContext.createConvolver();
 
   // load impulse response from file
@@ -257,9 +276,9 @@ async function createReverb() {
 
   return convolver;
 }
-let reverb = await createReverb();
+let judsonReverb = await createJudsonReverb();
 
-async function createReverb2() {
+async function createPlateReverb() {
   let convolver = audioContext.createConvolver();
 
   // load impulse response from file
@@ -269,7 +288,7 @@ async function createReverb2() {
 
   return convolver;
 }
-let reverb2 = await createReverb2();
+let plateReverb = await createPlateReverb();
 
 
 
@@ -288,11 +307,19 @@ let convolutionDistortion = await createConvolutionDistortion();
 const gainNode = audioContext.createGain();
 
 // THIS IS THE CHAIN
-osc1.connect(convolutionDistortion).connect(filterNode).connect(reverb).connect(reverb2).connect(gainNode).connect(audioContext.destination)
+
+
+function playDrone(){
+    const droneOsc = audioContext.createOscillator()
+    droneOsc.type = 'square'
+    droneOsc.frequency.value = '19.45'
+
+    droneOsc.connect(convolutionDistortion).connect(filterNode).connect(judsonReverb).connect(plateReverb).connect(gainNode).connect(audioContext.destination)
+    droneOsc.start()
+}
+
 
 const volumeControl = document.querySelector("#volume");
-// const freqControl = document.querySelector('#freq-range');
-// const filterControl = document.querySelector('#filter-range')
 
 console.log(gainNode.gain.value)
 volumeControl.addEventListener("input", () => {
@@ -301,30 +328,41 @@ volumeControl.addEventListener("input", () => {
 });
 
 
-// set range of filter to good sounding min and max
-// map (Math.sin(elapsedTime)) to that range
-// have the innerRadius move to this fiter
+const playDroneButton = document.getElementById('play-drone-button')
+playDroneButton.addEventListener("click", ()=>{
+    // rewrite this as func
+    playDrone();
+});
 
-const playButton = document.querySelector('button')
-playButton.addEventListener("click", ()=>{
-    osc1.start()
+const playLeadButton = document.getElementById('play-lead-button')
+console.log(playLeadButton)
+playLeadButton.addEventListener("click", ()=>{
+    console.log('i click')
+    playLeadOsc(clock.getElapsedTime())
 });
 
 
 /**
  * Animate
  */
+let currentTime = null
+console.log(currentTime)
 const clock = new THREE.Clock()
 const tick = () =>
 {
     const elapsedTime = clock.getElapsedTime()
     
-    // filter range mapped to sin func
+    // console.log(elapsedTime)
+
+    // DRONE FILTER SWEEP
     let sinRange = 2 // -1 to 1 is 2
-    
     let filterRange = filterMax - filterMin // high and low points of filter sweep
     let newFilterSweepValue = (((Math.sin(elapsedTime * filterSpeed) - (-1)) * filterRange) / sinRange ) + filterMin
     filterNode.frequency.value = newFilterSweepValue
+
+    // LEAD OSC
+    
+
     
     sphereParticles.rotation.z = elapsedTime * rotationSpeed   
     waveLengthDiv.textContent = `${getWaveInfo(points, waveLength)}`;
