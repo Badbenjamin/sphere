@@ -250,14 +250,14 @@ function playLeadOsc(time, noteSequence, currentNote) {
     });
 
     const sweepEnv = new GainNode(audioContext);
-    sweepEnv.gain.cancelScheduledValues(time);
-    sweepEnv.gain.setValueAtTime(0, time);
-    sweepEnv.gain.linearRampToValueAtTime(1, time +attackTime);
-    sweepEnv.gain.linearRampToValueAtTime(0, time +(attackTime + releaseTime));
+    sweepEnv.gain.cancelScheduledValues(time + .01);
+    sweepEnv.gain.setValueAtTime(0, time+ .01);
+    sweepEnv.gain.linearRampToValueAtTime(1, (time+ .5) +attackTime);
+    sweepEnv.gain.linearRampToValueAtTime(0, (time+ .5) +(attackTime + releaseTime));
 
     osc.connect(convolutionDistortion).connect(sweepEnv).connect(judsonReverb).connect(plateReverb).connect(leadGain).connect(audioContext.destination);
-    osc.start(time);
-    osc.stop(time + sweepLength);
+    osc.start(time+ .01);
+    osc.stop((time+ .01) + sweepLength);
 
     
     if (noteIndex < notesLength - 1){
@@ -267,14 +267,77 @@ function playLeadOsc(time, noteSequence, currentNote) {
     }
 }
 
+const leadGain = audioContext.createGain();
 
+// ADDITIVE PAD
+
+let fundamentalFrequency = 311.13
+let oscType = "sine" 
+function playAdditivePad(time, oscType, fundamental){
+
+    let fundamentalOsc = new OscillatorNode(audioContext, {
+        frequency: fundamental,
+        type: oscType,
+    });
+    let masterGain = audioContext.createGain();
+
+    let overtoneOneOsc = new OscillatorNode(audioContext, {
+        frequency: fundamental * 2,
+        type: oscType,
+    });
+    let overtoneOneGain = audioContext.createGain();
+
+    let overtoneTwoOsc= new OscillatorNode(audioContext, {
+        frequency: fundamental * 3,
+        type: oscType,
+    });
+    let overtoneTwoGain = audioContext.createGain();
+
+    let overtoneThreeOsc= new OscillatorNode(audioContext, {
+        frequency: fundamental * 5,
+        type: oscType,
+    });
+    let overtoneThreeGain = audioContext.createGain();
+
+
+    overtoneOneGain.gain.value = .1
+    overtoneTwoGain.gain.value = .2
+    overtoneThreeGain.gain.value = .5
+    masterGain.gain.value = .5
+
+    // routing 
+    fundamentalOsc.connect(masterGain)
+    overtoneOneOsc.connect(overtoneOneGain)
+    overtoneTwoOsc.connect(overtoneTwoGain)
+    overtoneThreeOsc.connect(overtoneThreeGain)
+
+    overtoneOneGain.connect(masterGain)
+    overtoneTwoGain.connect(masterGain)
+    overtoneThreeGain.connect(masterGain)
+    masterGain.connect(audioContext.destination)
+
+    // START STOP
+    fundamentalOsc.start(time + .01)
+    overtoneOneOsc.start(time + .01)
+    overtoneTwoOsc.start(time + .01)
+    overtoneThreeOsc.start(time + .01)
+
+    fundamentalOsc.stop(time + 1)
+    overtoneOneOsc.stop(time + 1)
+    overtoneTwoOsc.stop(time + 1)
+    overtoneThreeOsc.stop(time + 1)
+
+};
+
+
+// LFO
 const filterNode = audioContext.createBiquadFilter();
 filterNode.type = 'lowpass'
 filterNode.Q.value = '30'
 let filterMin = 30
 let filterMax = 60
 let filterSpeed = 1
-console.log(filterNode)
+
 
 async function createJudsonReverb() {
   let convolver = audioContext.createConvolver();
@@ -314,10 +377,6 @@ async function createConvolutionDistortion() {
 }
 let convolutionDistortion = await createConvolutionDistortion();
 
-const droneGain = audioContext.createGain();
-const leadGain = audioContext.createGain();
-// THIS IS THE CHAIN
-
 
 function playDrone(){
     const droneOsc = audioContext.createOscillator()
@@ -328,6 +387,7 @@ function playDrone(){
     droneOsc.start()
 }
 
+const droneGain = audioContext.createGain();
 
 const droneGainControl = document.querySelector("#drone-volume");
 
@@ -354,6 +414,12 @@ const playLeadButton = document.getElementById('play-lead-button')
 playLeadButton.addEventListener("click", ()=>{
     console.log('i click')
     playLeadOsc(clock.getElapsedTime(), noteSequence, noteIndex)
+});
+
+const playPadButton = document.getElementById('play-pad-button')
+playPadButton.addEventListener("click", ()=>{
+    console.log('i click')
+    playAdditivePad(clock.getElapsedTime(), "sine", fundamentalFrequency)
 });
 
 
