@@ -235,6 +235,7 @@ function getWaveInfo(points, waveLength){
 
 const audioContext = new AudioContext();
 
+// LEAD
 const noteSequence = [622.55, 739.99, 830.61, 932.33, 1244.51]
 let noteIndex = 0
 const attackTime = .1
@@ -251,10 +252,10 @@ function playLeadOsc(time, noteSequence, currentNote) {
     const sweepEnv = new GainNode(audioContext);
     sweepEnv.gain.cancelScheduledValues(time);
     sweepEnv.gain.setValueAtTime(0, time);
-    sweepEnv.gain.linearRampToValueAtTime(.05, time +attackTime);
+    sweepEnv.gain.linearRampToValueAtTime(1, time +attackTime);
     sweepEnv.gain.linearRampToValueAtTime(0, time +(attackTime + releaseTime));
 
-    osc.connect(convolutionDistortion).connect(sweepEnv).connect(judsonReverb).connect(plateReverb).connect(audioContext.destination);
+    osc.connect(convolutionDistortion).connect(sweepEnv).connect(judsonReverb).connect(plateReverb).connect(leadGain).connect(audioContext.destination);
     osc.start(time);
     osc.stop(time + sweepLength);
 
@@ -313,8 +314,8 @@ async function createConvolutionDistortion() {
 }
 let convolutionDistortion = await createConvolutionDistortion();
 
-const gainNode = audioContext.createGain();
-
+const droneGain = audioContext.createGain();
+const leadGain = audioContext.createGain();
 // THIS IS THE CHAIN
 
 
@@ -323,17 +324,23 @@ function playDrone(){
     droneOsc.type = 'square'
     droneOsc.frequency.value = '19.45'
 
-    droneOsc.connect(convolutionDistortion).connect(filterNode).connect(judsonReverb).connect(plateReverb).connect(gainNode).connect(audioContext.destination)
+    droneOsc.connect(convolutionDistortion).connect(filterNode).connect(judsonReverb).connect(plateReverb).connect(droneGain).connect(audioContext.destination)
     droneOsc.start()
 }
 
 
-const volumeControl = document.querySelector("#volume");
+const droneGainControl = document.querySelector("#drone-volume");
 
-console.log(gainNode.gain.value)
-volumeControl.addEventListener("input", () => {
-  gainNode.gain.value = volumeControl.value;
-  console.log(gainNode.gain.value)
+droneGainControl.addEventListener("input", () => {
+  droneGain.gain.value = droneGainControl.value;
+  console.log(droneGain.gain.value)
+});
+
+const leadGainControl = document.querySelector("#lead-volume");
+
+leadGainControl.addEventListener("input", () => {
+  leadGain.gain.value = leadGainControl.value;
+  console.log(leadGain.gain.value)
 });
 
 
@@ -384,13 +391,8 @@ const tick = () =>
         const polarAngle = Math.acos((1 - 2 * t));
         const azimuth = goldenAngleRadians * i;
 
-        
-
-        
-
         // 
-        let outerRadius = innerRadius2 + (Math.sin(((elapsedTime * speedOfWaves) + (i * waveLength)))) * amplitude // * depthOfWaves
-        // console.log((Math.sin(((elapsedTime * speedOfWaves) + (1 * waveLength)))))
+        let outerRadius = innerRadius2 + (Math.sin(((elapsedTime * speedOfWaves) + (i * waveLength)))) * amplitude // * 
         let i3 = i * 3
         
         positions[i3] = Math.sin(polarAngle) * Math.cos(azimuth) * (outerRadius);     // x
@@ -399,10 +401,14 @@ const tick = () =>
 
         // look into WHY z axis addition works and looks good
         
-        colors[i3] = 1.0 * (Math.sin(elapsedTime + positions[i3+2])) // r
-        colors[i3+1] = 1.0 * (Math.cos(elapsedTime +  positions[i3+2]))// g
-        colors[i3+2] = 1.0 * Math.sin((i) + (positions[i3 + 2]))// b
-    
+        // colors[i3] = 1.0 * (Math.sin(elapsedTime + positions[i3+2])) // r
+        // colors[i3+1] = 1.0 * (Math.cos(elapsedTime +  positions[i3+2]))// g
+        // colors[i3+2] = 1.0 * Math.sin((i) + (positions[i3 + 2]))// b
+        
+        colors[i3] = 1.0 * Math.sin(elapsedTime + positions[i3+2]) 
+        colors[i3+1] = 1.0 * Math.cos(elapsedTime + positions[i3 + 2]) 
+        //  adding outerRadius to r b or g creates cool color palettes. should figure out how to mix this variable into the colors
+        colors[i3+2] = 1.0 * Math.sin((i)) + outerRadius
 
         // line
         if (guiParams.scopeOn == true ){

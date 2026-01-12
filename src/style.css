@@ -49,10 +49,17 @@ body
     font-size: 18px;
 }
 
-.gain-range{
+.drone-gain-range{
     z-index: 100;
     position: fixed;
     bottom: 40px;
+    left: 40px;
+}
+
+.lead-gain-range{
+    z-index: 100;
+    position: fixed;
+    bottom: 50px;
     left: 40px;
 }
 
