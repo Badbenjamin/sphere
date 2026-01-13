@@ -1,10 +1,10 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import GUI from 'lil-gui'
-import { GodRaysCombineShader } from 'three/examples/jsm/Addons.js'
-import { element, notEqual } from 'three/tsl'
-import {chorusStrings} from '../wavetables/Chorus_Strings.js'
-console.log(chorusStrings)
+// import { GodRaysCombineShader } from 'three/examples/jsm/Addons.js'
+// import { element, notEqual } from 'three/tsl'
+// import {chorusStrings} from '../wavetables/Chorus_Strings.js'
+// console.log(chorusStrings)
 /**
  * Base
  */
@@ -252,8 +252,8 @@ function playLeadOsc(time, noteSequence, currentNote) {
     const sweepEnv = new GainNode(audioContext);
     sweepEnv.gain.cancelScheduledValues(time + .01);
     sweepEnv.gain.setValueAtTime(0, time+ .01);
-    sweepEnv.gain.linearRampToValueAtTime(1, (time+ .5) +attackTime);
-    sweepEnv.gain.linearRampToValueAtTime(0, (time+ .5) +(attackTime + releaseTime));
+    sweepEnv.gain.linearRampToValueAtTime(1, (time) +attackTime);
+    sweepEnv.gain.linearRampToValueAtTime(0, (time) +(attackTime + releaseTime));
 
     osc.connect(convolutionDistortion).connect(sweepEnv).connect(judsonReverb).connect(plateReverb).connect(leadGain).connect(audioContext.destination);
     osc.start(time+ .01);
@@ -271,10 +271,11 @@ const leadGain = audioContext.createGain();
 
 // ADDITIVE PAD
 
-let fundamentalFrequency = 311.13
-let oscType = "sine" 
+let fundamentalFrequency = 155.56
+
 function playAdditivePad(time, oscType, fundamental){
 
+    
     let fundamentalOsc = new OscillatorNode(audioContext, {
         frequency: fundamental,
         type: oscType,
@@ -296,36 +297,85 @@ function playAdditivePad(time, oscType, fundamental){
     let overtoneThreeOsc= new OscillatorNode(audioContext, {
         frequency: fundamental * 5,
         type: oscType,
+        
     });
     let overtoneThreeGain = audioContext.createGain();
 
+    let overtoneFourOsc= new OscillatorNode(audioContext, {
+        frequency: fundamental * 7,
+        type: oscType,
+    });
+    let overtoneFourGain = audioContext.createGain();
 
-    overtoneOneGain.gain.value = .1
-    overtoneTwoGain.gain.value = .2
-    overtoneThreeGain.gain.value = .5
-    masterGain.gain.value = .5
+    let overtoneFiveOsc= new OscillatorNode(audioContext, {
+        frequency: fundamental * 9,
+        type: oscType,
+    });
+    let overtoneFiveGain = audioContext.createGain();
+
+    masterGain.gain.cancelScheduledValues(time + .01);
+    masterGain.gain.setValueAtTime(0, time+ .01);
+    masterGain.gain.linearRampToValueAtTime(1, (time + 1) );
+    masterGain.gain.linearRampToValueAtTime(0, (time + 9));
+
+    overtoneOneGain.gain.cancelScheduledValues(time + .01);
+    overtoneOneGain.gain.setValueAtTime(0, time+ .01);
+    overtoneOneGain.gain.linearRampToValueAtTime(.3, (time + 1));
+    overtoneOneGain.gain.linearRampToValueAtTime(0, (time) + 3);
+
+    overtoneTwoGain.gain.cancelScheduledValues(time + .01);
+    overtoneTwoGain.gain.setValueAtTime(0, time+ .01);
+    overtoneTwoGain.gain.linearRampToValueAtTime(0, (time + .5));
+    overtoneTwoGain.gain.linearRampToValueAtTime(.7, (time) +(4));
+
+    overtoneThreeGain.gain.cancelScheduledValues(time + .01);
+    overtoneThreeGain.gain.setValueAtTime(0, time+ .01);
+    overtoneThreeGain.gain.linearRampToValueAtTime(0, (time + 2));
+    overtoneThreeGain.gain.linearRampToValueAtTime(.5, (time) +(5));
+
+    overtoneFourGain.gain.cancelScheduledValues(time + .01);
+    overtoneFourGain.gain.setValueAtTime(0, time+ .01);
+    overtoneFourGain.gain.linearRampToValueAtTime(.2, (time + 1));
+    overtoneFourGain.gain.linearRampToValueAtTime(0, (time) +(9));
+
+    overtoneFiveGain.gain.cancelScheduledValues(time + .01);
+    overtoneFiveGain.gain.setValueAtTime(0, time+ .01);
+    overtoneFiveGain.gain.linearRampToValueAtTime(.7, (time + 7));
+    overtoneFiveGain.gain.linearRampToValueAtTime(0, (time) +(9));
 
     // routing 
+
     fundamentalOsc.connect(masterGain)
     overtoneOneOsc.connect(overtoneOneGain)
     overtoneTwoOsc.connect(overtoneTwoGain)
     overtoneThreeOsc.connect(overtoneThreeGain)
+    overtoneFourOsc.connect(overtoneFourGain)
+    overtoneFiveOsc.connect(overtoneFiveGain)
 
     overtoneOneGain.connect(masterGain)
     overtoneTwoGain.connect(masterGain)
     overtoneThreeGain.connect(masterGain)
-    masterGain.connect(audioContext.destination)
+    overtoneFourGain.connect(masterGain)
+    overtoneFiveGain.connect(masterGain)
+
+    // filterNode2.connect(judsonReverb).connect(plateReverb).connect(masterGain)
+    
+    masterGain.connect(filterNode2).connect(plateReverb).connect(audioContext.destination)
 
     // START STOP
     fundamentalOsc.start(time + .01)
     overtoneOneOsc.start(time + .01)
     overtoneTwoOsc.start(time + .01)
     overtoneThreeOsc.start(time + .01)
+    overtoneFourOsc.start(time + .01)
+    overtoneFiveOsc.start(time + .01)
 
-    fundamentalOsc.stop(time + 1)
-    overtoneOneOsc.stop(time + 1)
-    overtoneTwoOsc.stop(time + 1)
-    overtoneThreeOsc.stop(time + 1)
+    fundamentalOsc.stop(time + 9)
+    overtoneOneOsc.stop(time + 9)
+    overtoneTwoOsc.stop(time + 9)
+    overtoneThreeOsc.stop(time + 9)
+    overtoneFourOsc.stop(time + 9)
+    overtoneFiveOsc.stop(time + 9)
 
 };
 
@@ -334,9 +384,14 @@ function playAdditivePad(time, oscType, fundamental){
 const filterNode = audioContext.createBiquadFilter();
 filterNode.type = 'lowpass'
 filterNode.Q.value = '30'
-let filterMin = 30
-let filterMax = 60
+let filterMin = 72
+let filterMax = 80
 let filterSpeed = 1
+
+const filterNode2 = audioContext.createBiquadFilter();
+filterNode2.type = 'bandpass'
+filterNode2.frequency.value = 600
+filterNode2.Q.value = '10'
 
 
 async function createJudsonReverb() {
@@ -381,7 +436,7 @@ let convolutionDistortion = await createConvolutionDistortion();
 function playDrone(){
     const droneOsc = audioContext.createOscillator()
     droneOsc.type = 'square'
-    droneOsc.frequency.value = '19.45'
+    droneOsc.frequency.value = '77.78'
 
     droneOsc.connect(convolutionDistortion).connect(filterNode).connect(judsonReverb).connect(plateReverb).connect(droneGain).connect(audioContext.destination)
     droneOsc.start()
@@ -447,6 +502,7 @@ const tick = () =>
     
     sphereParticles.rotation.z = elapsedTime * rotationSpeed   
     waveLengthDiv.textContent = `${getWaveInfo(points, waveLength)}`;
+    let wavelengthNumber = getWaveInfo(points, waveLength)
     // console.log('textContent',waveLengthDiv.textContent)
 
     
@@ -476,6 +532,12 @@ const tick = () =>
         //  adding outerRadius to r b or g creates cool color palettes. should figure out how to mix this variable into the colors
         colors[i3+2] = 1.0 * Math.sin((i)) + outerRadius
 
+        // if (i % wavelengthNumber === 0){
+        //     colors[i3] = 1.0 
+        //     colors[i3+1] = 1.0 
+        // //  adding outerRadius to r b or g creates cool color palettes. should figure out how to mix this variable into the colors
+        //     colors[i3+2] = 1.0 
+        // }
         // line
         if (guiParams.scopeOn == true ){
            
