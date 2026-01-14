@@ -273,7 +273,17 @@ const leadGain = audioContext.createGain();
 
 let fundamentalFrequency = 155.56
 
+const bpFilterNode = audioContext.createBiquadFilter();
+bpFilterNode.type = 'bandpass'
+// bpFilterNode.frequency.value = 250
+bpFilterNode.Q.value = '150'
+let bpFilterMin = 100
+let bpFilterMax = 200
+let bpFilterSpeed = 15
+
 function playAdditivePad(time, oscType, fundamental){
+
+    
 
     
     let fundamentalOsc = new OscillatorNode(audioContext, {
@@ -295,27 +305,45 @@ function playAdditivePad(time, oscType, fundamental){
     let overtoneTwoGain = audioContext.createGain();
 
     let overtoneThreeOsc= new OscillatorNode(audioContext, {
-        frequency: fundamental * 5,
+        frequency: fundamental * 4,
         type: oscType,
         
     });
     let overtoneThreeGain = audioContext.createGain();
 
     let overtoneFourOsc= new OscillatorNode(audioContext, {
-        frequency: fundamental * 7,
+        frequency: fundamental * 5,
         type: oscType,
     });
     let overtoneFourGain = audioContext.createGain();
 
     let overtoneFiveOsc= new OscillatorNode(audioContext, {
-        frequency: fundamental * 9,
+        frequency: fundamental * 6,
         type: oscType,
     });
     let overtoneFiveGain = audioContext.createGain();
 
+    let overtoneSixeOsc= new OscillatorNode(audioContext, {
+        frequency: fundamental * 7,
+        type: oscType,
+    });
+    let overtoneSixGain = audioContext.createGain();
+
+    let overtoneSevenOsc= new OscillatorNode(audioContext, {
+        frequency: fundamental * 8,
+        type: oscType,
+    });
+    let overtoneSevenGain = audioContext.createGain();
+
+    let overtoneEightOsc= new OscillatorNode(audioContext, {
+        frequency: fundamental * 9,
+        type: oscType,
+    });
+    let overtoneEightGain = audioContext.createGain();
+
     masterGain.gain.cancelScheduledValues(time + .01);
     masterGain.gain.setValueAtTime(0, time+ .01);
-    masterGain.gain.linearRampToValueAtTime(1, (time + 1) );
+    masterGain.gain.linearRampToValueAtTime(4, (time + 1) );
     masterGain.gain.linearRampToValueAtTime(0, (time + 9));
 
     overtoneOneGain.gain.cancelScheduledValues(time + .01);
@@ -325,13 +353,13 @@ function playAdditivePad(time, oscType, fundamental){
 
     overtoneTwoGain.gain.cancelScheduledValues(time + .01);
     overtoneTwoGain.gain.setValueAtTime(0, time+ .01);
-    overtoneTwoGain.gain.linearRampToValueAtTime(0, (time + .5));
-    overtoneTwoGain.gain.linearRampToValueAtTime(.7, (time) +(4));
+    overtoneTwoGain.gain.linearRampToValueAtTime(.5, (time + .5));
+    overtoneTwoGain.gain.linearRampToValueAtTime(0, (time) +(4));
 
     overtoneThreeGain.gain.cancelScheduledValues(time + .01);
     overtoneThreeGain.gain.setValueAtTime(0, time+ .01);
-    overtoneThreeGain.gain.linearRampToValueAtTime(0, (time + 2));
-    overtoneThreeGain.gain.linearRampToValueAtTime(.5, (time) +(5));
+    overtoneThreeGain.gain.linearRampToValueAtTime(.6, (time + 2));
+    overtoneThreeGain.gain.linearRampToValueAtTime(0, (time) +(5));
 
     overtoneFourGain.gain.cancelScheduledValues(time + .01);
     overtoneFourGain.gain.setValueAtTime(0, time+ .01);
@@ -340,8 +368,23 @@ function playAdditivePad(time, oscType, fundamental){
 
     overtoneFiveGain.gain.cancelScheduledValues(time + .01);
     overtoneFiveGain.gain.setValueAtTime(0, time+ .01);
-    overtoneFiveGain.gain.linearRampToValueAtTime(.7, (time + 7));
+    overtoneFiveGain.gain.linearRampToValueAtTime(.4, (time + 3));
     overtoneFiveGain.gain.linearRampToValueAtTime(0, (time) +(9));
+
+    overtoneSixGain.gain.cancelScheduledValues(time + .01);
+    overtoneSixGain.gain.setValueAtTime(0, time+ .01);
+    overtoneSixGain.gain.linearRampToValueAtTime(.2, (time + 2));
+    overtoneSixGain.gain.linearRampToValueAtTime(0, (time) +(8));
+
+    overtoneSevenGain.gain.cancelScheduledValues(time + .01);
+    overtoneSevenGain.gain.setValueAtTime(0, time+ .01);
+    overtoneSevenGain.gain.linearRampToValueAtTime(.2, (time + 5));
+    overtoneSevenGain.gain.linearRampToValueAtTime(0, (time) +(9));
+
+    overtoneEightGain.gain.cancelScheduledValues(time + .01);
+    overtoneEightGain.gain.setValueAtTime(0, time+ .01);
+    overtoneEightGain.gain.linearRampToValueAtTime(.2, (time + 2));
+    overtoneEightGain.gain.linearRampToValueAtTime(0, (time) +(9));
 
     // routing 
 
@@ -351,16 +394,22 @@ function playAdditivePad(time, oscType, fundamental){
     overtoneThreeOsc.connect(overtoneThreeGain)
     overtoneFourOsc.connect(overtoneFourGain)
     overtoneFiveOsc.connect(overtoneFiveGain)
+    overtoneSixeOsc.connect(overtoneSixGain)
+    overtoneSevenOsc.connect(overtoneSevenGain)
+    overtoneEightOsc.connect(overtoneEightGain)
 
     overtoneOneGain.connect(masterGain)
     overtoneTwoGain.connect(masterGain)
     overtoneThreeGain.connect(masterGain)
     overtoneFourGain.connect(masterGain)
     overtoneFiveGain.connect(masterGain)
+    overtoneSixGain.connect(masterGain)
+    overtoneSevenGain.connect(masterGain)
+    overtoneEightGain.connect(masterGain)
 
     // filterNode2.connect(judsonReverb).connect(plateReverb).connect(masterGain)
     
-    masterGain.connect(filterNode2).connect(plateReverb).connect(audioContext.destination)
+    masterGain.connect(bpFilterNode).connect(convolutionDistortion).connect(judsonReverb).connect(plateReverb).connect(audioContext.destination)
 
     // START STOP
     fundamentalOsc.start(time + .01)
@@ -381,17 +430,14 @@ function playAdditivePad(time, oscType, fundamental){
 
 
 // LFO
-const filterNode = audioContext.createBiquadFilter();
-filterNode.type = 'lowpass'
-filterNode.Q.value = '30'
-let filterMin = 72
-let filterMax = 80
-let filterSpeed = 1
+const LFOFilterNode = audioContext.createBiquadFilter();
+LFOFilterNode.type = 'lowpass'
+LFOFilterNode.Q.value = '30'
+let LfoFilterMin = 72
+let LfoFilterMax = 80
+let LfoFilterSpeed = 1
 
-const filterNode2 = audioContext.createBiquadFilter();
-filterNode2.type = 'bandpass'
-filterNode2.frequency.value = 600
-filterNode2.Q.value = '10'
+
 
 
 async function createJudsonReverb() {
@@ -438,7 +484,7 @@ function playDrone(){
     droneOsc.type = 'square'
     droneOsc.frequency.value = '77.78'
 
-    droneOsc.connect(convolutionDistortion).connect(filterNode).connect(judsonReverb).connect(plateReverb).connect(droneGain).connect(audioContext.destination)
+    droneOsc.connect(convolutionDistortion).connect(LFOFilterNode).connect(judsonReverb).connect(plateReverb).connect(droneGain).connect(audioContext.destination)
     droneOsc.start()
 }
 
@@ -474,7 +520,11 @@ playLeadButton.addEventListener("click", ()=>{
 const playPadButton = document.getElementById('play-pad-button')
 playPadButton.addEventListener("click", ()=>{
     console.log('i click')
-    playAdditivePad(clock.getElapsedTime(), "sine", fundamentalFrequency)
+    playAdditivePad(clock.getElapsedTime(), "sine", 311.13)
+    playAdditivePad((clock.getElapsedTime()+.5), "sine", 392)
+    playAdditivePad((clock.getElapsedTime()+1), "sine", 587.33)
+    playAdditivePad((clock.getElapsedTime()+1.5), "sine", 466.16)
+    
 });
 
 
@@ -492,9 +542,14 @@ const tick = () =>
 
     // DRONE FILTER SWEEP
     let sinRange = 2 // -1 to 1 is 2
-    let filterRange = filterMax - filterMin // high and low points of filter sweep
-    let newFilterSweepValue = (((Math.sin(elapsedTime * filterSpeed) - (-1)) * filterRange) / sinRange ) + filterMin
-    filterNode.frequency.value = newFilterSweepValue
+    let filterRange = LfoFilterMax - LfoFilterMin // high and low points of filter sweep
+    let newFilterSweepValue = (((Math.sin(elapsedTime * LfoFilterSpeed) - (-1)) * filterRange) / sinRange ) + LfoFilterMin
+    LFOFilterNode.frequency.value = newFilterSweepValue
+
+    let sinRange2 = 2
+    let bpFilterRange = bpFilterMax - bpFilterMin
+    let newBpFilterSweepValue = (((Math.sin(elapsedTime * bpFilterSpeed) - (-1)) * bpFilterRange) / sinRange2) + bpFilterMin
+    bpFilterNode.frequency.value = newBpFilterSweepValue
 
     // LEAD OSC
     
@@ -506,7 +561,7 @@ const tick = () =>
     // console.log('textContent',waveLengthDiv.textContent)
 
     
-    let innerRadius2 = (((Math.sin(elapsedTime * filterSpeed) - 4.9) * .2) / 2) + 4.9
+    let innerRadius2 = (((Math.sin(elapsedTime * LfoFilterSpeed) - 4.9) * .2) / 2) + 4.9
     for (let i = 0; i <= points; i++){
         const t = ((i / (points)));
         
