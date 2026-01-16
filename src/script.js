@@ -545,18 +545,31 @@ playPadButton.addEventListener("click", ()=>{
 // }
 
 let lastBeatTime = 0
-function countBeats(currentTime, tempo){
+let currentBeat = 1
+let currentBar = 1
+function metronome(currentTime, tempo){
     
     const beatLengthSeconds = 60.0 / tempo;
-    const barLengthSeconds = beatLengthSeconds * 4
+    const eighthhNoteSeconds = beatLengthSeconds / 2
 
-    let deltaSinceLastBeat = currentTime - lastBeatTime
+    let deltaTimeSinceLastBeat = currentTime - lastBeatTime
     
-    if (deltaSinceLastBeat >= beatLengthSeconds){
-        // console.log(lastBeatTime)
-        playLeadOsc(currentTime, noteSequence, noteIndex);
+    if (deltaTimeSinceLastBeat >= eighthhNoteSeconds){
         lastBeatTime = currentTime
-    }
+        if (currentBeat < 4){
+            currentBeat += .5
+
+        } else {
+            currentBeat = 1
+            if (currentBar < 8){
+                currentBar += 1
+            } else {
+                currentBar = 1
+            }
+        }
+    } 
+
+    console.log('bar', currentBar, 'beat', currentBeat)
 };
 
 
@@ -569,9 +582,9 @@ const clock = new THREE.Clock()
 
 const tick = () =>
 {
-    const elapsedTime = clock.getElapsedTime()
+    const elapsedTime = clock.getElapsedTime();
     
-    countBeats(elapsedTime, 60)
+    metronome(elapsedTime, 120);
     // console.log(elapsedTime)
 
     // DRONE FILTER SWEEP
@@ -591,7 +604,7 @@ const tick = () =>
     
     sphereParticles.rotation.z = elapsedTime * rotationSpeed   
     waveLengthDiv.textContent = `${getWaveInfo(points, waveLength)}`;
-    let wavelengthNumber = getWaveInfo(points, waveLength)
+    // let wavelengthNumber = getWaveInfo(points, waveLength)
     // console.log('textContent',waveLengthDiv.textContent)
     // console.log(Math.sin(elapsedTime))
     
@@ -616,10 +629,10 @@ const tick = () =>
         // colors[i3+1] = 1.0 * (Math.cos(elapsedTime +  positions[i3+2]))// g
         // colors[i3+2] = 1.0 * Math.sin((i) + (positions[i3 + 2]))// b
         
-        colors[i3] = 1.0 * Math.abs(Math.sin(elapsedTime + positions[i3+2])) + outerRadius
+        colors[i3] = 1.0 * Math.abs(Math.sin(elapsedTime + positions[i3+2]))  + outerRadius
         colors[i3+1] = 1.0 * Math.cos(elapsedTime + positions[i3 + 2]) 
         //  adding outerRadius to r b or g creates cool color palettes. should figure out how to mix this variable into the colors
-        colors[i3+2] = 1.0 * Math.sin((i))  
+        colors[i3+2] = 1.0 * Math.sin((i)) //  + positions[i3+2]
 
         // if (i3 % wavelengthNumber === 0){
         //     console.log('true')
