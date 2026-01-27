@@ -235,6 +235,7 @@ function getWaveInfo(points, waveLength){
 
 const audioContext = new AudioContext();
 
+
 // LEAD
 const noteSequence = [622.55, 739.99, 830.61, 932.33, 1244.51]
 let noteIndex = 0
@@ -243,7 +244,7 @@ const releaseTime = .5
 const sweepLength = attackTime + releaseTime
 function playLeadOsc(time, noteSequence, currentNote) {
     const notesLength = noteSequence.length
-    console.log(currentNote)
+    // console.log(currentNote)
     const osc = new OscillatorNode(audioContext, {
         frequency: noteSequence[currentNote],
         type: "sine",
@@ -283,9 +284,6 @@ let bpFilterSpeed = 15
 
 function playAdditivePad(time, oscType, fundamental){
 
-    
-
-    
     let fundamentalOsc = new OscillatorNode(audioContext, {
         frequency: fundamental,
         type: oscType,
@@ -529,48 +527,61 @@ playPadButton.addEventListener("click", ()=>{
 
 // BPM AND SCHEDULING
 
-// const lookAhead = 25.0 // How frequently to call scheduling function (in milliseconds)
-// const scheduleAheadTime = 0.1; // How far ahead to schedule audio (sec)
-
-// let currentNote = 0;
-// let nextNoteTime = 0.0; // when the next note is due.
-
-// function nextNote() {
-//   const secondsPerBeat = 60.0 / tempo;
-
-//   nextNoteTime += secondsPerBeat; // Add beat length to last beat time
-
-//   // Advance the beat number, wrap to zero when reaching 4
-//   currentNote = (currentNote + 1) % 4;
-// }
-
+let tempo = 60.0
+let beatLengthSeconds = 0.0
 let lastBeatTime = 0
 let currentBeat = 1
 let currentBar = 1
+let totalBars = 2
 function metronome(currentTime, tempo){
     
     const beatLengthSeconds = 60.0 / tempo;
-    const eighthhNoteSeconds = beatLengthSeconds / 2
+    const eighthhNoteSeconds = beatLengthSeconds / 2;
 
-    let deltaTimeSinceLastBeat = currentTime - lastBeatTime
+    let deltaTimeSinceLastBeat = currentTime - lastBeatTime;
     
     if (deltaTimeSinceLastBeat >= eighthhNoteSeconds){
-        lastBeatTime = currentTime
-        if (currentBeat < 4){
-            currentBeat += .5
+        lastBeatTime = currentTime;
+        if (currentBeat < 4.5){
+            currentBeat += .5;
 
         } else {
             currentBeat = 1
-            if (currentBar < 8){
-                currentBar += 1
+            if (currentBar < totalBars){
+                currentBar += 1;
             } else {
-                currentBar = 1
+                currentBar = 1;
             }
         }
-    } 
+    }; 
 
-    console.log('bar', currentBar, 'beat', currentBeat)
+    return {'bar' : currentBar, 'beat': currentBeat, 'beatLength' : beatLengthSeconds}
 };
+
+
+// SEQUENCER
+
+let leadSequence = [1,1.5,2,2.5,3,3.5,4,4.5]
+let sequenceStep = 0
+function sequencer(time, metronomeBeat, instrument, sequence) {
+
+    let beat = metronomeBeat.beat
+    let bar = metronomeBeat.bar
+    
+    if (sequence[sequenceStep] == beat){
+        instrument(time, noteSequence, noteIndex)
+        if (sequenceStep < sequence.length-1){
+            sequenceStep ++
+        } else {
+            sequenceStep = 0
+        }
+        
+    }
+}
+
+
+
+
 
 
 
@@ -584,8 +595,9 @@ const tick = () =>
 {
     const elapsedTime = clock.getElapsedTime();
     
-    metronome(elapsedTime, 120);
-    // console.log(elapsedTime)
+    let metronomeTime = metronome(elapsedTime, 60);
+    sequencer(elapsedTime, metronomeTime, playLeadOsc, leadSequence)
+    // let padSequcene = sequencer(elapsedTime, metronomeTime, playLeadOsc, [1, 2])
 
     // DRONE FILTER SWEEP
     let sinRange = 2 // -1 to 1 is 2
@@ -629,10 +641,10 @@ const tick = () =>
         // colors[i3+1] = 1.0 * (Math.cos(elapsedTime +  positions[i3+2]))// g
         // colors[i3+2] = 1.0 * Math.sin((i) + (positions[i3 + 2]))// b
         
-        colors[i3] = 1.0 * Math.abs(Math.sin(elapsedTime + positions[i3+2]))  + outerRadius
+        colors[i3] = 1.0 * Math.abs(Math.sin(elapsedTime + positions[i3+2])) // + outerRadius
         colors[i3+1] = 1.0 * Math.cos(elapsedTime + positions[i3 + 2]) 
         //  adding outerRadius to r b or g creates cool color palettes. should figure out how to mix this variable into the colors
-        colors[i3+2] = 1.0 * Math.sin((i)) //  + positions[i3+2]
+        colors[i3+2] = 1.0 * Math.sin((elapsedTime + positions[i3 + 2])) //  + positions[i3+2]
 
         // if (i3 % wavelengthNumber === 0){
         //     console.log('true')
