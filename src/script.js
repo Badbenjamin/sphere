@@ -231,7 +231,7 @@ function getWaveInfo(points, waveLength){
     return points / count
 }
 
-// SYNTH
+// AUDIO
 
 const audioContext = new AudioContext();
 
@@ -256,7 +256,7 @@ function playLeadOsc(time, noteSequence, currentNote) {
     sweepEnv.gain.linearRampToValueAtTime(1, (time) +attackTime);
     sweepEnv.gain.linearRampToValueAtTime(0, (time) +(attackTime + releaseTime));
 
-    osc.connect(convolutionDistortion).connect(sweepEnv).connect(judsonReverb).connect(plateReverb).connect(leadGain).connect(audioContext.destination);
+    osc.connect(convolutionDistortion3).connect(sweepEnv).connect(judsonReverb3).connect(plateReverb3).connect(leadGain).connect(audioContext.destination);
     osc.start(time+ .01);
     osc.stop((time+ .01) + sweepLength);
 
@@ -407,7 +407,7 @@ function playAdditivePad(time, oscType, fundamental){
 
     // filterNode2.connect(judsonReverb).connect(plateReverb).connect(masterGain)
     
-    masterGain.connect(bpFilterNode).connect(convolutionDistortion).connect(judsonReverb).connect(plateReverb).connect(audioContext.destination)
+    masterGain.connect(bpFilterNode).connect(convolutionDistortion2).connect(judsonReverb2).connect(plateReverb2).connect(audioContext.destination)
 
     // START STOP
     fundamentalOsc.start(time + .01)
@@ -436,7 +436,7 @@ let LfoFilterMax = 80
 let LfoFilterSpeed = 1
 
 
-
+// REVERBS
 
 async function createJudsonReverb() {
   let convolver = audioContext.createConvolver();
@@ -448,7 +448,9 @@ async function createJudsonReverb() {
 
   return convolver;
 }
-let judsonReverb = await createJudsonReverb();
+let judsonReverb1 = await createJudsonReverb();
+let judsonReverb2 = await createJudsonReverb();
+let judsonReverb3 = await createJudsonReverb();
 
 async function createPlateReverb() {
   let convolver = audioContext.createConvolver();
@@ -460,7 +462,9 @@ async function createPlateReverb() {
 
   return convolver;
 }
-let plateReverb = await createPlateReverb();
+let plateReverb1 = await createPlateReverb();
+let plateReverb2 = await createPlateReverb();
+let plateReverb3 = await createPlateReverb();
 
 
 
@@ -474,7 +478,9 @@ async function createConvolutionDistortion() {
 
   return convolver;
 }
-let convolutionDistortion = await createConvolutionDistortion();
+let convolutionDistortion1 = await createConvolutionDistortion();
+let convolutionDistortion2 = await createConvolutionDistortion();
+let convolutionDistortion3 = await createConvolutionDistortion();
 
 
 function playDrone(){
@@ -482,7 +488,7 @@ function playDrone(){
     droneOsc.type = 'square'
     droneOsc.frequency.value = '77.78'
 
-    droneOsc.connect(convolutionDistortion).connect(LFOFilterNode).connect(judsonReverb).connect(plateReverb).connect(droneGain).connect(audioContext.destination)
+    droneOsc.connect(convolutionDistortion1).connect(LFOFilterNode).connect(judsonReverb1).connect(plateReverb1).connect(droneGain).connect(audioContext.destination)
     droneOsc.start()
 }
 
@@ -561,7 +567,7 @@ function metronome(currentTime, tempo){
 
 // SEQUENCER
 
-let leadSequence = [1,1.5,2,2.5,3,3.5,4,4.5]
+let leadSequence = [1 ,2, 3, 4]
 let sequenceStep = 0
 function sequencer(time, metronomeBeat, instrument, sequence) {
 
