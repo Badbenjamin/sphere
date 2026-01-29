@@ -73,6 +73,13 @@ body
     left: 40px;
 }
 
+.pad-gain-range{
+    z-index: 100;
+    position: fixed;
+    bottom: 60px;
+    left: 40px;
+}
+
 .freq-range{
     z-index: 100;
     bottom: 90px;
