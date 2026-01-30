@@ -235,155 +235,50 @@ function getWaveInfo(points, waveLength){
 
 const audioContext = new AudioContext();
 
+function lfoValue(min, max, speed, time){
+    const lfoRange = max - min
+    const lfoValue = (((Math.sin(time * speed) + 1) * lfoRange) / 2) + min
+    return lfoValue
+}
+
+function createFilterNode(type,Q){
+    const filterNode = audioContext.createBiquadFilter();
+    filterNode.type = type
+    filterNode.Q.value = Q
+
+    return filterNode
+}
 
 // LEAD
 
-// LEAD FILTER 
-
-const bpFilterNodeLead = audioContext.createBiquadFilter();
-bpFilterNodeLead.type = 'bandpass'
-// bpFilterNode.frequency.value = 250
-bpFilterNodeLead.Q.value = '5'
-let bpFilterLeadMin = 500
-let bpFilterLeadMax = 1500
-let bpFilterLeadSpeed = 10
-// const noteSequence = [622.55, 739.99, 830.61, 932.33, 1244.51]
-const noteSequence = [783.99, 622.25, 932.35, 587.33, 1174.66, 783.99, 622.25, 932.35, 587.33]
-let noteIndex = 0
-const attackTime = .1
-const releaseTime = 1
-const sweepLength = attackTime + releaseTime
+const bpFilterNodeLead = createFilterNode('bandpass', '5')
 const leadGain = audioContext.createGain();
 const tremGain = new GainNode(audioContext)
-function playLeadOsc(time, noteSequence, currentNote) {
+
+function playLeadOsc(time, wave, attackTime, releaseTime, noteSequence, currentNoteIndex) {
     const notesLength = noteSequence.length
-    // console.log(currentNote)
+    const sweepLength = attackTime + releaseTime
+
     const leadFundamentalOsc = new OscillatorNode(audioContext, {
-        frequency: noteSequence[currentNote],
-        type: "sine",
+        frequency: noteSequence[currentNoteIndex],
+        type: wave,
     });
     const leadFundamentalOscGain = audioContext.createGain();
 
-    // add more fundamentals to beef up sound
-    // const leadOvertoneOneOsc = new OscillatorNode(audioContext, {
-    //     frequency: leadFundamentalOsc.frequency.value * 2,
-    //     type: "sine",
-    // });
-    // const leadOvertoneOneGain = audioContext.createGain();
-
-    // const leadOvertoneTwoOsc = new OscillatorNode(audioContext, {
-    //     frequency: leadFundamentalOsc.frequency.value * 2,
-    //     type: "sine",
-    // });
-    // const leadOvertoneTwoGain = audioContext.createGain();
-
-    // const leadOvertoneThreeOsc = new OscillatorNode(audioContext, {
-    //     frequency: leadFundamentalOsc.frequency.value * 3,
-    //     type: "sine",
-    // });
-    // const leadOvertoneThreeGain = audioContext.createGain();
-
-    // const leadOvertoneFourOsc = new OscillatorNode(audioContext, {
-    //     frequency: leadFundamentalOsc.frequency.value * 4,
-    //     type: "sine",
-    // });
-    // const leadOvertoneFourGain = audioContext.createGain();
-
-    // const leadOvertoneFiveOsc = new OscillatorNode(audioContext, {
-    //     frequency: leadFundamentalOsc.frequency.value * 5,
-    //     type: "sine",
-    // });
-    // const leadOvertoneFiveGain = audioContext.createGain();
-
-    // this appears to only fire when the function is called, and not throughout the oscilator's lifespan
-    // I would need to create osc nodes outside of the function to get this to work
-    
-    // let detuneRange = 50
-    // let detuneSinValue = ((Math.sin(time * 1000) * detuneRange) / 2)
-    // osc.detune.value = detuneSinValue
-
-    // Attack Release Gain Sweep
-
-    // const sweepEnv = new GainNode(audioContext);
-    // sweepEnv.gain.cancelScheduledValues(time);
-    // sweepEnv.gain.setValueAtTime(0, time);
-    // sweepEnv.gain.linearRampToValueAtTime(1, (time) +attackTime);
-    // sweepEnv.gain.linearRampToValueAtTime(0, (time) +(attackTime + releaseTime));
-
-    // leadFundamentalOscGain.gain.cancelScheduledValues(time);
-    // leadFundamentalOscGain.gain.setValueAtTime(0, time);
-    // leadFundamentalOscGain.gain.linearRampToValueAtTime(1, (time) +attackTime);
-    // leadFundamentalOscGain.gain.linearRampToValueAtTime(0, (time) +(attackTime + releaseTime));
-
-    // leadOvertoneOneGain.gain.cancelScheduledValues(time);
-    // leadOvertoneOneGain.gain.setValueAtTime(0, time);
-    // leadOvertoneOneGain.gain.linearRampToValueAtTime(.5, (time) +releaseTime);
-    // leadOvertoneOneGain.gain.linearRampToValueAtTime(0, (time) +(attackTime + releaseTime));
-
-    // leadOvertoneTwoGain.gain.cancelScheduledValues(time);
-    // leadOvertoneTwoGain.gain.setValueAtTime(0, time);
-    // leadOvertoneTwoGain.gain.linearRampToValueAtTime(.4, (time) +(attackTime * 2));
-    // leadOvertoneTwoGain.gain.linearRampToValueAtTime(0, (time) +(attackTime + releaseTime));
-
-    // leadOvertoneThreeGain.gain.cancelScheduledValues(time);
-    // leadOvertoneThreeGain.gain.setValueAtTime(0, time);
-    // leadOvertoneThreeGain.gain.linearRampToValueAtTime(.3, (time) +(attackTime));
-    // leadOvertoneThreeGain.gain.linearRampToValueAtTime(0, (time) +(attackTime + releaseTime * 1.5));
-
-    // leadOvertoneFourGain.gain.cancelScheduledValues(time);
-    // leadOvertoneFourGain.gain.setValueAtTime(0, time);
-    // leadOvertoneFourGain.gain.linearRampToValueAtTime(.2, (time) +(attackTime * 1.5));
-    // leadOvertoneFourGain.gain.linearRampToValueAtTime(0, (time) +(attackTime + releaseTime / 2));
-
-    // leadOvertoneFiveGain.gain.cancelScheduledValues(time);
-    // leadOvertoneFiveGain.gain.setValueAtTime(0, time);
-    // leadOvertoneFiveGain.gain.linearRampToValueAtTime(.1, (time) +(attackTime * 2));
-    // leadOvertoneFiveGain.gain.linearRampToValueAtTime(0, (time) +(attackTime + releaseTime / 3));
-
-
-
+    // CHAIN
     leadFundamentalOsc.connect(leadFundamentalOscGain).connect(bpFilterNodeLead).connect(convolutionDistortion1).connect(tremGain).connect(plateReverb3).connect(leadGain).connect(audioContext.destination);
-    
-    // ROUTING
-
-    // leadOvertoneOneOsc.connect(leadOvertoneOneGain)
-    // leadOvertoneTwoOsc.connect(leadOvertoneTwoGain)
-    // leadOvertoneThreeOsc.connect(leadOvertoneThreeGain)
-    // leadOvertoneFourOsc.connect(leadOvertoneFourGain)
-    // leadOvertoneFiveOsc.connect(leadOvertoneFiveGain)
-
-    // leadOvertoneOneGain.connect(leadFundamentalOscGain)
-    // leadOvertoneTwoGain.connect(leadFundamentalOscGain)
-    // leadOvertoneThreeGain.connect(leadFundamentalOscGain)
-    // leadOvertoneFourGain.connect(leadFundamentalOscGain)
-    // leadOvertoneFiveGain.connect(leadFundamentalOscGain)
 
     // START STOP
-
     leadFundamentalOsc.start(time);
     leadFundamentalOsc.stop((time) + sweepLength);
-    // leadOvertoneOneOsc.start(time);
-    // leadOvertoneOneOsc.stop((time) + sweepLength * 2);
-    // leadOvertoneTwoOsc.start(time);
-    // leadOvertoneTwoOsc.stop((time) + sweepLength * 2);
-    // leadOvertoneThreeOsc.start(time);
-    // leadOvertoneThreeOsc.stop((time) + sweepLength * 2);
-    // leadOvertoneFourOsc.start(time);
-    // leadOvertoneFourOsc.stop((time) + sweepLength * 2);
-    // leadOvertoneFiveOsc.start(time);
-    // leadOvertoneFiveOsc.stop((time) + sweepLength * 2);
-
 
     // Advance notes
-    
-    if (noteIndex < notesLength - 1){
-        noteIndex = noteIndex + 1
+    if (leadNoteIndex< notesLength - 1){
+        leadNoteIndex = leadNoteIndex + 1
     } else {
-        noteIndex = 0
+        leadNoteIndex = 0
     }
 }
-
-
 
 // ADDITIVE PAD
 
@@ -391,11 +286,8 @@ let fundamentalFrequency = 155.56
 
 
 // PAD FILTER
-const bpFilterNode = audioContext.createBiquadFilter();
-bpFilterNode.type = 'bandpass'
-// bpFilterNode.frequency.value = 250
-bpFilterNode.Q.value = '150'
-let bpFilterMin = 100
+const bpFilterNodePad = createFilterNode('bandpass', '150')
+
 let bpFilterMax = 200
 let bpFilterSpeed = 15
 let padGain = audioContext.createGain();
@@ -526,7 +418,7 @@ function playAdditivePad(time, oscType, fundamental){
 
     // filterNode2.connect(judsonReverb).connect(plateReverb).connect(masterGain)
     
-    masterGain.connect(bpFilterNode).connect(convolutionDistortion2).connect(judsonReverb2).connect(plateReverb2).connect(padGain).connect(audioContext.destination)
+    masterGain.connect(bpFilterNodePad).connect(convolutionDistortion2).connect(judsonReverb2).connect(plateReverb2).connect(padGain).connect(audioContext.destination)
 
     // START STOP
     fundamentalOsc.start(time + .01)
@@ -554,12 +446,9 @@ function playAdditivePad(time, oscType, fundamental){
 
 
 // LFO
-const LFOFilterNode = audioContext.createBiquadFilter();
-LFOFilterNode.type = 'lowpass'
-LFOFilterNode.Q.value = '30'
-let LfoFilterMin = 72
-let LfoFilterMax = 90
-let LfoFilterSpeed = 1
+
+
+
 
 
 // REVERBS
@@ -606,26 +495,24 @@ async function createConvolutionDistortion() {
 }
 let convolutionDistortion1 = await createConvolutionDistortion();
 let convolutionDistortion2 = await createConvolutionDistortion();
-let convolutionDistortion3 = await createConvolutionDistortion();
 
-let droneAttackTime = 0.5
-let droneReleaseTime = 5.0
-function playDrone(time){
+// drone lfo filter
+const droneLfoFilterNode = createFilterNode('lowpass', '30')
+
+function playDrone(time, wave, freqency, attack, release){
     const droneOsc = audioContext.createOscillator()
-    droneOsc.type = 'triangle'
-    droneOsc.frequency.value = '77.78'
+    droneOsc.type = wave
+    droneOsc.frequency.value = freqency
 
     const sweepEnv = new GainNode(audioContext);
     sweepEnv.gain.cancelScheduledValues(time);
     sweepEnv.gain.setValueAtTime(0, time);
-    sweepEnv.gain.linearRampToValueAtTime(1, (time) +droneAttackTime);
-    sweepEnv.gain.linearRampToValueAtTime(0, (time) +(droneAttackTime + droneReleaseTime));
+    sweepEnv.gain.linearRampToValueAtTime(1, (time) + attack);
+    sweepEnv.gain.linearRampToValueAtTime(0, (time) +(attack + release));
 
-
-
-    droneOsc.connect(sweepEnv).connect(convolutionDistortion1).connect(LFOFilterNode).connect(judsonReverb1).connect(plateReverb1).connect(droneGain).connect(audioContext.destination)
+    droneOsc.connect(sweepEnv).connect(convolutionDistortion1).connect(droneLfoFilterNode).connect(judsonReverb1).connect(plateReverb1).connect(droneGain).connect(audioContext.destination)
     droneOsc.start(time)
-    droneOsc.stop(time + (droneAttackTime + droneReleaseTime))
+    droneOsc.stop(time + (attack + release))
 }
 
 const droneGain = audioContext.createGain();
@@ -651,28 +538,6 @@ padGainControl.addEventListener("input", () => {
 //   console.log(leadGain.gain.value)
 });
 
-
-// const playDroneButton = document.getElementById('play-drone-button')
-// playDroneButton.addEventListener("click", ()=>{
-//     // rewrite this as func
-//     playDrone();
-// });
-
-// const playLeadButton = document.getElementById('play-lead-button')
-// playLeadButton.addEventListener("click", ()=>{
-//     console.log('i click')
-//     playLeadOsc(clock.getElapsedTime(), noteSequence, noteIndex)
-// });
-
-// const playPadButton = document.getElementById('play-pad-button')
-// playPadButton.addEventListener("click", ()=>{
-//     console.log('i click')
-//     playAdditivePad(clock.getElapsedTime(), "sine", 311.13)
-//     playAdditivePad((clock.getElapsedTime()+.5), "sine", 392)
-//     playAdditivePad((clock.getElapsedTime()+1), "sine", 587.33)
-//     playAdditivePad((clock.getElapsedTime()+1.5), "sine", 466.16)
-    
-// });
 
 // BPM AND SCHEDULING
 
@@ -710,6 +575,8 @@ function metronome(currentTime, tempo){
 
 // SEQUENCER
 
+const leadNoteSequence = [783.99, 622.25, 932.35, 587.33, 1174.66, 783.99, 622.25, 932.35, 587.33]
+let leadNoteIndex = 0
 let leadSequence = [1, 2.5, 4.5]
 let leadSequenceStep = 0
 function leadSequencer(time, metronomeBeat, sequence) {
@@ -717,7 +584,8 @@ function leadSequencer(time, metronomeBeat, sequence) {
     let beat = metronomeBeat.beat
     
     if (sequence[leadSequenceStep] == beat){
-        playLeadOsc(time, noteSequence, noteIndex)
+        playLeadOsc(time, 'sine', 0.1, 1, leadNoteSequence, leadNoteIndex)
+        // playLeadOsc(time, wave, attackTime, releaseTime, noteSequence, currentNote) 
         if (leadSequenceStep < sequence.length-1){
             leadSequenceStep ++
         } else {
@@ -733,7 +601,7 @@ function droneSequencer(time, metronomeBeat, sequence) {
     let beat = metronomeBeat.beat
     
     if (sequence[droneSequenceStep] == beat){
-        playDrone(time)
+        playDrone(time, 'triangle', '77.78', 0.5, 5.0)
         if (droneSequenceStep < sequence.length-1){
             droneSequenceStep ++
         } else {
@@ -763,11 +631,6 @@ function padSequencer(time, metronomeBeat, sequence) {
     }
 }
 
-
-
-
-
-
 /**
  * Animate
  */
@@ -779,49 +642,31 @@ const tick = () =>
     const elapsedTime = clock.getElapsedTime();
     
     let metronomeTime = metronome(elapsedTime, 30);
+
     leadSequencer(elapsedTime, metronomeTime, leadSequence)
-    let tremGainRange = .5
-    let tremGainValue = (((Math.sin(elapsedTime * 40) + 1) * tremGainRange) / 2) + .5
-    tremGain.gain.value = tremGainValue
-    // console.log(tremGainValue)
-    // let leadDetuneRange = 10
-    // let leadDetuneValue = (((Math.sin(elapsedTime) + 1) * leadDetuneRange) / 2) + 1
-    // osc.detune.value = leadDetuneValue
-    
+    tremGain.gain.value = lfoValue(.5, 1.5, 40, elapsedTime)
+ 
     droneSequencer(elapsedTime, metronomeTime, droneSequence)
+
     padSequencer(elapsedTime, metronomeTime, padSequence)
-    // let padSequcene = sequencer(elapsedTime, metronomeTime, playLeadOsc, [1, 2])
 
     // DRONE FILTER SWEEP
-    let sinRange = 2 // -1 to 1 is 2
-    let filterRange = LfoFilterMax - LfoFilterMin // high and low points of filter sweep
-    let newFilterSweepValue = (((Math.sin(elapsedTime * LfoFilterSpeed) - (-1)) * filterRange) / sinRange ) + LfoFilterMin
-    LFOFilterNode.frequency.value = newFilterSweepValue
+    droneLfoFilterNode.frequency.value = lfoValue(72, 90, 1, elapsedTime)
 
     // PAD FILTER SWEEP
-    let sinRange2 = 2
-    let bpFilterRange = bpFilterMax - bpFilterMin
-    let newBpFilterSweepValue = (((Math.sin(elapsedTime * bpFilterSpeed) + 1) * bpFilterRange) / sinRange2) + bpFilterMin
-    bpFilterNode.frequency.value = newBpFilterSweepValue
+    bpFilterNodePad.frequency.value = lfoValue(100, 200, 15, elapsedTime)
 
     // LEAD FILTER SWEEP
-    let sinRange3 = 2
-    let bpFilterRangeLead = bpFilterLeadMax - bpFilterLeadMin
-    let newBpFilterLeadSweepValue = (((Math.sin(elapsedTime * bpFilterLeadSpeed) + 1) * bpFilterRangeLead) / sinRange3) + bpFilterLeadMin
-    bpFilterNodeLead.frequency.value = newBpFilterLeadSweepValue
+    bpFilterNodeLead.frequency.value = lfoValue(500, 1500, 10, elapsedTime)
+
+    
 
     // LEAD OSC
-    
-
-
-    
     sphereParticles.rotation.z = elapsedTime * rotationSpeed   
     waveLengthDiv.textContent = `${getWaveInfo(points, waveLength)}`;
-    // let wavelengthNumber = getWaveInfo(points, waveLength)
-    // console.log('textContent',waveLengthDiv.textContent)
-    // console.log(Math.sin(elapsedTime))
     
-    let innerRadius2 = (((Math.sin(elapsedTime * LfoFilterSpeed) - 4.9) * .2) / 2) + 4.9
+    // MAP TO DRONE FILTER OR SOME AUDIO PARAM
+    let innerRadius2 = (((Math.sin(elapsedTime) - 4.9) * .2) / 2) + 4.9
     for (let i = 0; i <= points; i++){
         const t = ((i / (points)));
         
