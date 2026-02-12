@@ -541,8 +541,7 @@ padGainControl.addEventListener("input", () => {
 
 // BPM AND SCHEDULING
 
-let tempo = 60.0
-let beatLengthSeconds = 0.0
+
 let lastBeatTime = 0
 let currentBeat = 1
 let currentBar = 1
@@ -550,11 +549,11 @@ let totalBars = 2
 function metronome(currentTime, tempo){
     
     const beatLengthSeconds = 60.0 / tempo;
-    const eighthhNoteSeconds = beatLengthSeconds / 2;
+    const eighthNoteSeconds = beatLengthSeconds / 2;
 
     let deltaTimeSinceLastBeat = currentTime - lastBeatTime;
     
-    if (deltaTimeSinceLastBeat >= eighthhNoteSeconds){
+    if (deltaTimeSinceLastBeat >= eighthNoteSeconds){
         lastBeatTime = currentTime;
         if (currentBeat < 4.5){
             currentBeat += .5;
@@ -569,7 +568,7 @@ function metronome(currentTime, tempo){
         }
     }; 
 
-    return {'bar' : currentBar, 'beat': currentBeat, 'beatLength' : beatLengthSeconds}
+    return {'bar' : currentBar, 'beat': currentBeat}
 };
 
 
@@ -578,6 +577,7 @@ function metronome(currentTime, tempo){
 const leadNoteSequence = [783.99, 622.25, 932.35, 587.33, 1174.66, 783.99, 622.25, 932.35, 587.33]
 let leadNoteIndex = 0
 let leadSequence = [1, 2.5, 4.5]
+// let leadSequence = [1, 1.25, 1.5, 1.75, 2]
 let leadSequenceStep = 0
 function leadSequencer(time, metronomeBeat, sequence) {
 
@@ -585,7 +585,6 @@ function leadSequencer(time, metronomeBeat, sequence) {
     
     if (sequence[leadSequenceStep] == beat){
         playLeadOsc(time, 'sine', 0.1, 1, leadNoteSequence, leadNoteIndex)
-        // playLeadOsc(time, wave, attackTime, releaseTime, noteSequence, currentNote) 
         if (leadSequenceStep < sequence.length-1){
             leadSequenceStep ++
         } else {
