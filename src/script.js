@@ -282,14 +282,9 @@ function playLeadOsc(time, wave, attackTime, releaseTime, noteSequence, currentN
 
 // ADDITIVE PAD
 
-let fundamentalFrequency = 155.56
-
-
 // PAD FILTER
 const bpFilterNodePad = createFilterNode('bandpass', '150')
 
-let bpFilterMax = 200
-let bpFilterSpeed = 15
 let padGain = audioContext.createGain();
 // padGain.gain.value = 0.7
 
@@ -445,12 +440,6 @@ function playAdditivePad(time, oscType, fundamental){
 };
 
 
-// LFO
-
-
-
-
-
 // REVERBS
 
 async function createJudsonReverb() {
@@ -481,8 +470,6 @@ let plateReverb1 = await createPlateReverb();
 let plateReverb2 = await createPlateReverb();
 let plateReverb3 = await createPlateReverb();
 
-
-
 async function createConvolutionDistortion() {
   let convolver = audioContext.createConvolver();
 
@@ -496,7 +483,6 @@ async function createConvolutionDistortion() {
 let convolutionDistortion1 = await createConvolutionDistortion();
 let convolutionDistortion2 = await createConvolutionDistortion();
 
-// drone lfo filter
 const droneLfoFilterNode = createFilterNode('lowpass', '30')
 
 function playDrone(time, wave, freqency, attack, release){
@@ -640,7 +626,7 @@ const tick = () =>
 {
     const elapsedTime = clock.getElapsedTime();
     
-    let metronomeTime = metronome(elapsedTime, 30);
+    let metronomeTime = metronome(elapsedTime, 20);
 
     leadSequencer(elapsedTime, metronomeTime, leadSequence)
     tremGain.gain.value = lfoValue(.5, 1.5, 40, elapsedTime)
@@ -665,6 +651,8 @@ const tick = () =>
     waveLengthDiv.textContent = `${getWaveInfo(points, waveLength)}`;
     
     // MAP TO DRONE FILTER OR SOME AUDIO PARAM
+
+    // SPHERE
     let innerRadius2 = (((Math.sin(elapsedTime) - 4.9) * .2) / 2) + 4.9
     for (let i = 0; i <= points; i++){
         const t = ((i / (points)));
