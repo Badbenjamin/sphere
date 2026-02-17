@@ -1,10 +1,10 @@
 
-const hardString = "4/2/1+(6/3)*(5*5)-8+(2*5)/5+2/2" // = 25
+const hardString = "4/2/1+(6/3)*(5*5)-8+(2*5)/5+2/2" // = 47
 
 // takes a string that contains two numbers and an operator in between them
 // identifies an operator, turns num chars to left and right into ints
 // solves equation and returns a number (not string)
-// CANT HANDLE FLOATING POINT NUMBERS! (or exponents)
+// CANT HANDLE FLOATING POINT NUMBERS! 
 function evaluateEquation(singleEquationString){
     let result = null
     const operators = {
@@ -15,8 +15,7 @@ function evaluateEquation(singleEquationString){
         '%': (a, b) => a % b,
         '**': (a, b) => a ** b
     };
-    // needs to support multi digit nums
-    // differentiate between nums and operators
+
     let firstNum = ""
     let operator = null
     let secondNum = ""
@@ -49,7 +48,6 @@ function evaluateEquationsInParens(firstEquationString){
                 j += 1
             }
             newString += evaluateEquation(equationInParens)
-            // pay attention to where i is in string!!!
             i = j
         } else if (currentChar != "(" || currentChar != ")"){
             newString += currentChar
@@ -59,9 +57,10 @@ function evaluateEquationsInParens(firstEquationString){
 }
 
 // loop through equation string until a * or / is found
-// create strings for numbers to left of operator and right of operator (add chars until another operator is identified or out of bounds of string)
-// update a copy of the original string with result of multiplication or division equation spliced in
-// continue until string is looped through and all * and / have been evaluated
+// move a pointer left from the operator until another operator is found, move a pointer rigth from operator until another operator is found (or out of bounds of string)
+// slice the portion of the string between l and r and send to evaluateEquation()
+// concat the string back together with the new answer replacing the old multiplication or division equation
+// start the loop at the new answer, so it can be evaluated if another * or / comes after
 function evlauateMultiplicationAndDivision(stringWithoutParens){
     let stringCopy = stringWithoutParens
 
@@ -98,6 +97,7 @@ function evlauateMultiplicationAndDivision(stringWithoutParens){
 
 
 // Recursive function for solving equation string with multiple equations
+// starts with string containing multiple equations, evaluates equations left to right until the string only contains numbers and not operators.
 function solveFinalEquation(evaluatedString){
     let stringIsAnInt = true
     
@@ -113,7 +113,8 @@ function solveFinalEquation(evaluatedString){
         return evaluatedString
     } else {
         // IF equation is NOT a pure int (has operators), then we loop through the string and isolate individual equations
-        // start at begining of string and find index of second operator -> "1+2+3" = 3
+        // start at begining of string and find index of second operator 
+        // slice from begining to second operator, send to evaluateEquation(), add to front of rest of equation and return new equation string
         let secondOperatorIndex = null
         let nthOperator = 0
         let i = 0
@@ -122,14 +123,12 @@ function solveFinalEquation(evaluatedString){
             
             if (Number.isNaN(parseInt(currentChar))){
                 nthOperator ++
-                // SECOND TO LAST CASE WHEN THER IS NO SECOND OP!!!
                 if (nthOperator == 2){
                     secondOperatorIndex = i
                 } 
             } 
             i ++
         }
-        // slice equation string at second operator, send to evaluateEquation(), then concat to rest of string
         let equation = evaluatedString.slice(0,secondOperatorIndex)
         let restOfString = evaluatedString.slice(secondOperatorIndex, evaluatedString.length)
         let solvedEquation = evaluateEquation(equation)
@@ -138,10 +137,10 @@ function solveFinalEquation(evaluatedString){
     }
 }
 
-console.log(hardString)
+console.log('input',hardString)
 let equationWithoutParens = evaluateEquationsInParens(hardString)
-console.log(equationWithoutParens)
+console.log('no parens',equationWithoutParens)
 let equationWithoutMultiplicationAndDivision = evlauateMultiplicationAndDivision(equationWithoutParens)
-console.log(equationWithoutMultiplicationAndDivision)
+console.log('no mult or div',equationWithoutMultiplicationAndDivision)
 let answer = solveFinalEquation(equationWithoutMultiplicationAndDivision)
-console.log(answer)
+console.log('answer', answer)
