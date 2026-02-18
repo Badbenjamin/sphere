@@ -37,7 +37,7 @@ let points = 100000
 let innerRadius = 5
 const goldenRatio = (1 + Math.sqrt(5)) / 20;
 const goldenAngleRadians = Math.PI * 2 * goldenRatio;
-// console.log(goldenRatio)
+// WHAT PARTS OF SPHERE EQUATION CAN I REMOVE FROM GAME LOOP?
 
 // INTERESTING NUMBERS : WHAT RANGE TO SET? WHAT INCRIMENTS?
 // 3.005 : two spheres shrinking and growing from each pole
@@ -51,6 +51,7 @@ let amplitude = 1 // number of peaks and valleys in wave
 let speedOfWaves = .2
 let rotationSpeed = .1
 let waveLength = 1
+
 
 // GUI PARAMS
 const guiParams = {
@@ -592,7 +593,6 @@ function droneSequencer(time, metronomeBeat, sequence) {
         } else {
             droneSequenceStep = 0
         }
-        
     }
 }
 
@@ -612,7 +612,39 @@ function padSequencer(time, metronomeBeat, sequence) {
         } else {
             padSequenceStep = 0
         }
+    }
+}
+
+// PULSE
+// pulse must operate in time like bpm
+// it must be sent down the colors or positions array at a certain speed
+// lets start with colors
+// it must change colors or positions within a certain window while leaving others unchanged
+// it must be triggered by a synth play action
+
+// let lastPulsePosition = 0
+let lastPulseCall = 0
+// make a 100 particle wide band of white travel across the sphere
+// PROBLEM only persists for one frame???
+function updateColorsOnPulse(colorOrPositionsArray, elapsedTime){
+    // play every three seconds
+    let deltaSinceLastTrigger = elapsedTime - lastPulseCall
+    if (deltaSinceLastTrigger > 3){
+        console.log('pulse', elapsedTime, lastPulseCall)
         
+        
+        // make colors flash white
+        // how to make them stay white for a second?
+        for(let i = 0; i < colorOrPositionsArray.length; i++){
+            let i3 = i * 3
+
+            colors[i3] = 1.0
+            colors[i3+1] = 1.0
+            colors[i3+2] = 1.0
+        }
+        
+
+        lastPulseCall = elapsedTime
     }
 }
 
@@ -625,7 +657,7 @@ const clock = new THREE.Clock()
 const tick = () =>
 {
     const elapsedTime = clock.getElapsedTime();
-    
+    // console.log(elapsedTime)
     let metronomeTime = metronome(elapsedTime, 20);
 
     leadSequencer(elapsedTime, metronomeTime, leadSequence)
@@ -651,9 +683,12 @@ const tick = () =>
     waveLengthDiv.textContent = `${getWaveInfo(points, waveLength)}`;
     
     // MAP TO DRONE FILTER OR SOME AUDIO PARAM
-
+   
     // SPHERE
+    // can this be removed from loop and only certain variables kept in the loop?
+    // i need to relink inner radius to 
     let innerRadius2 = (((Math.sin(elapsedTime) - 4.9) * .2) / 2) + 4.9
+    // let innerRadius2 = droneLfoFilterNode.frequency.value - 100
     for (let i = 0; i <= points; i++){
         const t = ((i / (points)));
         
@@ -661,32 +696,31 @@ const tick = () =>
         const azimuth = goldenAngleRadians * i;
 
         // 
-        let outerRadius = innerRadius2 + (Math.sin(((elapsedTime * speedOfWaves) + (i * waveLength)))) * amplitude // * 
+        let outerRadius = innerRadius2 + (Math.sin(((elapsedTime * speedOfWaves) + (i * waveLength)))) * amplitude 
+        // how do I send a pulse down the sine wave that multiplies outer radius?
+
+        // PULSE
+        // needs to act on only one sliding window of the positions array at a time
+
         let i3 = i * 3
         
         positions[i3] = Math.sin(polarAngle) * Math.cos(azimuth) * (outerRadius);     // x
         positions[i3 + 1] = Math.sin(polarAngle) * Math.sin(azimuth) * (outerRadius); // y
-        positions[i3 + 2] = Math.cos(polarAngle) * outerRadius ; // z
+        positions[i3 + 2] = Math.cos(polarAngle) * (outerRadius) ; // z
 
-        // look into WHY z axis addition works and looks good
         
-        // colors[i3] = 1.0 * (Math.sin(elapsedTime + positions[i3+2])) // r
-        // colors[i3+1] = 1.0 * (Math.cos(elapsedTime +  positions[i3+2]))// g
-        // colors[i3+2] = 1.0 * Math.sin((i) + (positions[i3 + 2]))// b
+
         
-        colors[i3] = 1.0 * Math.abs(Math.sin(elapsedTime + positions[i3+2])) // + outerRadius
+        colors[i3] = 1.0 * Math.abs(Math.sin(elapsedTime + positions[i3+2])) + outerRadius
         colors[i3+1] = 1.0 * Math.cos(elapsedTime + positions[i3 + 2]) 
         //  adding outerRadius to r b or g creates cool color palettes. should figure out how to mix this variable into the colors
         colors[i3+2] = 1.0 * Math.sin((elapsedTime + positions[i3 + 2])) //  + positions[i3+2]
 
-        // if (i3 % wavelengthNumber === 0){
-        //     console.log('true')
-        //     colors[i3] = 1.0 
-        //     colors[i3+1] = 1.0 
-        // //  adding outerRadius to r b or g creates cool color palettes. should figure out how to mix this variable into the colors
-        //     colors[i3+2] = 1.0 
-        // }
-        // line
+        // updateColorsOnPulse(lastPulsePosition, elapsedTime)
+
+
+
+        // SCOPE
         if (guiParams.scopeOn == true ){
            
             linePositions[i3] = 0//x
@@ -704,11 +738,9 @@ const tick = () =>
             // console.log('i worked')
             scene.remove(lineParticles)
         }
-
-        
-        
-    
     }
+
+
    
     fibSphereGeometry.attributes.position.needsUpdate = true
     fibSphereGeometry.attributes.color.needsUpdate = true
@@ -716,7 +748,7 @@ const tick = () =>
     lineGeometry.attributes.position.needsUpdate = true
     lineGeometry.attributes.color.needsUpdate = true
 
-   
+    updateColorsOnPulse(colors, elapsedTime)
 
     controls.update()
     // console.log(Math.sin(waveLength))
