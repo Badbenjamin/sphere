@@ -624,8 +624,10 @@ function padSequencer(time, metronomeBeat, sequence) {
 
 // let lastPulsePosition = 0
 let lastPulseCall = 0
+let lastPulsePosition = 0
 // make a 100 particle wide band of white travel across the sphere
 // PROBLEM only persists for one frame???
+// color needs to be added to existing color?
 function updateColorsOnPulse(colorOrPositionsArray, elapsedTime){
     // play every three seconds
     let deltaSinceLastTrigger = elapsedTime - lastPulseCall
@@ -635,17 +637,20 @@ function updateColorsOnPulse(colorOrPositionsArray, elapsedTime){
         
         // make colors flash white
         // how to make them stay white for a second?
-        for(let i = 0; i < colorOrPositionsArray.length; i++){
-            let i3 = i * 3
+        // for(let i = 0; i < points; i++){
+        //     let i3 = i * 3
 
-            colors[i3] = 1.0
-            colors[i3+1] = 1.0
-            colors[i3+2] = 1.0
-        }
+        //     colors[i3] = 1.0
+        //     colors[i3+1] = 1.0
+        //     colors[i3+2] = 1.0
+        // }
+        console.log(colors[0],colors[1],colors[2])
         
 
         lastPulseCall = elapsedTime
+        
     }
+    lastPulsePosition += 1
 }
 
 /**
@@ -711,10 +716,15 @@ const tick = () =>
         
 
         
-        colors[i3] = 1.0 * Math.abs(Math.sin(elapsedTime + positions[i3+2])) + outerRadius
-        colors[i3+1] = 1.0 * Math.cos(elapsedTime + positions[i3 + 2]) 
-        //  adding outerRadius to r b or g creates cool color palettes. should figure out how to mix this variable into the colors
-        colors[i3+2] = 1.0 * Math.sin((elapsedTime + positions[i3 + 2])) //  + positions[i3+2]
+        // colors[i3] = 1.0 * Math.abs(Math.sin(elapsedTime + positions[i3+2])) + outerRadius
+        // colors[i3+1] = 1.0 * Math.cos(elapsedTime + positions[i3 + 2]) 
+        // //  adding outerRadius to r b or g creates cool color palettes. should figure out how to mix this variable into the colors
+        // colors[i3+2] = 1.0 * Math.sin((elapsedTime + positions[i3 + 2])) //  + positions[i3+2]
+
+        // color appears white when all rgb values are equal
+        colors[i3] = (Math.sin(elapsedTime + positions[i3 + 2]) + 1) / 2// r
+        colors[i3+ 1] = (Math.cos(elapsedTime + positions[i3 + 2])+1) / 2// g
+        colors[i3+2] = (Math.sin(elapsedTime + positions[i3 + 2])+1) / 2// b
 
         // updateColorsOnPulse(lastPulsePosition, elapsedTime)
 
