@@ -637,13 +637,15 @@ function updateColorsOnPulse(colorOrPositionsArray, elapsedTime){
         
         // make colors flash white
         // how to make them stay white for a second?
-        // for(let i = 0; i < points; i++){
-        //     let i3 = i * 3
+        for(let i = 0; i < points; i++){
+            const hue = (elapsedTime * 0.1) + (i / points);
+            let i3 = i * 3
+            let [r,g,b] = hslToRgb(hue, 1.0, 0.5)
 
-        //     colors[i3] = 1.0
-        //     colors[i3+1] = 1.0
-        //     colors[i3+2] = 1.0
-        // }
+            colors[i3] = r
+            colors[i3+1] = g
+            colors[i3+2] = b
+        }
         console.log(colors[0],colors[1],colors[2])
         
 
@@ -652,6 +654,16 @@ function updateColorsOnPulse(colorOrPositionsArray, elapsedTime){
     }
     lastPulsePosition += 1
 }
+
+// HSL TO RGB
+function hslToRgb(h, s, l) {
+    h = h % 1;
+    const k = n => (n + h * 12) % 12;
+    const a = s * Math.min(l, 1 - l);
+    const f = n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+    return [f(0), f(8), f(4)];
+}
+
 
 /**
  * Animate
@@ -694,6 +706,9 @@ const tick = () =>
     // i need to relink inner radius to 
     let innerRadius2 = (((Math.sin(elapsedTime) - 4.9) * .2) / 2) + 4.9
     // let innerRadius2 = droneLfoFilterNode.frequency.value - 100
+    console.log('r',(Math.sin(elapsedTime)+1) / 2)
+    console.log('g',(Math.sin(elapsedTime + 2)+1) / 2)
+    console.log('b',(Math.sin(elapsedTime + 4)+1) / 2)
     for (let i = 0; i <= points; i++){
         const t = ((i / (points)));
         
@@ -707,24 +722,31 @@ const tick = () =>
         // PULSE
         // needs to act on only one sliding window of the positions array at a time
 
+        // three value chunk for xyz or rgb values
         let i3 = i * 3
         
+        // spherical to cartesian 
         positions[i3] = Math.sin(polarAngle) * Math.cos(azimuth) * (outerRadius);     // x
         positions[i3 + 1] = Math.sin(polarAngle) * Math.sin(azimuth) * (outerRadius); // y
         positions[i3 + 2] = Math.cos(polarAngle) * (outerRadius) ; // z
 
-        
 
-        
-        // colors[i3] = 1.0 * Math.abs(Math.sin(elapsedTime + positions[i3+2])) + outerRadius
-        // colors[i3+1] = 1.0 * Math.cos(elapsedTime + positions[i3 + 2]) 
-        // //  adding outerRadius to r b or g creates cool color palettes. should figure out how to mix this variable into the colors
-        // colors[i3+2] = 1.0 * Math.sin((elapsedTime + positions[i3 + 2])) //  + positions[i3+2]
-
+        // RGB
         // color appears white when all rgb values are equal
-        colors[i3] = (Math.sin(elapsedTime + positions[i3 + 2]) + 1) / 2// r
-        colors[i3+ 1] = (Math.cos(elapsedTime + positions[i3 + 2])+1) / 2// g
-        colors[i3+2] = (Math.sin(elapsedTime + positions[i3 + 2])+1) / 2// b
+        // rgb values are between 0 and 1 
+        const zPosition = positions[i3 + 2]
+        colors[i3] = ((Math.sin(elapsedTime + zPosition)+1) / 2)// r
+        colors[i3+ 1] = ((Math.sin((elapsedTime + zPosition)+2)+1) / 2)// g
+        colors[i3+2] = ((Math.sin((elapsedTime + zPosition)+4)+1) / 2) // b
+
+        // HSL
+        // const hue = (elapsedTime * 0.1) + (i / points);  // time shift + spread across line
+        // // const hue = (elapsedTime * 0.1) + (i / points) + Math.sin(elapsedTime * 0.5 + i * 0.1) * 0.2;
+        // const [r, g, b] = hslToRgb(hue, 1.0, 0.5);
+
+        // colors[i3]     = r;
+        // colors[i3 + 1] = g;
+        // colors[i3 + 2] = b;
 
         // updateColorsOnPulse(lastPulsePosition, elapsedTime)
 
@@ -737,9 +759,10 @@ const tick = () =>
             linePositions[i3 + 1] = ((Math.sin((elapsedTime * speedOfWaves) + (i * waveLength))))  * amplitude //y
             linePositions[i3+2] = i / 50 //z
 
-            lineColor[i3] = 1.0
-            lineColor[i3+1] = 1.0
-            lineColor[i3+2] = 1.0
+            const zPosition = positions[i3 + 2]
+            lineColor[i3] = ((Math.sin(elapsedTime + zPosition)+1) / 2)// r
+            lineColor[i3+1] = ((Math.sin((elapsedTime + zPosition)+2)+1) / 2)// g
+            lineColor[i3+2] = ((Math.sin((elapsedTime + zPosition)+4)+1) / 2) // b
             if (!checkForChildName(scene, 'lineParticles')){
                 scene.add(lineParticles)
             }
@@ -758,7 +781,7 @@ const tick = () =>
     lineGeometry.attributes.position.needsUpdate = true
     lineGeometry.attributes.color.needsUpdate = true
 
-    updateColorsOnPulse(colors, elapsedTime)
+    // updateColorsOnPulse(colors, elapsedTime)
 
     controls.update()
     // console.log(Math.sin(waveLength))
