@@ -706,9 +706,7 @@ const tick = () =>
     // i need to relink inner radius to 
     let innerRadius2 = (((Math.sin(elapsedTime) - 4.9) * .2) / 2) + 4.9
     // let innerRadius2 = droneLfoFilterNode.frequency.value - 100
-    console.log('r',(Math.sin(elapsedTime)+1) / 2)
-    console.log('g',(Math.sin(elapsedTime + 2)+1) / 2)
-    console.log('b',(Math.sin(elapsedTime + 4)+1) / 2)
+    
     for (let i = 0; i <= points; i++){
         const t = ((i / (points)));
         
@@ -734,10 +732,13 @@ const tick = () =>
         // RGB
         // color appears white when all rgb values are equal
         // rgb values are between 0 and 1 
+        const colorAmplitude = .3
+        const colorCenter = .7
+
         const zPosition = positions[i3 + 2]
-        colors[i3] = ((Math.sin(elapsedTime + zPosition)+1) / 2)// r
-        colors[i3+ 1] = ((Math.sin((elapsedTime + zPosition)+2)+1) / 2)// g
-        colors[i3+2] = ((Math.sin((elapsedTime + zPosition)+4)+1) / 2) // b
+        colors[i3] = ((Math.sin(elapsedTime + zPosition)*colorAmplitude) + colorCenter)// r
+        colors[i3+ 1] = ((Math.sin((elapsedTime + zPosition)+2)*colorAmplitude) + colorCenter)// g
+        colors[i3+2] = ((Math.sin((elapsedTime + zPosition)+4)*colorAmplitude) + colorCenter) // b
 
         // HSL
         // const hue = (elapsedTime * 0.1) + (i / points);  // time shift + spread across line
@@ -760,8 +761,8 @@ const tick = () =>
             linePositions[i3+2] = i / 50 //z
 
             const zPosition = positions[i3 + 2]
-            lineColor[i3] = ((Math.sin(elapsedTime + zPosition)+1) / 2)// r
-            lineColor[i3+1] = ((Math.sin((elapsedTime + zPosition)+2)+1) / 2)// g
+            lineColor[i3] = ((Math.sin(elapsedTime + zPosition)+1) / 2) // r
+            lineColor[i3+1] = ((Math.sin((elapsedTime + zPosition)+2)+1) / 2) // g
             lineColor[i3+2] = ((Math.sin((elapsedTime + zPosition)+4)+1) / 2) // b
             if (!checkForChildName(scene, 'lineParticles')){
                 scene.add(lineParticles)
