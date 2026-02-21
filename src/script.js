@@ -596,73 +596,40 @@ function droneSequencer(time, metronomeBeat, sequence) {
     }
 }
 
+
 let padSequence = [1, 4]
 let padSequenceStep = 0
 function padSequencer(time, metronomeBeat, sequence) {
 
     let beat = metronomeBeat.beat
     
+    
     if (sequence[padSequenceStep] == beat){
             playAdditivePad(time, "sine", 311.13)
             playAdditivePad((time+.5), "sine", 392)
             playAdditivePad((time+1), "sine", 587.33)
             playAdditivePad((time+1.5), "sine", 466.16)
+            lastPadStart = time
+            
         if (padSequenceStep < sequence.length-1){
             padSequenceStep ++
         } else {
             padSequenceStep = 0
         }
-    }
+    } 
+    
+    
+    // increaseSaturationWithPadPlay(time)
+}
+
+// UTILITY FUNCTIONS
+
+function mapRange(value, inMin, inMax, outMin, outMax){
+    return outMin + (outMax - outMin)*((value - inMin)/(inMax - inMin))
 }
 
 // PULSE
-// pulse must operate in time like bpm
-// it must be sent down the colors or positions array at a certain speed
-// lets start with colors
-// it must change colors or positions within a certain window while leaving others unchanged
-// it must be triggered by a synth play action
 
-// let lastPulsePosition = 0
-let lastPulseCall = 0
-let lastPulsePosition = 0
-// make a 100 particle wide band of white travel across the sphere
-// PROBLEM only persists for one frame???
-// color needs to be added to existing color?
-function updateColorsOnPulse(colorOrPositionsArray, elapsedTime){
-    // play every three seconds
-    let deltaSinceLastTrigger = elapsedTime - lastPulseCall
-    if (deltaSinceLastTrigger > 3){
-        console.log('pulse', elapsedTime, lastPulseCall)
-        
-        
-        // make colors flash white
-        // how to make them stay white for a second?
-        for(let i = 0; i < points; i++){
-            const hue = (elapsedTime * 0.1) + (i / points);
-            let i3 = i * 3
-            let [r,g,b] = hslToRgb(hue, 1.0, 0.5)
-
-            colors[i3] = r
-            colors[i3+1] = g
-            colors[i3+2] = b
-        }
-        console.log(colors[0],colors[1],colors[2])
-        
-
-        lastPulseCall = elapsedTime
-        
-    }
-    lastPulsePosition += 1
-}
-
-// HSL TO RGB
-function hslToRgb(h, s, l) {
-    h = h % 1;
-    const k = n => (n + h * 12) % 12;
-    const a = s * Math.min(l, 1 - l);
-    const f = n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
-    return [f(0), f(8), f(4)];
-}
 
 
 /**
@@ -683,6 +650,8 @@ const tick = () =>
     droneSequencer(elapsedTime, metronomeTime, droneSequence)
 
     padSequencer(elapsedTime, metronomeTime, padSequence)
+    increaseSaturationWithPadPlay(elapsedTime)
+    // console.log(saturationLevel)
 
     // DRONE FILTER SWEEP
     droneLfoFilterNode.frequency.value = lfoValue(72, 90, 1, elapsedTime)
@@ -732,22 +701,12 @@ const tick = () =>
         // RGB
         // color appears white when all rgb values are equal
         // rgb values are between 0 and 1 
-        const colorAmplitude = .3
-        const colorCenter = .7
-
+        const colorAmplitude = .5
+        const colorCenter = .5
         const zPosition = positions[i3 + 2]
         colors[i3] = ((Math.sin(elapsedTime + zPosition)*colorAmplitude) + colorCenter)// r
         colors[i3+ 1] = ((Math.sin((elapsedTime + zPosition)+2)*colorAmplitude) + colorCenter)// g
         colors[i3+2] = ((Math.sin((elapsedTime + zPosition)+4)*colorAmplitude) + colorCenter) // b
-
-        // HSL
-        // const hue = (elapsedTime * 0.1) + (i / points);  // time shift + spread across line
-        // // const hue = (elapsedTime * 0.1) + (i / points) + Math.sin(elapsedTime * 0.5 + i * 0.1) * 0.2;
-        // const [r, g, b] = hslToRgb(hue, 1.0, 0.5);
-
-        // colors[i3]     = r;
-        // colors[i3 + 1] = g;
-        // colors[i3 + 2] = b;
 
         // updateColorsOnPulse(lastPulsePosition, elapsedTime)
 
