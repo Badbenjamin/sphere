@@ -609,7 +609,7 @@ function padSequencer(time, metronomeBeat, sequence) {
             playAdditivePad((time+.5), "sine", 392)
             playAdditivePad((time+1), "sine", 587.33)
             playAdditivePad((time+1.5), "sine", 466.16)
-            lastPadStart = time
+            
             
         if (padSequenceStep < sequence.length-1){
             padSequenceStep ++
@@ -628,7 +628,16 @@ function mapRange(value, inMin, inMax, outMin, outMax){
     return outMin + (outMax - outMin)*((value - inMin)/(inMax - inMin))
 }
 
-// PULSE
+// ANIMATIONS
+
+let padStartTimeMS = null
+let isPadPlaying = false
+let padLength = 9
+function checkIfPadHasPlayed(time, padLength){
+    //this function sets padStatTimeMS with currentTime when triggered
+    // while currentTime - padStartTimeMS < padLength, isPadPlaying = true, else false
+    // 
+}
 
 
 
@@ -650,7 +659,7 @@ const tick = () =>
     droneSequencer(elapsedTime, metronomeTime, droneSequence)
 
     padSequencer(elapsedTime, metronomeTime, padSequence)
-    increaseSaturationWithPadPlay(elapsedTime)
+    
     // console.log(saturationLevel)
 
     // DRONE FILTER SWEEP
