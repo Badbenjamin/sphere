@@ -630,20 +630,14 @@ function mapRange(value, inMin, inMax, outMin, outMax){
 
 // ANIMATIONS
 
+// global vars
 let padStartTimeMS = null
-let padAnimationLengthSec = 9
-// function setPadStartTime(time){
-//     //this function sets padStatTimeMS with currentTime when triggered
-//     let currentTime = time
-//     if (padStartTimeMS == null){
-//         padStartTimeMS = currentTime
-//     } 
-// }
+let padAnimationLengthSec = 5
 
-// compare elapsedTime in render loop to padStartTimeMS + padLength 
-// if elapsedTime < padStartTimeMS + padLength, trigger animation (with while loop variable?), else switch off
-// function to modulate envelope for saturation change (lives in while loop in render loop, on while pad is playing)
-// use envelope to change saturation
+function updateSaturation(deltaSincePadTrigger){
+    console.log('increase saturation', deltaSincePadTrigger)
+}
+
 
 
 
@@ -684,10 +678,15 @@ const tick = () =>
     waveLengthDiv.textContent = `${getWaveInfo(points, waveLength)}`;
     
     // ANIMATIONS 
-    // while (elapsedTime < padStartTimeMS + padAnimationLengthSec){
-    //     console.log("im da pad animation")
-    // }
-    console.log('pst',padStartTimeMS, 'ct', elapsedTime)
+    let deltaSincePadTrigger = elapsedTime - padStartTimeMS;
+   
+    if (deltaSincePadTrigger < padAnimationLengthSec){
+        // trigger animation
+        updateSaturation(deltaSincePadTrigger)
+    } else {
+        // stop animation
+        console.log('animation off')
+    }
    
     // SPHERE
     // can this be removed from loop and only certain variables kept in the loop?
