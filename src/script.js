@@ -609,7 +609,7 @@ function padSequencer(time, metronomeBeat, sequence) {
             playAdditivePad((time+.5), "sine", 392)
             playAdditivePad((time+1), "sine", 587.33)
             playAdditivePad((time+1.5), "sine", 466.16)
-            
+            padStartTimeMS = time
             
         if (padSequenceStep < sequence.length-1){
             padSequenceStep ++
@@ -631,13 +631,19 @@ function mapRange(value, inMin, inMax, outMin, outMax){
 // ANIMATIONS
 
 let padStartTimeMS = null
-let isPadPlaying = false
-let padLength = 9
-function checkIfPadHasPlayed(time, padLength){
-    //this function sets padStatTimeMS with currentTime when triggered
-    // while currentTime - padStartTimeMS < padLength, isPadPlaying = true, else false
-    // 
-}
+let padAnimationLengthSec = 9
+// function setPadStartTime(time){
+//     //this function sets padStatTimeMS with currentTime when triggered
+//     let currentTime = time
+//     if (padStartTimeMS == null){
+//         padStartTimeMS = currentTime
+//     } 
+// }
+
+// compare elapsedTime in render loop to padStartTimeMS + padLength 
+// if elapsedTime < padStartTimeMS + padLength, trigger animation (with while loop variable?), else switch off
+// function to modulate envelope for saturation change (lives in while loop in render loop, on while pad is playing)
+// use envelope to change saturation
 
 
 
@@ -677,7 +683,11 @@ const tick = () =>
     sphereParticles.rotation.z = elapsedTime * rotationSpeed   
     waveLengthDiv.textContent = `${getWaveInfo(points, waveLength)}`;
     
-    // MAP TO DRONE FILTER OR SOME AUDIO PARAM
+    // ANIMATIONS 
+    // while (elapsedTime < padStartTimeMS + padAnimationLengthSec){
+    //     console.log("im da pad animation")
+    // }
+    console.log('pst',padStartTimeMS, 'ct', elapsedTime)
    
     // SPHERE
     // can this be removed from loop and only certain variables kept in the loop?
