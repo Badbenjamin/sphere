@@ -624,6 +624,8 @@ function padSequencer(time, metronomeBeat, sequence) {
 
 // UTILITY FUNCTIONS
 
+// inMin and inMax should be the delta for the animation
+// outMin and outMax the animation value
 function mapRange(value, inMin, inMax, outMin, outMax){
     return outMin + (outMax - outMin)*((value - inMin)/(inMax - inMin))
 }
@@ -634,8 +636,22 @@ function mapRange(value, inMin, inMax, outMin, outMax){
 let padStartTimeMS = null
 let padAnimationLengthSec = 5
 
-function updateSaturation(deltaSincePadTrigger){
-    console.log('increase saturation', deltaSincePadTrigger)
+function triggerAnimation(deltaSinceNoteTrigger, animationLengthSec){
+    if (deltaSinceNoteTrigger < animationLengthSec){
+        // trigger animation
+        increaseSaturation(deltaSinceNoteTrigger)
+    } else {
+        // stop animation
+        console.log('animation off')
+    }
+}
+
+// GLOBAL VARS FOR SATURATION
+let colorCenter = .5
+let colorAmplitude = 1.0 - colorCenter
+function increaseSaturation(deltaSinceNoteTrigger){
+    colorCenter = mapRange(deltaSinceNoteTrigger, 0, 5, 1 , .5)
+    console.log(colorCenter)
 }
 
 
@@ -678,15 +694,10 @@ const tick = () =>
     waveLengthDiv.textContent = `${getWaveInfo(points, waveLength)}`;
     
     // ANIMATIONS 
-    let deltaSincePadTrigger = elapsedTime - padStartTimeMS;
+    let deltaSinceNoteTrigger = elapsedTime - padStartTimeMS;
    
-    if (deltaSincePadTrigger < padAnimationLengthSec){
-        // trigger animation
-        updateSaturation(deltaSincePadTrigger)
-    } else {
-        // stop animation
-        console.log('animation off')
-    }
+    
+    triggerAnimation(deltaSinceNoteTrigger, padAnimationLengthSec)
    
     // SPHERE
     // can this be removed from loop and only certain variables kept in the loop?
@@ -719,8 +730,8 @@ const tick = () =>
         // RGB
         // color appears white when all rgb values are equal
         // rgb values are between 0 and 1 
-        const colorAmplitude = .5
-        const colorCenter = .5
+        
+
         const zPosition = positions[i3 + 2]
         colors[i3] = ((Math.sin(elapsedTime + zPosition)*colorAmplitude) + colorCenter)// r
         colors[i3+ 1] = ((Math.sin((elapsedTime + zPosition)+2)*colorAmplitude) + colorCenter)// g
