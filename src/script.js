@@ -633,26 +633,37 @@ function mapRange(value, inMin, inMax, outMin, outMax){
 // ANIMATIONS
 
 // global vars
+// pstms is set when pad is triggered by sequencer
 let padStartTimeMS = null
-let padAnimationLengthSec = 5
+const padAnimationLengthSec = 5
+const padAnimationMidpoint = padAnimationLengthSec / 2
 
-function triggerAnimation(deltaSinceNoteTrigger, animationLengthSec){
-    if (deltaSinceNoteTrigger < animationLengthSec){
-        // trigger animation
-        increaseSaturation(deltaSinceNoteTrigger)
+let animationValue = 0
+function createAnimationValue(deltaSinceNoteTrigger){
+    
+    if (deltaSinceNoteTrigger < padAnimationMidpoint){
+        // count up to animation midpoint
+        animationValue = deltaSinceNoteTrigger
+        // console.log('up', animationValue)
+    } else if (deltaSinceNoteTrigger > padAnimationMidpoint && animationValue > 0) {
+        // count down from animation midpoint to end of animation
+        let countDownTillEndOfAnimation = padAnimationLengthSec - deltaSinceNoteTrigger
+        animationValue = countDownTillEndOfAnimation
     } else {
-        // stop animation
-        console.log('animation off')
+        animationValue = 0
     }
 }
 
 // GLOBAL VARS FOR SATURATION
-let colorCenter = .5
+// .7 with .3 amplitude is desaturated, .5 center with .5 amp is saturated
+let colorCenter = .7
 let colorAmplitude = 1.0 - colorCenter
-function increaseSaturation(deltaSinceNoteTrigger){
-    colorCenter = mapRange(deltaSinceNoteTrigger, 0, 5, 1 , .5)
+function changeSaturation(deltaSinceNoteTrigger){
+    colorCenter = mapRange(deltaSinceNoteTrigger, 0, 5, .5 , .7)
     console.log(colorCenter)
 }
+
+
 
 
 
@@ -697,8 +708,9 @@ const tick = () =>
     let deltaSinceNoteTrigger = elapsedTime - padStartTimeMS;
    
     
-    triggerAnimation(deltaSinceNoteTrigger, padAnimationLengthSec)
-   
+    createAnimationValue(deltaSinceNoteTrigger)
+    // console.log(animationValue)
+    // console.log(colorCenter)
     // SPHERE
     // can this be removed from loop and only certain variables kept in the loop?
     // i need to relink inner radius to 
