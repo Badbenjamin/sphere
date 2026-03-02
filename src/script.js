@@ -60,7 +60,7 @@ const guiParams = {
     speedOfWaves: .2,
     rotationSpeed: .1,
     waveLength : 1,
-    scopeOn : true
+    scopeOn : false
 }
 
 gui.add( guiParams, 'innerRadius', .1, 10, .1 ).onChange(value =>{
@@ -635,7 +635,7 @@ function mapRange(value, inMin, inMax, outMin, outMax){
 // global vars
 // pstms is set when pad is triggered by sequencer
 let padStartTimeMS = null
-const padAnimationLengthSec = 5
+const padAnimationLengthSec = 9
 const padAnimationMidpoint = padAnimationLengthSec / 2
 
 let animationValue = 0
@@ -709,8 +709,18 @@ const tick = () =>
    
     
     createAnimationValue(deltaSinceNoteTrigger)
-    // console.log(animationValue)
-    // console.log(colorCenter)
+    
+    // map animationValue to colorCenter
+    // resting state cc .7, peak of animation .5
+    // so color center must got from .7 to .5 and back over the course of animation, remain at .7 otherwise
+    let saturationChange = mapRange(animationValue, 0, padAnimationLengthSec, 0, .3)
+    // console.log(saturationChange)
+    let newColorCenter = colorCenter - saturationChange
+    let newColorAmplitude = 1 - newColorCenter
+    console.log(newColorCenter, newColorAmplitude)
+    // colorCenter = colorCenter - saturationChange
+    // console.log(colorCenter, colorAmplitude)
+    
     // SPHERE
     // can this be removed from loop and only certain variables kept in the loop?
     // i need to relink inner radius to 
@@ -745,9 +755,9 @@ const tick = () =>
         
 
         const zPosition = positions[i3 + 2]
-        colors[i3] = ((Math.sin(elapsedTime + zPosition)*colorAmplitude) + colorCenter)// r
-        colors[i3+ 1] = ((Math.sin((elapsedTime + zPosition)+2)*colorAmplitude) + colorCenter)// g
-        colors[i3+2] = ((Math.sin((elapsedTime + zPosition)+4)*colorAmplitude) + colorCenter) // b
+        colors[i3] = ((Math.sin(elapsedTime + zPosition)*newColorAmplitude) + newColorCenter)// r
+        colors[i3+ 1] = ((Math.sin((elapsedTime + zPosition)+2)*newColorAmplitude) + newColorCenter)// g
+        colors[i3+2] = ((Math.sin((elapsedTime + zPosition)+4)*newColorAmplitude) + newColorCenter) // b
 
         // updateColorsOnPulse(lastPulsePosition, elapsedTime)
 
