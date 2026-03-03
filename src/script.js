@@ -637,35 +637,33 @@ function mapRange(value, inMin, inMax, outMin, outMax){
 let padStartTimeMS = null
 const padAnimationLengthSec = 9
 const padAnimationMidpoint = padAnimationLengthSec / 2
-
+// animationValue normalized 0-100
 let animationValue = 0
 function createAnimationValue(deltaSinceNoteTrigger){
+    // problem, overlapping animations where the trigger sets animationvValue to 0
+    // should this instead be a value between 1 and 100 just to make it easier to comprenend?
     
     if (deltaSinceNoteTrigger < padAnimationMidpoint){
         // count up to animation midpoint
-        animationValue = deltaSinceNoteTrigger
+        // BUT don't restart at 0 if new animation starts before last is finished
+
+        animationValue = mapRange(deltaSinceNoteTrigger, 0, padAnimationMidpoint, 0, 100)
         // console.log('up', animationValue)
     } else if (deltaSinceNoteTrigger > padAnimationMidpoint && animationValue > 0) {
         // count down from animation midpoint to end of animation
         let countDownTillEndOfAnimation = padAnimationLengthSec - deltaSinceNoteTrigger
-        animationValue = countDownTillEndOfAnimation
+        // animationValue = countDownTillEndOfAnimation
+        animationValue = mapRange(countDownTillEndOfAnimation, 0, padAnimationMidpoint, 0, 100)
     } else {
         animationValue = 0
     }
+    // console.log(animationValue)
 }
+
 
 // GLOBAL VARS FOR SATURATION
 // .7 with .3 amplitude is desaturated, .5 center with .5 amp is saturated
-let colorCenter = .7
-let colorAmplitude = 1.0 - colorCenter
-function changeSaturation(deltaSinceNoteTrigger){
-    colorCenter = mapRange(deltaSinceNoteTrigger, 0, 5, .5 , .7)
-    console.log(colorCenter)
-}
-
-
-
-
+let colorCenter = .6
 
 
 /**
@@ -705,21 +703,16 @@ const tick = () =>
     waveLengthDiv.textContent = `${getWaveInfo(points, waveLength)}`;
     
     // ANIMATIONS 
-    let deltaSinceNoteTrigger = elapsedTime - padStartTimeMS;
+    // 
+    let deltaSincePadTrigger = elapsedTime - padStartTimeMS;
    
-    
-    createAnimationValue(deltaSinceNoteTrigger)
-    
-    // map animationValue to colorCenter
-    // resting state cc .7, peak of animation .5
-    // so color center must got from .7 to .5 and back over the course of animation, remain at .7 otherwise
-    let saturationChange = mapRange(animationValue, 0, padAnimationLengthSec, 0, .3)
-    // console.log(saturationChange)
+    // saturation changes when pad is triggered
+    // too desaturated at low end? 
+    createAnimationValue(deltaSincePadTrigger)
+    let saturationChange = mapRange(animationValue, 1, 100, 0, .1)
     let newColorCenter = colorCenter - saturationChange
-    let newColorAmplitude = 1 - newColorCenter
-    console.log(newColorCenter, newColorAmplitude)
-    // colorCenter = colorCenter - saturationChange
-    // console.log(colorCenter, colorAmplitude)
+    let newColorAmplitude = 1.0 - newColorCenter
+    // console.log(newColorCenter, newColorAmplitude)
     
     // SPHERE
     // can this be removed from loop and only certain variables kept in the loop?
@@ -737,8 +730,6 @@ const tick = () =>
         let outerRadius = innerRadius2 + (Math.sin(((elapsedTime * speedOfWaves) + (i * waveLength)))) * amplitude 
         // how do I send a pulse down the sine wave that multiplies outer radius?
 
-        // PULSE
-        // needs to act on only one sliding window of the positions array at a time
 
         // three value chunk for xyz or rgb values
         let i3 = i * 3
