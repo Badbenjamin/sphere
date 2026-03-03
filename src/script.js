@@ -636,6 +636,7 @@ function mapRange(value, inMin, inMax, outMin, outMax){
 // pstms is set when pad is triggered by sequencer
 let padStartTimeMS = null
 const padAnimationLengthSec = 9
+// why does this only work for halfway point?
 const padAnimationMidpoint = padAnimationLengthSec / 2
 // animationValue normalized 0-100
 let animationValue = 0
@@ -644,11 +645,16 @@ function createAnimationValue(deltaSinceNoteTrigger){
     // should this instead be a value between 1 and 100 just to make it easier to comprenend?
     
     if (deltaSinceNoteTrigger < padAnimationMidpoint){
-        // count up to animation midpoint
-        // BUT don't restart at 0 if new animation starts before last is finished
-
-        animationValue = mapRange(deltaSinceNoteTrigger, 0, padAnimationMidpoint, 0, 100)
-        // console.log('up', animationValue)
+        // count animationValue up to 100 between start and midpoint of padAnimation
+        if (deltaSinceNoteTrigger < padAnimationMidpoint && animationValue != 0){
+            // pad triggers animation befoe last animation has finished
+            // start at current animationValue
+            animationValue = mapRange(deltaSinceNoteTrigger, 0, padAnimationMidpoint, animationValue, 100)
+        } else {
+            // pad triggers new animation after last has finished
+            // start animationValue at 0
+            animationValue = mapRange(deltaSinceNoteTrigger, 0, padAnimationMidpoint, 0, 100)
+        }
     } else if (deltaSinceNoteTrigger > padAnimationMidpoint && animationValue > 0) {
         // count down from animation midpoint to end of animation
         let countDownTillEndOfAnimation = padAnimationLengthSec - deltaSinceNoteTrigger
