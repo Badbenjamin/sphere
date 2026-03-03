@@ -267,7 +267,7 @@ function playLeadOsc(time, wave, attackTime, releaseTime, noteSequence, currentN
     const leadFundamentalOscGain = audioContext.createGain();
 
     // CHAIN
-    leadFundamentalOsc.connect(leadFundamentalOscGain).connect(bpFilterNodeLead).connect(convolutionDistortion1).connect(tremGain).connect(plateReverb3).connect(leadGain).connect(audioContext.destination);
+    leadFundamentalOsc.connect(leadFundamentalOscGain).connect(bpFilterNodeLead).connect(convolutionDistortion1).connect(tremGain).connect(plateReverb1).connect(leadGain).connect(audioContext.destination);
 
     // START STOP
     leadFundamentalOsc.start(time);
@@ -483,26 +483,65 @@ async function createConvolutionDistortion() {
 }
 let convolutionDistortion1 = await createConvolutionDistortion();
 let convolutionDistortion2 = await createConvolutionDistortion();
+let convolutionDistortion3 = await createConvolutionDistortion();
 
 const droneLfoFilterNode = createFilterNode('lowpass', '30')
 
+const droneGain = audioContext.createGain();
+
 function playDrone(time, wave, freqency, attack, release){
-    const droneOsc = audioContext.createOscillator()
-    droneOsc.type = wave
-    droneOsc.frequency.value = freqency
 
-    const sweepEnv = new GainNode(audioContext);
-    sweepEnv.gain.cancelScheduledValues(time);
-    sweepEnv.gain.setValueAtTime(0, time);
-    sweepEnv.gain.linearRampToValueAtTime(1, (time) + attack);
-    sweepEnv.gain.linearRampToValueAtTime(0, (time) +(attack + release));
+    // fundamental osc goes straight to sweepEnvGain envelope
+    // sub osc and 5th osc are attenuated before linking to sweepEnvGain
 
-    droneOsc.connect(sweepEnv).connect(convolutionDistortion1).connect(droneLfoFilterNode).connect(judsonReverb1).connect(plateReverb1).connect(droneGain).connect(audioContext.destination)
-    droneOsc.start(time)
-    droneOsc.stop(time + (attack + release))
+    const droneOscFundamental = audioContext.createOscillator()
+    droneOscFundamental.type = wave
+    droneOscFundamental.frequency.value = freqency
+    
+
+    const droneOscSub = audioContext.createOscillator()
+    droneOscSub.type = wave
+    droneOscSub.frequency.value = freqency / 2
+    const droneOscSubGain = audioContext.createGain()
+    droneOscSubGain.gain.value = 0.2
+    // console.log(droneOscSub.frequency.value)
+
+    const droneOsc5th = audioContext.createOscillator()
+    droneOsc5th.type = wave
+    droneOsc5th.frequency.value = freqency * 3
+    const droneOsc5thGain = audioContext.createGain()
+    droneOsc5thGain.gain.value = 0.2
+
+
+    const sweepEnvGain = new GainNode(audioContext);
+    sweepEnvGain.gain.cancelScheduledValues(time);
+    sweepEnvGain.gain.setValueAtTime(0, time);
+    sweepEnvGain.gain.linearRampToValueAtTime(1, (time) + attack);
+    sweepEnvGain.gain.linearRampToValueAtTime(0, (time) +(attack + release));
+
+    // create sub osc and fifth above fundamental and link to chain at lower volumes
+
+    droneOsc5th.connect(droneOsc5thGain)
+    droneOscSub.connect(droneOscSubGain)
+
+    droneOsc5thGain.connect(sweepEnvGain)
+    droneOscSubGain.connect(sweepEnvGain)
+
+    droneOscFundamental.connect(sweepEnvGain)
+
+
+    sweepEnvGain.connect(plateReverb3).connect(droneGain).connect(audioContext.destination)
+    droneOscFundamental.start(time)
+    droneOscFundamental.stop(time + (attack + release))
+
+    droneOsc5th.start(time)
+    droneOsc5th.stop(time + (attack + release))
+
+    droneOscSub.start(time)
+    droneOscSub.stop(time + (attack + release))
 }
 
-const droneGain = audioContext.createGain();
+
 
 const droneGainControl = document.querySelector("#drone-volume");
 
@@ -571,7 +610,7 @@ function leadSequencer(time, metronomeBeat, sequence) {
     let beat = metronomeBeat.beat
     
     if (sequence[leadSequenceStep] == beat){
-        playLeadOsc(time, 'sine', 0.1, 1, leadNoteSequence, leadNoteIndex)
+        playLeadOsc(time, 'triangle', 0.1, 1, leadNoteSequence, leadNoteIndex)
         if (leadSequenceStep < sequence.length-1){
             leadSequenceStep ++
         } else {
@@ -580,14 +619,14 @@ function leadSequencer(time, metronomeBeat, sequence) {
     }
 }
 
-let droneSequence = [1]
+let droneSequence = [1, 2, 3, 4]
 let droneSequenceStep = 0
 function droneSequencer(time, metronomeBeat, sequence) {
 
     let beat = metronomeBeat.beat
     
     if (sequence[droneSequenceStep] == beat){
-        playDrone(time, 'triangle', '77.78', 0.5, 5.0)
+        playDrone(time, 'sine', '77.78', 2.0, 12.0)
         if (droneSequenceStep < sequence.length-1){
             droneSequenceStep ++
         } else {
@@ -637,33 +676,34 @@ function mapRange(value, inMin, inMax, outMin, outMax){
 let padStartTimeMS = null
 const padAnimationLengthSec = 9
 // why does this only work for halfway point?
-const padAnimationMidpoint = padAnimationLengthSec / 2
+
 // animationValue normalized 0-100
+// maybe this could be an array of animation values for multiple calls?
 let animationValue = 0
-function createAnimationValue(deltaSinceNoteTrigger){
+function createAnimationValue(deltaSinceNoteTrigger, animationLength){
+    let animationMidpoint = animationLength /2
     // problem, overlapping animations where the trigger sets animationvValue to 0
     // should this instead be a value between 1 and 100 just to make it easier to comprenend?
     
-    if (deltaSinceNoteTrigger < padAnimationMidpoint){
+    if (deltaSinceNoteTrigger < animationMidpoint){
         // count animationValue up to 100 between start and midpoint of padAnimation
-        if (deltaSinceNoteTrigger < padAnimationMidpoint && animationValue != 0){
+        if (deltaSinceNoteTrigger < animationMidpoint && animationValue != 0){
             // pad triggers animation befoe last animation has finished
             // start at current animationValue
-            animationValue = mapRange(deltaSinceNoteTrigger, 0, padAnimationMidpoint, animationValue, 100)
+            animationValue = mapRange(deltaSinceNoteTrigger, 0, animationMidpoint, animationValue, 100)
         } else {
             // pad triggers new animation after last has finished
             // start animationValue at 0
-            animationValue = mapRange(deltaSinceNoteTrigger, 0, padAnimationMidpoint, 0, 100)
+            animationValue = mapRange(deltaSinceNoteTrigger, 0, animationMidpoint, 0, 100)
         }
-    } else if (deltaSinceNoteTrigger > padAnimationMidpoint && animationValue > 0) {
+    } else if (deltaSinceNoteTrigger > animationMidpoint && animationValue > 0) {
         // count down from animation midpoint to end of animation
         let countDownTillEndOfAnimation = padAnimationLengthSec - deltaSinceNoteTrigger
         // animationValue = countDownTillEndOfAnimation
-        animationValue = mapRange(countDownTillEndOfAnimation, 0, padAnimationMidpoint, 0, 100)
+        animationValue = mapRange(countDownTillEndOfAnimation, 0, animationMidpoint, 0, 100)
     } else {
         animationValue = 0
     }
-    // console.log(animationValue)
 }
 
 
@@ -694,8 +734,8 @@ const tick = () =>
     // console.log(saturationLevel)
 
     // DRONE FILTER SWEEP
-    droneLfoFilterNode.frequency.value = lfoValue(72, 90, 1, elapsedTime)
-
+    droneLfoFilterNode.frequency.value = lfoValue(60, 80, 1, elapsedTime)
+    // console.log(droneLfoFilterNode.frequency.value)
     // PAD FILTER SWEEP
     bpFilterNodePad.frequency.value = lfoValue(100, 200, 15, elapsedTime)
 
@@ -714,7 +754,7 @@ const tick = () =>
    
     // saturation changes when pad is triggered
     // too desaturated at low end? 
-    createAnimationValue(deltaSincePadTrigger)
+    createAnimationValue(deltaSincePadTrigger, padAnimationLengthSec)
     let saturationChange = mapRange(animationValue, 1, 100, 0, .1)
     let newColorCenter = colorCenter - saturationChange
     let newColorAmplitude = 1.0 - newColorCenter
