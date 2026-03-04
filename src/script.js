@@ -255,6 +255,9 @@ function createFilterNode(type,Q){
 const bpFilterNodeLead = createFilterNode('bandpass', '5')
 const leadGain = audioContext.createGain();
 const tremGain = new GainNode(audioContext)
+const leadPan = audioContext.createStereoPanner()
+
+leadPan.pan.value = -.3
 
 function playLeadOsc(time, wave, attackTime, releaseTime, noteSequence, currentNoteIndex) {
     const notesLength = noteSequence.length
@@ -267,11 +270,18 @@ function playLeadOsc(time, wave, attackTime, releaseTime, noteSequence, currentN
     const leadFundamentalOscGain = audioContext.createGain();
 
     // CHAIN
-    leadFundamentalOsc.connect(leadFundamentalOscGain).connect(bpFilterNodeLead).connect(convolutionDistortion1).connect(tremGain).connect(plateReverb1).connect(leadGain).connect(audioContext.destination);
+    leadFundamentalOsc.connect(leadFundamentalOscGain).connect(bpFilterNodeLead).connect(convolutionDistortion1).connect(tremGain).connect(plateReverb1).connect(leadPan).connect(leadGain).connect(audioContext.destination);
 
     // START STOP
     leadFundamentalOsc.start(time);
     leadFundamentalOsc.stop((time) + sweepLength);
+
+    // ALTERNATE PANNING
+    if (leadPan.pan.value < 0){
+        leadPan.pan.value = .3
+    } else {
+        leadPan.pan.value = -.3
+    }
 
     // Advance notes
     if (leadNoteIndex< notesLength - 1){
@@ -710,7 +720,7 @@ function createAnimationValue(deltaSinceNoteTrigger, animationLength){
 
 // GLOBAL VARS FOR SATURATION
 // .7 with .3 amplitude is desaturated, .5 center with .5 amp is saturated
-let colorCenter = .6
+let colorCenter = .55
 
 
 /**
@@ -757,17 +767,21 @@ const tick = () =>
     // saturation changes when pad is triggered
     // too desaturated at low end? 
     createAnimationValue(deltaSincePadTrigger, padAnimationLengthSec)
-    let saturationChange = mapRange(animationValue, 1, 100, 0, .1)
+    let saturationChange = mapRange(animationValue, 1, 100, 0, .05)
     let newColorCenter = colorCenter - saturationChange
     let newColorAmplitude = 1.0 - newColorCenter
-    // console.log(newColorCenter, newColorAmplitude)
     
     // SPHERE
     // can this be removed from loop and only certain variables kept in the loop?
     // i need to relink inner radius to 
     // let innerRadius2 = (((Math.sin(elapsedTime) - 4.9) * .2) / 2) + 4.9
     let innerRadius2 = mapRange(droneLfoFilterNode.frequency.value, 39, 156, 5, 5.5)
-    
+    // initial attack is too fast? 
+    // let newAmplitude = mapRange(animationValue, 1, 100, amplitude, amplitude * 1.5)
+    // console.log(-(Math.cos(Math.PI * animationValue) - 1) / 2)
+    // Math.sin((x * Math.PI) / 2)
+    // console.log(animationValue, mapRange(animationValue, 1, 100, 1, 1.5))
+
     for (let i = 0; i <= points; i++){
         const t = ((i / (points)));
         
@@ -775,7 +789,7 @@ const tick = () =>
         const azimuth = goldenAngleRadians * i;
 
         // 
-        let outerRadius = innerRadius2 + (Math.sin(((elapsedTime * speedOfWaves) + (i * waveLength)))) * amplitude 
+        let outerRadius = innerRadius2 + (Math.sin(((elapsedTime * speedOfWaves) + (i * waveLength)))) * amplitude
         // how do I send a pulse down the sine wave that multiplies outer radius?
 
 

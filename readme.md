@@ -1,4 +1,5 @@
-# Three.js Journey
+## UNNAMED SPHERE GENERATIVE MUSIC VISUALIZEER
+This ongoing projects uses three.js particles and the web audio API to create an interactive, generative, music visualizer. 
 
 ## Setup
 Download [Node.js](https://nodejs.org/en/download/).
