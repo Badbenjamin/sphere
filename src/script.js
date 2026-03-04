@@ -453,9 +453,9 @@ async function createJudsonReverb() {
 
   return convolver;
 }
-let judsonReverb1 = await createJudsonReverb();
+// let judsonReverb1 = await createJudsonReverb();
 let judsonReverb2 = await createJudsonReverb();
-let judsonReverb3 = await createJudsonReverb();
+// let judsonReverb3 = await createJudsonReverb();
 
 async function createPlateReverb() {
   let convolver = audioContext.createConvolver();
@@ -483,11 +483,13 @@ async function createConvolutionDistortion() {
 }
 let convolutionDistortion1 = await createConvolutionDistortion();
 let convolutionDistortion2 = await createConvolutionDistortion();
-let convolutionDistortion3 = await createConvolutionDistortion();
 
-const droneLfoFilterNode = createFilterNode('lowpass', '30')
+const droneLfoFilterNode = createFilterNode('bandpass', '1')
 
 const droneGain = audioContext.createGain();
+
+const dronePan = audioContext.createStereoPanner()
+// console.log(dronePan.pan.value = -1)
 
 function playDrone(time, wave, freqency, attack, release){
 
@@ -503,14 +505,14 @@ function playDrone(time, wave, freqency, attack, release){
     droneOscSub.type = wave
     droneOscSub.frequency.value = freqency / 2
     const droneOscSubGain = audioContext.createGain()
-    droneOscSubGain.gain.value = 0.2
+    droneOscSubGain.gain.value = 0.1
     // console.log(droneOscSub.frequency.value)
 
     const droneOsc5th = audioContext.createOscillator()
     droneOsc5th.type = wave
-    droneOsc5th.frequency.value = freqency * 3
+    droneOsc5th.frequency.value = freqency * 2
     const droneOsc5thGain = audioContext.createGain()
-    droneOsc5thGain.gain.value = 0.2
+    droneOsc5thGain.gain.value = 0.01
 
 
     const sweepEnvGain = new GainNode(audioContext);
@@ -530,7 +532,7 @@ function playDrone(time, wave, freqency, attack, release){
     droneOscFundamental.connect(sweepEnvGain)
 
 
-    sweepEnvGain.connect(plateReverb3).connect(droneGain).connect(audioContext.destination)
+    sweepEnvGain.connect(droneLfoFilterNode).connect(convolutionDistortion2).connect(dronePan).connect(plateReverb3).connect(droneGain).connect(audioContext.destination)
     droneOscFundamental.start(time)
     droneOscFundamental.stop(time + (attack + release))
 
@@ -540,8 +542,6 @@ function playDrone(time, wave, freqency, attack, release){
     droneOscSub.start(time)
     droneOscSub.stop(time + (attack + release))
 }
-
-
 
 const droneGainControl = document.querySelector("#drone-volume");
 
@@ -619,7 +619,8 @@ function leadSequencer(time, metronomeBeat, sequence) {
     }
 }
 
-let droneSequence = [1, 2, 3, 4]
+
+let droneSequence = [1]
 let droneSequenceStep = 0
 function droneSequencer(time, metronomeBeat, sequence) {
 
@@ -728,13 +729,14 @@ const tick = () =>
     tremGain.gain.value = lfoValue(.5, 1.5, 40, elapsedTime)
  
     droneSequencer(elapsedTime, metronomeTime, droneSequence)
+    dronePan.pan.value = Math.sin(elapsedTime) / 6
 
     padSequencer(elapsedTime, metronomeTime, padSequence)
     
     // console.log(saturationLevel)
 
     // DRONE FILTER SWEEP
-    droneLfoFilterNode.frequency.value = lfoValue(60, 80, 1, elapsedTime)
+    droneLfoFilterNode.frequency.value = lfoValue(39, 156, .5, elapsedTime)
     // console.log(droneLfoFilterNode.frequency.value)
     // PAD FILTER SWEEP
     bpFilterNodePad.frequency.value = lfoValue(100, 200, 15, elapsedTime)
@@ -763,8 +765,8 @@ const tick = () =>
     // SPHERE
     // can this be removed from loop and only certain variables kept in the loop?
     // i need to relink inner radius to 
-    let innerRadius2 = (((Math.sin(elapsedTime) - 4.9) * .2) / 2) + 4.9
-    // let innerRadius2 = droneLfoFilterNode.frequency.value - 100
+    // let innerRadius2 = (((Math.sin(elapsedTime) - 4.9) * .2) / 2) + 4.9
+    let innerRadius2 = mapRange(droneLfoFilterNode.frequency.value, 39, 156, 5, 5.5)
     
     for (let i = 0; i <= points; i++){
         const t = ((i / (points)));
