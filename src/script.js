@@ -650,7 +650,7 @@ function droneSequencer(time, metronomeBeat, sequence) {
 let padSequence = [1, 4]
 let padSequenceStep = 0
 function padSequencer(time, metronomeBeat, sequence) {
-
+    
     let beat = metronomeBeat.beat
     
     
@@ -660,7 +660,7 @@ function padSequencer(time, metronomeBeat, sequence) {
             playAdditivePad((time+1), "sine", 587.33)
             playAdditivePad((time+1.5), "sine", 466.16)
             padStartTimeMS = time
-            
+            console.log('ps trig', time)
         if (padSequenceStep < sequence.length-1){
             padSequenceStep ++
         } else {
@@ -676,45 +676,45 @@ function padSequencer(time, metronomeBeat, sequence) {
 
 // inMin and inMax should be the delta for the animation
 // outMin and outMax the animation value
-function mapRange(value, inMin, inMax, outMin, outMax){
+function mapV(value, inMin, inMax, outMin, outMax){
     return outMin + (outMax - outMin)*((value - inMin)/(inMax - inMin))
+}
+
+function mapVEaseInEaseOut(value, inMin, inMax, outMin, outMax){
+    let x = outMin + (outMax - outMin)*((value - inMin)/(inMax - inMin))
+    return -(Math.cos(Math.PI * x) - 1) / 2
 }
 
 // ANIMATIONS
 
-// global vars
-// pstms is set when pad is triggered by sequencer
-let padStartTimeMS = null
-const padAnimationLengthSec = 9
-// why does this only work for halfway point?
+// global vars for pad
 
-// animationValue normalized 0-100
-// maybe this could be an array of animation values for multiple calls?
+let padStartTimeMS = null
+const padAnimationLengthSec = 8
+
+
 let animationValue = 0
+// function lives inside render loop
 function createAnimationValue(deltaSinceNoteTrigger, animationLength){
-    let animationMidpoint = animationLength /2
-    // problem, overlapping animations where the trigger sets animationvValue to 0
-    // should this instead be a value between 1 and 100 just to make it easier to comprenend?
+    // if two trigs overlap, length of animation needs to be set to time that has passed + animation time
     
-    if (deltaSinceNoteTrigger < animationMidpoint){
-        // count animationValue up to 100 between start and midpoint of padAnimation
-        if (deltaSinceNoteTrigger < animationMidpoint && animationValue != 0){
-            // pad triggers animation befoe last animation has finished
-            // start at current animationValue
-            animationValue = mapRange(deltaSinceNoteTrigger, 0, animationMidpoint, animationValue, 100)
-        } else {
-            // pad triggers new animation after last has finished
-            // start animationValue at 0
-            animationValue = mapRange(deltaSinceNoteTrigger, 0, animationMidpoint, 0, 100)
-        }
-    } else if (deltaSinceNoteTrigger > animationMidpoint && animationValue > 0) {
-        // count down from animation midpoint to end of animation
-        let countDownTillEndOfAnimation = padAnimationLengthSec - deltaSinceNoteTrigger
-        // animationValue = countDownTillEndOfAnimation
-        animationValue = mapRange(countDownTillEndOfAnimation, 0, animationMidpoint, 0, 100)
+    let animationMidPoint = animationLength / 2
+    let newTrigBeforeAnimationFinished = animationValue > 0 && deltaSinceNoteTrigger === 0
+    // pad is triggered before last pad animation completed
+    if (newTrigBeforeAnimationFinished){
+        console.log('double trig')
+    }
+    // console.log(animationInProgress, newAnimationValue)
+    
+
+    if (deltaSinceNoteTrigger < animationMidPoint){
+        animationValue = deltaSinceNoteTrigger
+    } else if (deltaSinceNoteTrigger > animationMidPoint && deltaSinceNoteTrigger <= animationLength) {
+        animationValue = animationLength - deltaSinceNoteTrigger
     } else {
         animationValue = 0
     }
+    // console.log(animationValue)
 }
 
 
@@ -763,11 +763,12 @@ const tick = () =>
     // ANIMATIONS 
     // 
     let deltaSincePadTrigger = elapsedTime - padStartTimeMS;
+    // console.log('dspt', deltaSincePadTrigger)
    
     // saturation changes when pad is triggered
     // too desaturated at low end? 
     createAnimationValue(deltaSincePadTrigger, padAnimationLengthSec)
-    let saturationChange = mapRange(animationValue, 1, 100, 0, .05)
+    let saturationChange = mapV(animationValue, 1, 100, 0, .05)
     let newColorCenter = colorCenter - saturationChange
     let newColorAmplitude = 1.0 - newColorCenter
     
@@ -775,9 +776,11 @@ const tick = () =>
     // can this be removed from loop and only certain variables kept in the loop?
     // i need to relink inner radius to 
     // let innerRadius2 = (((Math.sin(elapsedTime) - 4.9) * .2) / 2) + 4.9
-    let innerRadius2 = mapRange(droneLfoFilterNode.frequency.value, 39, 156, 5, 5.5)
+    let innerRadius2 = mapV(droneLfoFilterNode.frequency.value, 39, 156, 5, 5.5)
     // initial attack is too fast? 
-    // let newAmplitude = mapRange(animationValue, 1, 100, amplitude, amplitude * 1.5)
+    // console.log(animationValue)
+    // let newAmplitude = mapV(animationValue, 1, 100, amplitude, amplitude * 1.5)
+    
     // console.log(-(Math.cos(Math.PI * animationValue) - 1) / 2)
     // Math.sin((x * Math.PI) / 2)
     // console.log(animationValue, mapRange(animationValue, 1, 100, 1, 1.5))
@@ -788,7 +791,7 @@ const tick = () =>
         const polarAngle = Math.acos((1 - 2 * t));
         const azimuth = goldenAngleRadians * i;
 
-        // 
+        // is there a better name for this variable? Total Radius?
         let outerRadius = innerRadius2 + (Math.sin(((elapsedTime * speedOfWaves) + (i * waveLength)))) * amplitude
         // how do I send a pulse down the sine wave that multiplies outer radius?
 
