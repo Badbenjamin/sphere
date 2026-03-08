@@ -659,7 +659,7 @@ function padSequencer(time, metronomeBeat, sequence) {
             playAdditivePad((time+.5), "sine", 392)
             playAdditivePad((time+1), "sine", 587.33)
             playAdditivePad((time+1.5), "sine", 466.16)
-            padStartTimeMS = time
+            padStartTimeArray.push(time)
             console.log('ps trig', time)
         if (padSequenceStep < sequence.length-1){
             padSequenceStep ++
@@ -681,41 +681,55 @@ function mapV(value, inMin, inMax, outMin, outMax){
 }
 
 function mapVEaseInEaseOut(value, inMin, inMax, outMin, outMax){
-    let x = outMin + (outMax - outMin)*((value - inMin)/(inMax - inMin))
-    return -(Math.cos(Math.PI * x) - 1) / 2
+    let v = outMin + (outMax - outMin)*((value - inMin)/(inMax - inMin))
+    return -(Math.cos(Math.PI * v) - 1) / 2
 }
 
 // ANIMATIONS
 
 // global vars for pad
 
-let padStartTimeMS = null
-const padAnimationLengthSec = 8
+let padStartTimeArray = []
+const padAnimationLength = 8
+
+function popStartTimesOfCompletedAnimations(elapsedTime, startTimeArray, animationLength){
+    for (let i = 0; i < startTimeArray.length; i++){
+        let startTime = startTimeArray[i]
+        let delta = elapsedTime - startTime
+        if (delta > animationLength){
+            startTimeArray.splice(i, i+1)
+        }
+    }
+}
 
 
 let animationValue = 0
-// function lives inside render loop
-function createAnimationValue(deltaSinceNoteTrigger, animationLength){
-    // if two trigs overlap, length of animation needs to be set to time that has passed + animation time
-    
-    let animationMidPoint = animationLength / 2
-    let newTrigBeforeAnimationFinished = animationValue > 0 && deltaSinceNoteTrigger === 0
-    // pad is triggered before last pad animation completed
-    if (newTrigBeforeAnimationFinished){
-        console.log('double trig')
-    }
-    // console.log(animationInProgress, newAnimationValue)
-    
 
-    if (deltaSinceNoteTrigger < animationMidPoint){
-        animationValue = deltaSinceNoteTrigger
-    } else if (deltaSinceNoteTrigger > animationMidPoint && deltaSinceNoteTrigger <= animationLength) {
-        animationValue = animationLength - deltaSinceNoteTrigger
-    } else {
-        animationValue = 0
-    }
-    // console.log(animationValue)
-}
+// function updateAnimationValue(deltaSinceNoteTrigger, baseAnimationLength, extraAnimationLength){
+//     let totalAnimationLength = baseAnimationLength + extraAnimationLength
+//     let animationMidPoint = totalAnimationLength / 2
+
+//     let trigerBeforeFullCycle = deltaSinceNoteTrigger === 0 && animationValue > 0
+//     if (trigerBeforeFullCycle){
+//         console.log('how to handle this differently')
+//     } else {
+//         if (deltaSinceNoteTrigger < animationMidPoint){
+//             // count up 
+//             animationValue = deltaSinceNoteTrigger
+//         } else if (deltaSinceNoteTrigger > animationMidPoint && deltaSinceNoteTrigger <= totalAnimationLength) {
+//             // count down
+//             animationValue = totalAnimationLength - deltaSinceNoteTrigger
+//         } else {
+//             // if delta is longer than total animation, animation seq is over
+//             // reset animation value
+//             animationValue = 0
+//         }
+//     }
+//     console.log(animationValue)
+    
+// }
+
+
 
 
 // GLOBAL VARS FOR SATURATION
@@ -762,13 +776,20 @@ const tick = () =>
     
     // ANIMATIONS 
     // 
-    let deltaSincePadTrigger = elapsedTime - padStartTimeMS;
+    console.log(padStartTimeArray)
+    popStartTimesOfCompletedAnimations(elapsedTime, padStartTimeArray, padAnimationLength)
+    let padTriggerDeltaArray = []
+    // let deltaSincePadTrigger = elapsedTime - padStartTimeMS;
     // console.log('dspt', deltaSincePadTrigger)
    
-    // saturation changes when pad is triggered
-    // too desaturated at low end? 
-    createAnimationValue(deltaSincePadTrigger, padAnimationLengthSec)
-    let saturationChange = mapV(animationValue, 1, 100, 0, .05)
+    // pad is trigged
+    // animationValue is pushed to array
+    // animationValue counts up, then down to midway point
+    // animation value is popped from array when done
+    let animationValueArray = []
+    // updateAnimationValue(animationValueArray, animationLength)
+    
+    let saturationChange = 0 //mapV(animationValue, 1, 100, 0, .05)
     let newColorCenter = colorCenter - saturationChange
     let newColorAmplitude = 1.0 - newColorCenter
     
