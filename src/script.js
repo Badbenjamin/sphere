@@ -692,7 +692,7 @@ function mapVEaseInEaseOut(value, inMin, inMax, outMin, outMax){
 let padStartTimeArray = []
 const padAnimationLength = 8
 
-function popStartTimesOfCompletedAnimations(elapsedTime, startTimeArray, animationLength){
+function removeStartTimesOfCompletedAnimations(elapsedTime, startTimeArray, animationLength){
     for (let i = 0; i < startTimeArray.length; i++){
         let startTime = startTimeArray[i]
         let delta = elapsedTime - startTime
@@ -702,8 +702,46 @@ function popStartTimesOfCompletedAnimations(elapsedTime, startTimeArray, animati
     }
 }
 
+function returnPercentCompleteAnimation(elapsedTime, startTime, animationLength){
+    let animationPercentageComplete = 0
+    let timeLeftInAnimation = elapsedTime - startTime
+    let isAnimationActive = timeLeftInAnimation < animationLength
+    if (isAnimationActive){
+        animationPercentageComplete = mapV(timeLeftInAnimation, 0, animationLength, 0, 100)
+    } else {
+        animationPercentageComplete = 100
+    }
+    return animationPercentageComplete
+}
+
 
 let animationValue = 0
+
+function raiseAndLowerAnimationValueTo100(percentCompleteAnimation){
+    let value = 0
+    if (percentCompleteAnimation <= 50){
+        value = percentCompleteAnimation
+    } else {
+        value = 100 - percentCompleteAnimation
+    }
+    let normalizedValue = mapV(value, 0, 50, 0, 100)
+    return normalizedValue
+}
+
+function sumAllAnimationValues(elapsedTime, startTimeArray, animationLength){
+    let res = 0
+    if (startTimeArray.length === 0){
+        return 0
+    } else {
+        for (let i = 0; i < startTimeArray.length; i++ ){
+            let currentStartTime = startTimeArray[i]
+            let percentageComplete = returnPercentCompleteAnimation(elapsedTime, currentStartTime, animationLength)
+            let individualAnimationValue = raiseAndLowerAnimationValueTo100(percentageComplete)
+            res += individualAnimationValue
+        }
+        return res
+    }
+}
 
 // function updateAnimationValue(deltaSinceNoteTrigger, baseAnimationLength, extraAnimationLength){
 //     let totalAnimationLength = baseAnimationLength + extraAnimationLength
@@ -776,16 +814,10 @@ const tick = () =>
     
     // ANIMATIONS 
     // 
-    console.log(padStartTimeArray)
-    popStartTimesOfCompletedAnimations(elapsedTime, padStartTimeArray, padAnimationLength)
-    let padTriggerDeltaArray = []
-    // let deltaSincePadTrigger = elapsedTime - padStartTimeMS;
-    // console.log('dspt', deltaSincePadTrigger)
-   
-    // pad is trigged
-    // animationValue is pushed to array
-    // animationValue counts up, then down to midway point
-    // animation value is popped from array when done
+    
+    removeStartTimesOfCompletedAnimations(elapsedTime, padStartTimeArray, padAnimationLength)
+    console.log(sumAllAnimationValues(elapsedTime, padStartTimeArray, padAnimationLength))
+
     let animationValueArray = []
     // updateAnimationValue(animationValueArray, animationLength)
     
