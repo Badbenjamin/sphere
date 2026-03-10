@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import GUI from 'lil-gui'
+import * as MathUtils from 'three/src/math/MathUtils.js'
 // import { GodRaysCombineShader } from 'three/examples/jsm/Addons.js'
 // import { element, notEqual } from 'three/tsl'
 // import {chorusStrings} from '../wavetables/Chorus_Strings.js'
@@ -690,7 +691,7 @@ function mapVEaseInEaseOut(value, inMin, inMax, outMin, outMax){
 // global vars for pad
 
 let padStartTimeArray = []
-const padAnimationLength = 8
+const padAnimationLength = 9
 
 function removeStartTimesOfCompletedAnimations(elapsedTime, startTimeArray, animationLength){
     for (let i = 0; i < startTimeArray.length; i++){
@@ -714,8 +715,6 @@ function returnPercentCompleteAnimation(elapsedTime, startTime, animationLength)
     return animationPercentageComplete
 }
 
-
-let animationValue = 0
 
 function raiseAndLowerAnimationValueTo100(percentCompleteAnimation){
     let value = 0
@@ -743,36 +742,8 @@ function sumAllAnimationValues(elapsedTime, startTimeArray, animationLength){
     }
 }
 
-// function updateAnimationValue(deltaSinceNoteTrigger, baseAnimationLength, extraAnimationLength){
-//     let totalAnimationLength = baseAnimationLength + extraAnimationLength
-//     let animationMidPoint = totalAnimationLength / 2
-
-//     let trigerBeforeFullCycle = deltaSinceNoteTrigger === 0 && animationValue > 0
-//     if (trigerBeforeFullCycle){
-//         console.log('how to handle this differently')
-//     } else {
-//         if (deltaSinceNoteTrigger < animationMidPoint){
-//             // count up 
-//             animationValue = deltaSinceNoteTrigger
-//         } else if (deltaSinceNoteTrigger > animationMidPoint && deltaSinceNoteTrigger <= totalAnimationLength) {
-//             // count down
-//             animationValue = totalAnimationLength - deltaSinceNoteTrigger
-//         } else {
-//             // if delta is longer than total animation, animation seq is over
-//             // reset animation value
-//             animationValue = 0
-//         }
-//     }
-//     console.log(animationValue)
-    
-// }
 
 
-
-
-// GLOBAL VARS FOR SATURATION
-// .7 with .3 amplitude is desaturated, .5 center with .5 amp is saturated
-let colorCenter = .55
 
 
 /**
@@ -815,20 +786,20 @@ const tick = () =>
     // ANIMATIONS 
     // 
     
+    // PAD ANIMATIONS
     removeStartTimesOfCompletedAnimations(elapsedTime, padStartTimeArray, padAnimationLength)
-    console.log(sumAllAnimationValues(elapsedTime, padStartTimeArray, padAnimationLength))
-
-    let animationValueArray = []
-    // updateAnimationValue(animationValueArray, animationLength)
+    let summedAnimationValues = sumAllAnimationValues(elapsedTime, padStartTimeArray, padAnimationLength)
+    let clampedAnimationValuesSum = MathUtils.clamp(summedAnimationValues, 0 ,100)
     
-    let saturationChange = 0 //mapV(animationValue, 1, 100, 0, .05)
+    
+    const colorCenter = .6
+    let saturationChange = mapV(clampedAnimationValuesSum, 1, 100, 0, .1)
     let newColorCenter = colorCenter - saturationChange
     let newColorAmplitude = 1.0 - newColorCenter
+
+    let newAmplitude = amplitude + mapV(clampedAnimationValuesSum, 0, 100, 0 , .1)
     
-    // SPHERE
-    // can this be removed from loop and only certain variables kept in the loop?
-    // i need to relink inner radius to 
-    // let innerRadius2 = (((Math.sin(elapsedTime) - 4.9) * .2) / 2) + 4.9
+    // DRONE ANIMATION
     let innerRadius2 = mapV(droneLfoFilterNode.frequency.value, 39, 156, 5, 5.5)
     // initial attack is too fast? 
     // console.log(animationValue)
@@ -845,7 +816,7 @@ const tick = () =>
         const azimuth = goldenAngleRadians * i;
 
         // is there a better name for this variable? Total Radius?
-        let outerRadius = innerRadius2 + (Math.sin(((elapsedTime * speedOfWaves) + (i * waveLength)))) * amplitude
+        let outerRadius = innerRadius2 + (Math.sin(((elapsedTime * speedOfWaves) + (i * waveLength)))) * newAmplitude
         // how do I send a pulse down the sine wave that multiplies outer radius?
 
 
