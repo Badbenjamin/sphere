@@ -622,6 +622,7 @@ function leadSequencer(time, metronomeBeat, sequence) {
     
     if (sequence[leadSequenceStep] == beat){
         playLeadOsc(time, 'triangle', 0.1, 1, leadNoteSequence, leadNoteIndex)
+        leadStartTimeArray.push(time)
         if (leadSequenceStep < sequence.length-1){
             leadSequenceStep ++
         } else {
@@ -660,8 +661,8 @@ function padSequencer(time, metronomeBeat, sequence) {
             playAdditivePad((time+.5), "sine", 392)
             playAdditivePad((time+1), "sine", 587.33)
             playAdditivePad((time+1.5), "sine", 466.16)
+            // add padTrigTime to array
             padStartTimeArray.push(time)
-            console.log('ps trig', time)
         if (padSequenceStep < sequence.length-1){
             padSequenceStep ++
         } else {
@@ -692,6 +693,9 @@ function mapVEaseInEaseOut(value, inMin, inMax, outMin, outMax){
 
 let padStartTimeArray = []
 const padAnimationLength = 9
+
+let leadStartTimeArray = []
+const leadAnimationLength = 1.5 // 1 sec and some reverb
 
 function removeStartTimesOfCompletedAnimations(elapsedTime, startTimeArray, animationLength){
     for (let i = 0; i < startTimeArray.length; i++){
@@ -742,6 +746,20 @@ function sumAllAnimationValues(elapsedTime, startTimeArray, animationLength){
     }
 }
 
+// LEAD ANIMATION FUNCTIONS
+
+function createWhiteBandsOnLeadTrig(elapsedTime, leadStartTimeArray, leadAnimationLength, upperBound, lowerBound, bandwith){
+    let bandPositions = []
+    if (leadStartTimeArray.length == 0){
+        return
+    } else {
+        for (let i = 0; i < leadStartTimeArray.length; i ++){
+            let currentStartTime = leadStartTimeArray[i]
+            let percentageComplete = returnPercentCompleteAnimation(elapsedTime, currentStartTime, leadAnimationLength)
+            console.log(i, percentageComplete)
+        }
+    }
+}
 
 
 
@@ -784,39 +802,44 @@ const tick = () =>
     waveLengthDiv.textContent = `${getWaveInfo(points, waveLength)}`;
     
     // ANIMATIONS 
-    // 
-    
+    // LEAD ANIMATIONS
+    removeStartTimesOfCompletedAnimations(elapsedTime,leadStartTimeArray,leadAnimationLength)
+    // console.log(leadStartTimeArray)
+
+
     // PAD ANIMATIONS
     removeStartTimesOfCompletedAnimations(elapsedTime, padStartTimeArray, padAnimationLength)
     let summedAnimationValues = sumAllAnimationValues(elapsedTime, padStartTimeArray, padAnimationLength)
     let clampedAnimationValuesSum = MathUtils.clamp(summedAnimationValues, 0 ,100)
     
     
-    const colorCenter = .6
-    let saturationChange = mapV(clampedAnimationValuesSum, 1, 100, 0, .1)
+    const colorCenter = .55
+    let saturationChange = mapV(clampedAnimationValuesSum, 1, 100, 0, .03)
     let newColorCenter = colorCenter - saturationChange
     let newColorAmplitude = 1.0 - newColorCenter
+    
 
-    let newAmplitude = amplitude + mapV(clampedAnimationValuesSum, 0, 100, 0 , .1)
+    let newAmplitude = amplitude + mapV(clampedAnimationValuesSum, 0, 100, 0 , .05)
     
     // DRONE ANIMATION
     let innerRadius2 = mapV(droneLfoFilterNode.frequency.value, 39, 156, 5, 5.5)
-    // initial attack is too fast? 
-    // console.log(animationValue)
-    // let newAmplitude = mapV(animationValue, 1, 100, amplitude, amplitude * 1.5)
+    // LEAD ANIMATION
+    // band animates from start of innerRadius to 
     
-    // console.log(-(Math.cos(Math.PI * animationValue) - 1) / 2)
-    // Math.sin((x * Math.PI) / 2)
-    // console.log(animationValue, mapRange(animationValue, 1, 100, 1, 1.5))
+    let lowerBound = (innerRadius2 - newAmplitude) 
+    let upperBound = (innerRadius2 + newAmplitude) 
+    let bandwidth = .2
+    createWhiteBandsOnLeadTrig(elapsedTime, leadStartTimeArray, leadAnimationLength, upperBound, lowerBound, bandwidth)
+    // while animation is active, incriment i from lowerBound to upperBound during lenght of animation
 
     for (let i = 0; i <= points; i++){
         const t = ((i / (points)));
         
         const polarAngle = Math.acos((1 - 2 * t));
         const azimuth = goldenAngleRadians * i;
-
+        
         // is there a better name for this variable? Total Radius?
-        let outerRadius = innerRadius2 + (Math.sin(((elapsedTime * speedOfWaves) + (i * waveLength)))) * newAmplitude
+        let outerRadius = innerRadius2 + ((Math.sin(((elapsedTime * speedOfWaves) + (i * waveLength)))) * newAmplitude)
         // how do I send a pulse down the sine wave that multiplies outer radius?
 
 
@@ -839,8 +862,14 @@ const tick = () =>
         colors[i3+ 1] = ((Math.sin((elapsedTime + zPosition)+2)*newColorAmplitude) + newColorCenter)// g
         colors[i3+2] = ((Math.sin((elapsedTime + zPosition)+4)*newColorAmplitude) + newColorCenter) // b
 
-        // updateColorsOnPulse(lastPulsePosition, elapsedTime)
-
+        // make band of white at certain distance from radius
+        // how do I measure individual particle distance from radius
+        
+        if (outerRadius > lowerBound && outerRadius < upperBound){
+            colors[i3] = 1.0
+            colors[i3+ 1] = 1.0
+            colors[i3+2] = 1.0
+        }
 
 
         // SCOPE
