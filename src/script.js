@@ -778,9 +778,45 @@ function createPositionBetweenBoundsArray(leadAnimationPercentCompleteArray, low
     return positionBetweenBoundsArray
 }
 
+function returnRadiusBandArray(positionBetweenBoundsArray, bandwidth){
+    let bandPositionsArray = []
+    if (positionBetweenBoundsArray.length == 0){
+        return []
+    } else {
+        for (let i = 0; i < positionBetweenBoundsArray.length; i ++){
+
+            let currentPosition = positionBetweenBoundsArray[i]
+            let upperEdge = currentPosition + (bandwidth / 2)
+            let lowerEdge = currentPosition - (bandwidth / 2)
+            let bandwidthObj = {
+                
+            }
+            // let position = mapV(currentPercentageComplete, 0, 100, lowerBound, upperBound)
+            bandPositionsArray.push(position)
+        }
+    }
+    return positionBetweenBoundsArray
+
+}
+
 // this function lives in the sphere particles/color loop
-function changeColorOfParticlesWithinRadiusBandwidth(){
-    
+function changeColorOfParticlesWithinBandwidth(positionBetweenBoundsArray, i3 , colorsArray,  bandwidth){
+    // let i3 = i * 3
+    // console.log(upperEdge, lowerEdge)
+    if(positionBetweenBoundsArray.length > 0){
+        // console.log('working')
+         for (let j = 0; j < positionBetweenBoundsArray.length; j++){
+            let currentPosition = positionBetweenBoundsArray[j]
+            let upperEdge = currentPosition + (bandwidth / 2)
+            let lowerEdge = currentPosition - (bandwidth / 2)
+            // console.log(currentPosition)
+            if (currentPosition > lowerEdge && currentPosition < upperEdge){
+                colorsArray[i3] = 1.0
+                colorsArray[i3+ 1] = 1.0
+                colorsArray[i3+2] = 1.0
+            }
+         }
+    }
 }
 
 /**
@@ -847,10 +883,11 @@ const tick = () =>
     
     let lowerBound = (innerRadius2 - newAmplitude) 
     let upperBound = (innerRadius2 + newAmplitude) 
-    let bandwidth = .1
+    
     let leadAnimationPercentCompleteArray = createLeadAnimationPercentCompleteArray(elapsedTime, leadStartTimeArray, leadAnimationLength)
     let positionBetweenBoundsArray = createPositionBetweenBoundsArray(leadAnimationPercentCompleteArray, lowerBound, upperBound)
-    console.log(positionBetweenBoundsArray)
+    // console.log(positionBetweenBoundsArray)
+    // console.log(positionBetweenBoundsArray)
     // remove start times of completed animations
     removeStartTimesOfCompletedAnimations(elapsedTime,leadStartTimeArray,leadAnimationLength)
     // while animation is active, incriment i from lowerBound to upperBound during lenght of animation
@@ -887,12 +924,19 @@ const tick = () =>
 
         // make band of white at certain distance from radius
         // how do I measure individual particle distance from radius
-        
-        if (outerRadius > lowerBound && outerRadius < upperBound){
-            colors[i3] = 1.0
-            colors[i3+ 1] = 1.0
-            colors[i3+2] = 1.0
+        // CHANGE COLOR FUNC LIVES HERE
+        let bandwidth = .5
+        if (positionBetweenBoundsArray.length > 0){
+            let positionOne = positionBetweenBoundsArray[0]
+            let upperEdge = positionOne + (bandwidth / 2)
+            let lowerEdge = positionOne - (bandwidth / 2)
+            if (outerRadius >= lowerEdge && outerRadius <= upperEdge){
+                colors[i3] = 1.0// r
+                colors[i3+ 1] = 1.0// g
+                colors[i3+2] = 1.0 // b
+            }
         }
+        
 
 
         // SCOPE
