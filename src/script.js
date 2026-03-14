@@ -748,21 +748,40 @@ function sumAllAnimationValues(elapsedTime, startTimeArray, animationLength){
 
 // LEAD ANIMATION FUNCTIONS
 
-function createWhiteBandsOnLeadTrig(elapsedTime, leadStartTimeArray, leadAnimationLength, upperBound, lowerBound, bandwith){
-    let bandPositions = []
+function createLeadAnimationPercentCompleteArray(elapsedTime, leadStartTimeArray, leadAnimationLength, lowerBound, upperBound){
+    let percentCompleteArray = []
     if (leadStartTimeArray.length == 0){
-        return
+        return []
     } else {
         for (let i = 0; i < leadStartTimeArray.length; i ++){
             let currentStartTime = leadStartTimeArray[i]
             let percentageComplete = returnPercentCompleteAnimation(elapsedTime, currentStartTime, leadAnimationLength)
-            console.log(i, percentageComplete)
+            percentCompleteArray.push(percentageComplete)
         }
     }
+    return percentCompleteArray
 }
 
+// this function lives in the main render loop
+// use % to return position between upper and lower bound
+function createPositionBetweenBoundsArray(leadAnimationPercentCompleteArray, lowerBound, upperBound){
+    let positionBetweenBoundsArray = []
+    if (leadAnimationPercentCompleteArray.length == 0){
+        return []
+    } else {
+        for (let i = 0; i < leadAnimationPercentCompleteArray.length; i ++){
+            let currentPercentageComplete = leadAnimationPercentCompleteArray[i]
+            let position = mapV(currentPercentageComplete, 0, 100, lowerBound, upperBound)
+            positionBetweenBoundsArray.push(position)
+        }
+    }
+    return positionBetweenBoundsArray
+}
 
-
+// this function lives in the sphere particles/color loop
+function changeColorOfParticlesWithinRadiusBandwidth(){
+    
+}
 
 /**
  * Animate
@@ -803,7 +822,7 @@ const tick = () =>
     
     // ANIMATIONS 
     // LEAD ANIMATIONS
-    removeStartTimesOfCompletedAnimations(elapsedTime,leadStartTimeArray,leadAnimationLength)
+    
     // console.log(leadStartTimeArray)
 
 
@@ -828,8 +847,12 @@ const tick = () =>
     
     let lowerBound = (innerRadius2 - newAmplitude) 
     let upperBound = (innerRadius2 + newAmplitude) 
-    let bandwidth = .2
-    createWhiteBandsOnLeadTrig(elapsedTime, leadStartTimeArray, leadAnimationLength, upperBound, lowerBound, bandwidth)
+    let bandwidth = .1
+    let leadAnimationPercentCompleteArray = createLeadAnimationPercentCompleteArray(elapsedTime, leadStartTimeArray, leadAnimationLength)
+    let positionBetweenBoundsArray = createPositionBetweenBoundsArray(leadAnimationPercentCompleteArray, lowerBound, upperBound)
+    console.log(positionBetweenBoundsArray)
+    // remove start times of completed animations
+    removeStartTimesOfCompletedAnimations(elapsedTime,leadStartTimeArray,leadAnimationLength)
     // while animation is active, incriment i from lowerBound to upperBound during lenght of animation
 
     for (let i = 0; i <= points; i++){
