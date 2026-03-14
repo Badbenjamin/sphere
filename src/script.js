@@ -765,57 +765,35 @@ function createLeadAnimationPercentCompleteArray(elapsedTime, leadStartTimeArray
 // this function lives in the main render loop
 // use % to return position between upper and lower bound
 function createPositionBetweenBoundsArray(leadAnimationPercentCompleteArray, lowerBound, upperBound){
+    let bufferZone = .5
     let positionBetweenBoundsArray = []
     if (leadAnimationPercentCompleteArray.length == 0){
         return []
     } else {
         for (let i = 0; i < leadAnimationPercentCompleteArray.length; i ++){
             let currentPercentageComplete = leadAnimationPercentCompleteArray[i]
-            let position = mapV(currentPercentageComplete, 0, 100, lowerBound, upperBound)
+            let position = mapV(currentPercentageComplete, 0, 100, lowerBound - bufferZone, upperBound + bufferZone)
             positionBetweenBoundsArray.push(position)
         }
     }
     return positionBetweenBoundsArray
 }
 
-function returnRadiusBandArray(positionBetweenBoundsArray, bandwidth){
-    let bandPositionsArray = []
-    if (positionBetweenBoundsArray.length == 0){
-        return []
-    } else {
-        for (let i = 0; i < positionBetweenBoundsArray.length; i ++){
-
-            let currentPosition = positionBetweenBoundsArray[i]
-            let upperEdge = currentPosition + (bandwidth / 2)
-            let lowerEdge = currentPosition - (bandwidth / 2)
-            let bandwidthObj = {
-                
-            }
-            // let position = mapV(currentPercentageComplete, 0, 100, lowerBound, upperBound)
-            bandPositionsArray.push(position)
-        }
-    }
-    return positionBetweenBoundsArray
-
-}
 
 // this function lives in the sphere particles/color loop
-function changeColorOfParticlesWithinBandwidth(positionBetweenBoundsArray, i3 , colorsArray,  bandwidth){
-    // let i3 = i * 3
-    // console.log(upperEdge, lowerEdge)
-    if(positionBetweenBoundsArray.length > 0){
-        // console.log('working')
-         for (let j = 0; j < positionBetweenBoundsArray.length; j++){
-            let currentPosition = positionBetweenBoundsArray[j]
-            let upperEdge = currentPosition + (bandwidth / 2)
-            let lowerEdge = currentPosition - (bandwidth / 2)
-            // console.log(currentPosition)
-            if (currentPosition > lowerEdge && currentPosition < upperEdge){
-                colorsArray[i3] = 1.0
-                colorsArray[i3+ 1] = 1.0
-                colorsArray[i3+2] = 1.0
+function changeColorOfParticlesWithinBandwidth(positionBetweenBoundsArray, outerRadius, i3, bandwidth){
+    
+    if (positionBetweenBoundsArray.length > 0){
+        for (let j = 0; j < positionBetweenBoundsArray.length; j++){
+            let positionOne = positionBetweenBoundsArray[0]
+            let upperEdge = positionOne + (bandwidth / 2)
+            let lowerEdge = positionOne - (bandwidth / 2)
+            if ((outerRadius)  >= lowerEdge  && (outerRadius) <= upperEdge){
+                colors[i3] = 1.0// r
+                colors[i3+ 1] = 1.0// g
+                colors[i3+2] = 1.0 // b
             }
-         }
+        }
     }
 }
 
@@ -867,14 +845,14 @@ const tick = () =>
     let summedAnimationValues = sumAllAnimationValues(elapsedTime, padStartTimeArray, padAnimationLength)
     let clampedAnimationValuesSum = MathUtils.clamp(summedAnimationValues, 0 ,100)
     
-    
+    // THIS COULD LOOK BETTER!!!
     const colorCenter = .55
     let saturationChange = mapV(clampedAnimationValuesSum, 1, 100, 0, .03)
     let newColorCenter = colorCenter - saturationChange
     let newColorAmplitude = 1.0 - newColorCenter
     
 
-    let newAmplitude = amplitude + mapV(clampedAnimationValuesSum, 0, 100, 0 , .05)
+    let newAmplitude = amplitude + mapV(clampedAnimationValuesSum, 0, 100, 0 , .2)
     
     // DRONE ANIMATION
     let innerRadius2 = mapV(droneLfoFilterNode.frequency.value, 39, 156, 5, 5.5)
@@ -925,17 +903,18 @@ const tick = () =>
         // make band of white at certain distance from radius
         // how do I measure individual particle distance from radius
         // CHANGE COLOR FUNC LIVES HERE
-        let bandwidth = .5
-        if (positionBetweenBoundsArray.length > 0){
-            let positionOne = positionBetweenBoundsArray[0]
-            let upperEdge = positionOne + (bandwidth / 2)
-            let lowerEdge = positionOne - (bandwidth / 2)
-            if (outerRadius >= lowerEdge && outerRadius <= upperEdge){
-                colors[i3] = 1.0// r
-                colors[i3+ 1] = 1.0// g
-                colors[i3+2] = 1.0 // b
-            }
-        }
+        // let bandwidth = .5
+        // if (positionBetweenBoundsArray.length > 0){
+        //     let positionOne = positionBetweenBoundsArray[0]
+        //     let upperEdge = positionOne + (bandwidth / 2)
+        //     let lowerEdge = positionOne - (bandwidth / 2)
+        //     if (outerRadius >= lowerEdge && outerRadius <= upperEdge){
+        //         colors[i3] = 1.0// r
+        //         colors[i3+ 1] = 1.0// g
+        //         colors[i3+2] = 1.0 // b
+        //     }
+        // }
+        changeColorOfParticlesWithinBandwidth(positionBetweenBoundsArray, outerRadius, i3, .5)
         
 
 
