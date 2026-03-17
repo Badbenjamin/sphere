@@ -695,7 +695,7 @@ let padStartTimeArray = []
 const padAnimationLength = 9
 
 let leadStartTimeArray = []
-const leadAnimationLength = 1.5 // 1 sec and some reverb
+const leadAnimationLength = 2 // 1 sec and some reverb
 
 function removeStartTimesOfCompletedAnimations(elapsedTime, startTimeArray, animationLength){
     for (let i = 0; i < startTimeArray.length; i++){
@@ -765,14 +765,15 @@ function createLeadAnimationPercentCompleteArray(elapsedTime, leadStartTimeArray
 // this function lives in the main render loop
 // use % to return position between upper and lower bound
 function createPositionBetweenBoundsArray(leadAnimationPercentCompleteArray, lowerBound, upperBound){
-    let bufferZone = .5
+    // buffer zone should acomidate upper and lower bound
+    let bufferZone = upperBound - lowerBound
     let positionBetweenBoundsArray = []
     if (leadAnimationPercentCompleteArray.length == 0){
         return []
     } else {
         for (let i = 0; i < leadAnimationPercentCompleteArray.length; i ++){
             let currentPercentageComplete = leadAnimationPercentCompleteArray[i]
-            let position = mapV(currentPercentageComplete, 0, 100, lowerBound - bufferZone, upperBound + bufferZone)
+            let position = mapV(currentPercentageComplete, 0, 100, lowerBound - bufferZone/2, upperBound + bufferZone)
             positionBetweenBoundsArray.push(position)
         }
     }
@@ -782,16 +783,35 @@ function createPositionBetweenBoundsArray(leadAnimationPercentCompleteArray, low
 
 // this function lives in the sphere particles/color loop
 function changeColorOfParticlesWithinBandwidth(positionBetweenBoundsArray, outerRadius, i3, bandwidth){
-    
+    // OUTER RADIUS is the distance of the particle from the center (Maybe rename var?)
     if (positionBetweenBoundsArray.length > 0){
         for (let j = 0; j < positionBetweenBoundsArray.length; j++){
-            let positionOne = positionBetweenBoundsArray[0]
-            let upperEdge = positionOne + (bandwidth / 2)
-            let lowerEdge = positionOne - (bandwidth / 2)
+            let currentBandPosition = positionBetweenBoundsArray[j]
+            let upperEdge = currentBandPosition + (bandwidth / 2)
+            let lowerEdge = currentBandPosition - (bandwidth / 2)
+            // how do i create a gradient using sin()?
+            // outer radius is the actual radius of the paricle
             if ((outerRadius)  >= lowerEdge  && (outerRadius) <= upperEdge){
-                colors[i3] = 1.0// r
-                colors[i3+ 1] = 1.0// g
-                colors[i3+2] = 1.0 // b
+                // 1.0 is full white
+                // colors[i3] is previous color
+                // lowerEdge and upperEdge should equal previous color
+                // center, currentPosition should equal 1.0
+                let originalRed = colors[i3]
+                let originalGreen = colors[i3+1]
+                let originalBlue = colors[i3+2]
+
+                let redInverse = 1.0 - originalRed
+                let greenInverse = 1.0 - originalGreen
+                let blueInverse = 1.0 - originalBlue
+
+                // need to make lower edge 0 and upper edge PI
+                let gradient = mapV(outerRadius, lowerEdge, upperEdge, 0 , Math.PI)
+                
+
+                colors[i3] = originalRed + (redInverse * Math.sin(gradient)) // r
+                colors[i3+ 1] = originalGreen + (greenInverse * Math.sin(gradient))// g
+                colors[i3+2] = originalBlue + (blueInverse * Math.sin(gradient)) // b
+
             }
         }
     }
@@ -914,7 +934,7 @@ const tick = () =>
         //         colors[i3+2] = 1.0 // b
         //     }
         // }
-        changeColorOfParticlesWithinBandwidth(positionBetweenBoundsArray, outerRadius, i3, .5)
+        changeColorOfParticlesWithinBandwidth(positionBetweenBoundsArray, outerRadius, i3, 1.5)
         
 
 
