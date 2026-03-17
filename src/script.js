@@ -695,7 +695,7 @@ let padStartTimeArray = []
 const padAnimationLength = 9
 
 let leadStartTimeArray = []
-const leadAnimationLength = 2.5 // 1 sec and some reverb
+const leadAnimationLength = 4 // 1 sec and some reverb
 
 function removeStartTimesOfCompletedAnimations(elapsedTime, startTimeArray, animationLength){
     for (let i = 0; i < startTimeArray.length; i++){
@@ -765,15 +765,16 @@ function createLeadAnimationPercentCompleteArray(elapsedTime, leadStartTimeArray
 // this function lives in the main render loop
 // use % to return position between upper and lower bound
 function createPositionBetweenBoundsArray(leadAnimationPercentCompleteArray, lowerBound, upperBound){
-    // buffer zone should acomidate upper and lower bound
+    // buffer zone allows full gradient of band to pass out of sphere, 
     let bufferZone = upperBound - lowerBound
+    let lowerStartBuffer = -.25
     let positionBetweenBoundsArray = []
     if (leadAnimationPercentCompleteArray.length == 0){
         return []
     } else {
         for (let i = 0; i < leadAnimationPercentCompleteArray.length; i ++){
             let currentPercentageComplete = leadAnimationPercentCompleteArray[i]
-            let position = mapV(currentPercentageComplete, 0, 100, lowerBound - bufferZone/2, upperBound + bufferZone)
+            let position = mapV(currentPercentageComplete, 0, 100, lowerBound + lowerStartBuffer, upperBound + bufferZone)
             positionBetweenBoundsArray.push(position)
         }
     }
@@ -810,6 +811,13 @@ function changeColorOfParticlesWithinBandwidth(positionBetweenBoundsArray, outer
                 colors[i3] = originalRed + (redInverse * Math.sin(gradient)) // r
                 colors[i3+ 1] = originalGreen + (greenInverse * Math.sin(gradient))// g
                 colors[i3+2] = originalBlue + (blueInverse * Math.sin(gradient)) // b
+
+                // INTERESTING IDEA HERE, NEED TO DIAL IT IN TO LOOK GOOD
+                // PROBABLY NEEDS OWN FUNCTION
+                // WORK ON THIS TOMORROW!!!
+                positions[i3] = positions[i3] + Math.sin(gradient) / 40
+                positions[i3+1] = positions[i3+1] + Math.sin(gradient) / 40
+                positions[i3+2] = positions[i3+2] + Math.sin(gradient) / 40
 
             }
         }
@@ -916,7 +924,7 @@ const tick = () =>
         colors[i3+ 1] = ((Math.sin((elapsedTime + zPosition)+2)*newColorAmplitude) + newColorCenter)// g
         colors[i3+2] = ((Math.sin((elapsedTime + zPosition)+4)*newColorAmplitude) + newColorCenter) // b
 
-        changeColorOfParticlesWithinBandwidth(positionBetweenBoundsArray, outerRadius, i3, 1.5)
+        changeColorOfParticlesWithinBandwidth(positionBetweenBoundsArray, outerRadius, i3, .75)
         
         // SCOPE
         if (guiParams.scopeOn == true ){
