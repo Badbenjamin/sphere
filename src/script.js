@@ -583,9 +583,9 @@ let lastBeatTime = 0
 let currentBeat = 1
 let currentBar = 1
 let totalBars = 2
-function metronome(currentTime, tempo){
+function metronome(currentTime, bpm){
     
-    const beatLengthSeconds = 60.0 / tempo;
+    const beatLengthSeconds = 60.0 / bpm;
     const eighthNoteSeconds = beatLengthSeconds / 2;
 
     let deltaTimeSinceLastBeat = currentTime - lastBeatTime;
@@ -695,7 +695,7 @@ let padStartTimeArray = []
 const padAnimationLength = 9
 
 let leadStartTimeArray = []
-const leadAnimationLength = 2 // 1 sec and some reverb
+const leadAnimationLength = 2.5 // 1 sec and some reverb
 
 function removeStartTimesOfCompletedAnimations(elapsedTime, startTimeArray, animationLength){
     for (let i = 0; i < startTimeArray.length; i++){
@@ -807,7 +807,6 @@ function changeColorOfParticlesWithinBandwidth(positionBetweenBoundsArray, outer
                 // need to make lower edge 0 and upper edge PI
                 let gradient = mapV(outerRadius, lowerEdge, upperEdge, 0 , Math.PI)
                 
-
                 colors[i3] = originalRed + (redInverse * Math.sin(gradient)) // r
                 colors[i3+ 1] = originalGreen + (greenInverse * Math.sin(gradient))// g
                 colors[i3+2] = originalBlue + (blueInverse * Math.sin(gradient)) // b
@@ -872,7 +871,7 @@ const tick = () =>
     let newColorAmplitude = 1.0 - newColorCenter
     
 
-    let newAmplitude = amplitude + mapV(clampedAnimationValuesSum, 0, 100, 0 , .2)
+    let newAmplitude = amplitude + mapVEaseInEaseOut(clampedAnimationValuesSum, 0, 100, 0 , .2)
     
     // DRONE ANIMATION
     let innerRadius2 = mapV(droneLfoFilterNode.frequency.value, 39, 156, 5, 5.5)
@@ -884,11 +883,8 @@ const tick = () =>
     
     let leadAnimationPercentCompleteArray = createLeadAnimationPercentCompleteArray(elapsedTime, leadStartTimeArray, leadAnimationLength)
     let positionBetweenBoundsArray = createPositionBetweenBoundsArray(leadAnimationPercentCompleteArray, lowerBound, upperBound)
-    // console.log(positionBetweenBoundsArray)
-    // console.log(positionBetweenBoundsArray)
-    // remove start times of completed animations
+
     removeStartTimesOfCompletedAnimations(elapsedTime,leadStartTimeArray,leadAnimationLength)
-    // while animation is active, incriment i from lowerBound to upperBound during lenght of animation
 
     for (let i = 0; i <= points; i++){
         const t = ((i / (points)));
@@ -920,24 +916,8 @@ const tick = () =>
         colors[i3+ 1] = ((Math.sin((elapsedTime + zPosition)+2)*newColorAmplitude) + newColorCenter)// g
         colors[i3+2] = ((Math.sin((elapsedTime + zPosition)+4)*newColorAmplitude) + newColorCenter) // b
 
-        // make band of white at certain distance from radius
-        // how do I measure individual particle distance from radius
-        // CHANGE COLOR FUNC LIVES HERE
-        // let bandwidth = .5
-        // if (positionBetweenBoundsArray.length > 0){
-        //     let positionOne = positionBetweenBoundsArray[0]
-        //     let upperEdge = positionOne + (bandwidth / 2)
-        //     let lowerEdge = positionOne - (bandwidth / 2)
-        //     if (outerRadius >= lowerEdge && outerRadius <= upperEdge){
-        //         colors[i3] = 1.0// r
-        //         colors[i3+ 1] = 1.0// g
-        //         colors[i3+2] = 1.0 // b
-        //     }
-        // }
         changeColorOfParticlesWithinBandwidth(positionBetweenBoundsArray, outerRadius, i3, 1.5)
         
-
-
         // SCOPE
         if (guiParams.scopeOn == true ){
            
