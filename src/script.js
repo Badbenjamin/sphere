@@ -682,9 +682,8 @@ function mapV(value, inMin, inMax, outMin, outMax){
     return outMin + (outMax - outMin)*((value - inMin)/(inMax - inMin))
 }
 
-function mapVEaseInEaseOut(value, inMin, inMax, outMin, outMax){
-    let v = outMin + (outMax - outMin)*((value - inMin)/(inMax - inMin))
-    return -(Math.cos(Math.PI * v) - 1) / 2
+function easeInOutSine(value) {
+return -(Math.cos(Math.PI * value) - 1) / 2;
 }
 
 // ANIMATIONS
@@ -695,7 +694,7 @@ let padStartTimeArray = []
 const padAnimationLength = 9
 
 let leadStartTimeArray = []
-const leadAnimationLength = 4 // 1 sec and some reverb
+const leadAnimationLength = 3.5 // 1 sec and some reverb
 
 function removeStartTimesOfCompletedAnimations(elapsedTime, startTimeArray, animationLength){
     for (let i = 0; i < startTimeArray.length; i++){
@@ -707,6 +706,7 @@ function removeStartTimesOfCompletedAnimations(elapsedTime, startTimeArray, anim
     }
 }
 
+// what if this slowed down throughout the animation? start fast but end slower
 function returnPercentCompleteAnimation(elapsedTime, startTime, animationLength){
     let animationPercentageComplete = 0
     let timeLeftInAnimation = elapsedTime - startTime
@@ -767,14 +767,15 @@ function createLeadAnimationPercentCompleteArray(elapsedTime, leadStartTimeArray
 function createPositionBetweenBoundsArray(leadAnimationPercentCompleteArray, lowerBound, upperBound){
     // buffer zone allows full gradient of band to pass out of sphere, 
     let bufferZone = upperBound - lowerBound
-    let lowerStartBuffer = -.25
+    // let lowerStartBuffer = -.5
     let positionBetweenBoundsArray = []
     if (leadAnimationPercentCompleteArray.length == 0){
         return []
     } else {
         for (let i = 0; i < leadAnimationPercentCompleteArray.length; i ++){
             let currentPercentageComplete = leadAnimationPercentCompleteArray[i]
-            let position = mapV(currentPercentageComplete, 0, 100, lowerBound + lowerStartBuffer, upperBound + bufferZone)
+            // modify buffer zone of lower edge so that animation appears when note is triggered
+            let position = mapV(currentPercentageComplete, 0, 100, lowerBound - (bufferZone / 3), upperBound + bufferZone)
             positionBetweenBoundsArray.push(position)
         }
     }
@@ -811,13 +812,31 @@ function changeColorOfParticlesWithinBandwidth(positionBetweenBoundsArray, outer
                 colors[i3] = originalRed + (redInverse * Math.sin(gradient)) // r
                 colors[i3+ 1] = originalGreen + (greenInverse * Math.sin(gradient))// g
                 colors[i3+2] = originalBlue + (blueInverse * Math.sin(gradient)) // b
+                
+            }
+        }
+    }
+}
 
-                // INTERESTING IDEA HERE, NEED TO DIAL IT IN TO LOOK GOOD
-                // PROBABLY NEEDS OWN FUNCTION
-                // WORK ON THIS TOMORROW!!!
-                positions[i3] = positions[i3] + Math.sin(gradient) / 40
-                positions[i3+1] = positions[i3+1] + Math.sin(gradient) / 40
-                positions[i3+2] = positions[i3+2] + Math.sin(gradient) / 40
+function changePositionParticlesWithinBandwidth(positionBetweenBoundsArray, polarAngle, azimuth, outerRadius, i3, bandwidth){
+    // OUTER RADIUS is the distance of the particle from the center (Maybe rename var?)
+    if (positionBetweenBoundsArray.length > 0){
+        for (let j = 0; j < positionBetweenBoundsArray.length; j++){
+            let currentBandPosition = positionBetweenBoundsArray[j]
+            let upperEdge = currentBandPosition + (bandwidth / 2)
+            let lowerEdge = currentBandPosition - (bandwidth / 2)
+
+            if ((outerRadius)  >= lowerEdge  && (outerRadius) <= upperEdge){
+                
+
+                // lowerEdge should equal 0, middle should equal 1, upper edge should equal 0
+                let radiusGradient = mapV(outerRadius, lowerEdge, upperEdge, 0 , Math.PI)
+                let radiusModified = mapV(Math.sin(radiusGradient), 0, 1, 0 , .04)
+
+                // spherical to cartesian with extra radius
+                positions[i3] = Math.sin(polarAngle) * Math.cos(azimuth) * (outerRadius + radiusModified);     // x
+                positions[i3 + 1] = Math.sin(polarAngle) * Math.sin(azimuth) * (outerRadius + radiusModified); // y
+                positions[i3 + 2] = Math.cos(polarAngle) * (outerRadius + radiusModified) ; // z
 
             }
         }
@@ -874,12 +893,13 @@ const tick = () =>
     
     // THIS COULD LOOK BETTER!!!
     const colorCenter = .55
-    let saturationChange = mapV(clampedAnimationValuesSum, 1, 100, 0, .03)
+    let saturationChange = mapV(clampedAnimationValuesSum, 1, 100, 0, .07)
     let newColorCenter = colorCenter - saturationChange
     let newColorAmplitude = 1.0 - newColorCenter
     
 
-    let newAmplitude = amplitude + mapVEaseInEaseOut(clampedAnimationValuesSum, 0, 100, 0 , .2)
+    let newAmplitude = amplitude + easeInOutSine(mapV(clampedAnimationValuesSum, 0, 100, 0 , .25))
+
     
     // DRONE ANIMATION
     let innerRadius2 = mapV(droneLfoFilterNode.frequency.value, 39, 156, 5, 5.5)
@@ -924,7 +944,8 @@ const tick = () =>
         colors[i3+ 1] = ((Math.sin((elapsedTime + zPosition)+2)*newColorAmplitude) + newColorCenter)// g
         colors[i3+2] = ((Math.sin((elapsedTime + zPosition)+4)*newColorAmplitude) + newColorCenter) // b
 
-        changeColorOfParticlesWithinBandwidth(positionBetweenBoundsArray, outerRadius, i3, .75)
+        changeColorOfParticlesWithinBandwidth(positionBetweenBoundsArray, outerRadius, i3, 1)
+        easeInOutSine(changePositionParticlesWithinBandwidth(positionBetweenBoundsArray, polarAngle, azimuth, outerRadius, i3, 1))
         
         // SCOPE
         if (guiParams.scopeOn == true ){
