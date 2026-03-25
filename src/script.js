@@ -775,7 +775,7 @@ function createPositionBetweenBoundsArray(leadAnimationPercentCompleteArray, low
         for (let i = 0; i < leadAnimationPercentCompleteArray.length; i ++){
             let currentPercentageComplete = leadAnimationPercentCompleteArray[i]
             // modify buffer zone of lower edge so that animation appears when note is triggered
-            let position = mapV(currentPercentageComplete, 0, 100, lowerBound - (bufferZone / 3), upperBound + bufferZone)
+            let position = mapV(currentPercentageComplete, 0, 100, lowerBound - .2, upperBound + bufferZone)
             positionBetweenBoundsArray.push(position)
         }
     }
@@ -831,7 +831,7 @@ function changePositionParticlesWithinBandwidth(positionBetweenBoundsArray, pola
 
                 // lowerEdge should equal 0, middle should equal 1, upper edge should equal 0
                 let radiusGradient = mapV(outerRadius, lowerEdge, upperEdge, 0 , Math.PI)
-                let radiusModified = mapV(Math.sin(radiusGradient), 0, 1, 0 , .04)
+                let radiusModified = mapV(Math.sin(radiusGradient), 0, 1, 0 , .02)
 
                 // spherical to cartesian with extra radius
                 positions[i3] = Math.sin(polarAngle) * Math.cos(azimuth) * (outerRadius + radiusModified);     // x
@@ -890,6 +890,8 @@ const tick = () =>
     removeStartTimesOfCompletedAnimations(elapsedTime, padStartTimeArray, padAnimationLength)
     let summedAnimationValues = sumAllAnimationValues(elapsedTime, padStartTimeArray, padAnimationLength)
     let clampedAnimationValuesSum = MathUtils.clamp(summedAnimationValues, 0 ,100)
+
+    waveLength = mapV(clampedAnimationValuesSum, 1 , 100 , waveLength, waveLength + .0000001)
     
     // THIS COULD LOOK BETTER!!!
     const colorCenter = .55
@@ -911,6 +913,8 @@ const tick = () =>
     
     let leadAnimationPercentCompleteArray = createLeadAnimationPercentCompleteArray(elapsedTime, leadStartTimeArray, leadAnimationLength)
     let positionBetweenBoundsArray = createPositionBetweenBoundsArray(leadAnimationPercentCompleteArray, lowerBound, upperBound)
+
+   
 
     removeStartTimesOfCompletedAnimations(elapsedTime,leadStartTimeArray,leadAnimationLength)
 
