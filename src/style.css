@@ -100,3 +100,11 @@ body
     left: 10px;
     position: fixed;
 }
+
+.drum-machine-controls{
+    z-index: 100;
+    bottom: 210px;
+    left: 10px;
+    position: fixed;
+    color: white;
+}

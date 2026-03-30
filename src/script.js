@@ -775,7 +775,7 @@ function createPositionBetweenBoundsArray(leadAnimationPercentCompleteArray, low
         for (let i = 0; i < leadAnimationPercentCompleteArray.length; i ++){
             let currentPercentageComplete = leadAnimationPercentCompleteArray[i]
             // modify buffer zone of lower edge so that animation appears when note is triggered
-            let position = mapV(currentPercentageComplete, 0, 100, lowerBound - .2, upperBound + bufferZone)
+            let position = mapV(currentPercentageComplete, 0, 100, lowerBound - .5, upperBound + bufferZone)
             positionBetweenBoundsArray.push(position)
         }
     }
@@ -843,6 +843,7 @@ function changePositionParticlesWithinBandwidth(positionBetweenBoundsArray, pola
     }
 }
 
+let globalElapsedTime = null
 /**
  * Animate
  */
@@ -853,6 +854,8 @@ const tick = () =>
 {
     const elapsedTime = clock.getElapsedTime();
     // console.log(elapsedTime)
+    globalElapsedTime = elapsedTime
+    // console.log(globalElapsedTime)
     let metronomeTime = metronome(elapsedTime, 20);
 
     leadSequencer(elapsedTime, metronomeTime, leadSequence)
@@ -891,6 +894,8 @@ const tick = () =>
     let summedAnimationValues = sumAllAnimationValues(elapsedTime, padStartTimeArray, padAnimationLength)
     let clampedAnimationValuesSum = MathUtils.clamp(summedAnimationValues, 0 ,100)
 
+    // change fib spiral pattern with pad play
+    // could use non clamped vals but would need to know
     waveLength = mapV(clampedAnimationValuesSum, 1 , 100 , waveLength, waveLength + .0000001)
     
     // THIS COULD LOOK BETTER!!!
@@ -995,6 +1000,29 @@ const tick = () =>
 tick()
 
 
+// UI
+import p5 from 'p5';
+
+// three render loop and this component need to share time
+// lets try to get a dot to move around the circle in bpm time
+
+const sketch = (p) => {
+  p.setup = () => {
+    const container = document.getElementById('controls');
+    p.createCanvas(600, 200).parent(container);
+  };
+
+  
+
+
+  p.draw = () => {
+    p.background(30);
+    p.circle(100,100,100)
+    
+  };
+};
+
+new p5(sketch);
 
 
 
