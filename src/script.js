@@ -896,7 +896,7 @@ const tick = () =>
 
     // change fib spiral pattern with pad play
     // could use non clamped vals but would need to know
-    waveLength = mapV(clampedAnimationValuesSum, 1 , 100 , waveLength, waveLength + .0000001)
+    waveLength = mapV(clampedAnimationValuesSum, 1 , 100 , waveLength, waveLength + .00000005)
     
     // THIS COULD LOOK BETTER!!!
     const colorCenter = .55
@@ -1002,27 +1002,67 @@ tick()
 
 // UI
 import p5 from 'p5';
+// import { circle } from 'three/examples/jsm/tsl/display/Shape.js'
+// import { circle } from 'three/examples/jsm/tsl/display/Shape.js'
 
 // three render loop and this component need to share time
 // lets try to get a dot to move around the circle in bpm time
 
-const sketch = (p) => {
-  p.setup = () => {
-    const container = document.getElementById('controls');
-    p.createCanvas(600, 200).parent(container);
-  };
 
-  
+class Circle {
+    constructor (x, y, radius, color, sketch){
+        this.x = x
+        this.y = y
+        this.radius = radius
+        this.color = color
+    }
+    draw(){
+        sketch.circle(Circle.x, Circle.y, Circle.radius, Circle.Color)
+        sketch.fill(0)
+        sketch.stroke(Circle.color)
+    }
+
+}
 
 
-  p.draw = () => {
-    p.background(30);
-    p.circle(100,100,100)
+// THIS IS THE ANIMATED UI
+const circleNotationOne = (sketch) => {
+
+    let canvasHeight = 300
+    let canvasWidth = 300
     
+    sketch.setup = () => {
+        const container = document.getElementById('controls');
+        // p.pixelDensity(window.devicePixelRatio);
+        sketch.createCanvas(canvasHeight, canvasWidth).parent(container);
+    };
+
+    
+    
+    
+    sketch.draw = () => {
+        
+        // outline
+        sketch.clear()
+        sketch.background(30);
+        sketch.noFill();
+        sketch.stroke(255);
+        sketch.strokeWeight(7)
+        sketch.circle(canvasHeight/2,canvasWidth/2, canvasHeight - 50)
+
+        //dots
+
+        //animation
+
+
+        
   };
 };
 
-new p5(sketch);
+
+
+let myp5 = new p5(circleNotationOne);
+
 
 
 

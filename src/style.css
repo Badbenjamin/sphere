@@ -102,7 +102,7 @@ body
 }
 
 .drum-machine-controls{
-    z-index: 100;
+    z-index: 200;
     bottom: 210px;
     left: 10px;
     position: fixed;
