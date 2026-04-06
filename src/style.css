@@ -103,7 +103,7 @@ body
 
 .drum-machine-controls{
     z-index: 200;
-    bottom: 210px;
+    bottom: 100px;
     left: 10px;
     position: fixed;
     color: white;

@@ -578,34 +578,29 @@ padGainControl.addEventListener("input", () => {
 
 // BPM AND SCHEDULING
 
-
-let lastBeatTime = 0
-let currentBeat = 1
-let currentBar = 1
-let totalBars = 2
-function metronome(currentTime, bpm){
+let numberOfPulses = 8
+let lastPulseTime = 0
+let currentPulse = 1
+// let currentBar = 1
+// let totalBars = 2
+function metronome(currentTime, numberOfPulses, bpm){
     
     const beatLengthSeconds = 60.0 / bpm;
-    const eighthNoteSeconds = beatLengthSeconds / 2;
+    // const eighthNoteSeconds = beatLengthSeconds / 2;
 
-    let deltaTimeSinceLastBeat = currentTime - lastBeatTime;
+    let deltaTimeSinceLastPulse = currentTime - lastPulseTime;
     
-    if (deltaTimeSinceLastBeat >= eighthNoteSeconds){
-        lastBeatTime = currentTime;
-        if (currentBeat < 4.5){
-            currentBeat += .5;
+    if (deltaTimeSinceLastPulse >= beatLengthSeconds){
+        lastPulseTime = currentTime;
+        if (currentPulse < numberOfPulses){
+            currentPulse += 1;
 
         } else {
-            currentBeat = 1
-            if (currentBar < totalBars){
-                currentBar += 1;
-            } else {
-                currentBar = 1;
-            }
+            currentPulse = 1
         }
     }; 
 
-    return {'bar' : currentBar, 'beat': currentBeat}
+    return currentPulse
 };
 
 
@@ -613,12 +608,12 @@ function metronome(currentTime, bpm){
 
 const leadNoteSequence = [783.99, 622.25, 932.35, 587.33, 1174.66, 783.99, 622.25, 932.35, 587.33]
 let leadNoteIndex = 0
-let leadSequence = [1, 2.5, 4.5]
+let leadSequence = [1, 3, 5]
 // let leadSequence = [1, 1.25, 1.5, 1.75, 2]
 let leadSequenceStep = 0
 function leadSequencer(time, metronomeBeat, sequence) {
 
-    let beat = metronomeBeat.beat
+    let beat = metronomeBeat
     
     if (sequence[leadSequenceStep] == beat){
         playLeadOsc(time, 'triangle', 0.1, 1, leadNoteSequence, leadNoteIndex)
@@ -636,7 +631,7 @@ let droneSequence = [1]
 let droneSequenceStep = 0
 function droneSequencer(time, metronomeBeat, sequence) {
 
-    let beat = metronomeBeat.beat
+    let beat = metronomeBeat
     
     if (sequence[droneSequenceStep] == beat){
         playDrone(time, 'sine', '77.78', 2.0, 12.0)
@@ -653,7 +648,7 @@ let padSequence = [1, 4]
 let padSequenceStep = 0
 function padSequencer(time, metronomeBeat, sequence) {
     
-    let beat = metronomeBeat.beat
+    let beat = metronomeBeat
     
     
     if (sequence[padSequenceStep] == beat){
@@ -844,6 +839,7 @@ function changePositionParticlesWithinBandwidth(positionBetweenBoundsArray, pola
 }
 
 let globalElapsedTime = null
+let globalMetronomeTime = null
 /**
  * Animate
  */
@@ -856,7 +852,9 @@ const tick = () =>
     // console.log(elapsedTime)
     globalElapsedTime = elapsedTime
     // console.log(globalElapsedTime)
-    let metronomeTime = metronome(elapsedTime, 20);
+    let metronomeTime = metronome(elapsedTime, 8, 20);
+    console.log(metronomeTime)
+    globalMetronomeTime = metronomeTime
 
     leadSequencer(elapsedTime, metronomeTime, leadSequence)
     tremGain.gain.value = lfoValue(.5, 1.5, 40, elapsedTime)
@@ -905,7 +903,7 @@ const tick = () =>
     let newColorAmplitude = 1.0 - newColorCenter
     
 
-    let newAmplitude = amplitude + easeInOutSine(mapV(clampedAnimationValuesSum, 0, 100, 0 , .25))
+    let newAmplitude = amplitude + easeInOutSine(mapV(clampedAnimationValuesSum, 0, 100, 0 , .15))
 
     
     // DRONE ANIMATION
@@ -1028,8 +1026,13 @@ class Circle {
 // THIS IS THE ANIMATED UI
 const circleNotationOne = (sketch) => {
 
-    let canvasHeight = 300
-    let canvasWidth = 300
+    let canvasHeight = 225
+    let canvasWidth = 225
+    let numberOfPulses = 8
+    let originX = canvasWidth / 2
+    let originY = canvasHeight / 2
+    let circleDiameter = canvasHeight - 50
+    let circleRadius = circleDiameter / 2
     
     sketch.setup = () => {
         const container = document.getElementById('controls');
@@ -1038,22 +1041,38 @@ const circleNotationOne = (sketch) => {
     };
 
     
-    
-    
     sketch.draw = () => {
         
         // outline
-        sketch.clear()
-        sketch.background(30);
+        sketch.clear();
+        // sketch.background(30);
         sketch.noFill();
         sketch.stroke(255);
-        sketch.strokeWeight(7)
-        sketch.circle(canvasHeight/2,canvasWidth/2, canvasHeight - 50)
+        sketch.strokeWeight(5);
+        sketch.circle(originX, originY, circleDiameter);
 
         //dots
+        // sketch.circle(originX, originY, 20)
+        // 8 beats 8 dots
+        // should rewrite metronome to not have bars and beats, but only pulses
+        for(let i = 0; i < numberOfPulses; i++){
+            const angle = (i / numberOfPulses) * (Math.PI * 2) - Math.PI / 2
+            const x = originX + Math.cos(angle) * circleRadius
+            const y = originY + Math.sin(angle) * circleRadius
+            sketch.fill(255)
+            sketch.circle(x,y, 12)
+            
+            // [1, 2.5, 4.5]
+            // if (globalMetronomeTime = 1){
+            //     sketch.fill(100)
+            //     sketch.stroke(100)
+            // }
+        }
+
+         
 
         //animation
-
+        // console.log(globalMetronomeTime)
 
         
   };
