@@ -1024,7 +1024,8 @@ class Circle {
 
 
 // THIS IS THE ANIMATED UI
-const circleNotationOne = (sketch) => {
+function creatCircleNotation (){
+    const circleNotation= (sketch) => {
 
     let canvasHeight = 225
     let canvasWidth = 225
@@ -1062,11 +1063,6 @@ const circleNotationOne = (sketch) => {
             sketch.fill(255)
             sketch.circle(x,y, 12)
             
-            // [1, 2.5, 4.5]
-            // if (globalMetronomeTime = 1){
-            //     sketch.fill(100)
-            //     sketch.stroke(100)
-            // }
         }
 
          
@@ -1077,6 +1073,10 @@ const circleNotationOne = (sketch) => {
         
   };
 };
+return circleNotation
+}
+
+let circleNotationOne = creatCircleNotation()
 
 
 
