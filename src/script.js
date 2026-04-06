@@ -576,17 +576,17 @@ padGainControl.addEventListener("input", () => {
 });
 
 
-// BPM AND SCHEDULING
+// METRONOME
 
-let numberOfPulses = 8
-let lastPulseTime = 0
-let currentPulse = 1
-// let currentBar = 1
-// let totalBars = 2
+let bpm = 20;
+let numberOfPulses = 8;
+let lastPulseTime = 0;
+let currentPulse = 1;
+let beatLengthSeconds = null
+// console.log(numberOfPulses)
 function metronome(currentTime, numberOfPulses, bpm){
     
-    const beatLengthSeconds = 60.0 / bpm;
-    // const eighthNoteSeconds = beatLengthSeconds / 2;
+    beatLengthSeconds = 60.0 / bpm;
 
     let deltaTimeSinceLastPulse = currentTime - lastPulseTime;
     
@@ -627,7 +627,7 @@ function leadSequencer(time, metronomeBeat, sequence) {
 }
 
 
-let droneSequence = [1]
+let droneSequence = [1, 5]
 let droneSequenceStep = 0
 function droneSequencer(time, metronomeBeat, sequence) {
 
@@ -644,7 +644,7 @@ function droneSequencer(time, metronomeBeat, sequence) {
 }
 
 
-let padSequence = [1, 4]
+let padSequence = [1, 4, 5 , 8]
 let padSequenceStep = 0
 function padSequencer(time, metronomeBeat, sequence) {
     
@@ -849,11 +849,11 @@ const clock = new THREE.Clock()
 const tick = () =>
 {
     const elapsedTime = clock.getElapsedTime();
-    // console.log(elapsedTime)
+
     globalElapsedTime = elapsedTime
-    // console.log(globalElapsedTime)
-    let metronomeTime = metronome(elapsedTime, 8, 20);
-    console.log(metronomeTime)
+
+    let metronomeTime = metronome(elapsedTime, 8, bpm);
+
     globalMetronomeTime = metronomeTime
 
     leadSequencer(elapsedTime, metronomeTime, leadSequence)
@@ -1027,53 +1027,59 @@ class Circle {
 function creatCircleNotation (){
     const circleNotation= (sketch) => {
 
-    let canvasHeight = 225
-    let canvasWidth = 225
-    let numberOfPulses = 8
-    let originX = canvasWidth / 2
-    let originY = canvasHeight / 2
-    let circleDiameter = canvasHeight - 50
-    let circleRadius = circleDiameter / 2
-    
-    sketch.setup = () => {
-        const container = document.getElementById('controls');
-        // p.pixelDensity(window.devicePixelRatio);
-        sketch.createCanvas(canvasHeight, canvasWidth).parent(container);
-    };
-
-    
-    sketch.draw = () => {
+        let canvasHeight = 175
+        let canvasWidth = 175
+        let numberOfPulses = 8
+        let originX = canvasWidth / 2
+        let originY = canvasHeight / 2
+        let circleDiameter = canvasHeight - 50
+        let circleRadius = circleDiameter / 2
         
-        // outline
-        sketch.clear();
-        // sketch.background(30);
-        sketch.noFill();
-        sketch.stroke(255);
-        sketch.strokeWeight(5);
-        sketch.circle(originX, originY, circleDiameter);
+        sketch.setup = () => {
+                const container = document.getElementById('controls');
+                sketch.createCanvas(canvasHeight, canvasWidth).parent(container);
+            };
 
-        //dots
-        // sketch.circle(originX, originY, 20)
-        // 8 beats 8 dots
-        // should rewrite metronome to not have bars and beats, but only pulses
-        for(let i = 0; i < numberOfPulses; i++){
-            const angle = (i / numberOfPulses) * (Math.PI * 2) - Math.PI / 2
-            const x = originX + Math.cos(angle) * circleRadius
-            const y = originY + Math.sin(angle) * circleRadius
-            sketch.fill(255)
-            sketch.circle(x,y, 12)
+        
+        sketch.draw = () => {
             
-        }
+            // CIRCLE 
+            sketch.clear();
+            // sketch.background(30);
+            sketch.noFill();
+            sketch.stroke(255);
+            sketch.strokeWeight(2);
+            sketch.circle(originX, originY, circleDiameter);
 
-         
+            //DOTS FOR PULSES
+            for(let i = 0; i < numberOfPulses; i++){
+                const angle = (i / numberOfPulses) * (Math.PI * 2) - Math.PI / 2
+                const x = originX + Math.cos(angle) * circleRadius
+                const y = originY + Math.sin(angle) * circleRadius
+                // if circle selected, fill and push i to notesArray
+                sketch.fill(255)
+                sketch.circle(x,y,12)
+            }
 
-        //animation
-        // console.log(globalMetronomeTime)
-
-        
-  };
-};
-return circleNotation
+            //animation
+            // METRONOME SHOULD RETURN LOOP TIME FOR SSOT
+            const totalLoopTime = beatLengthSeconds * numberOfPulses;
+            let lastLoopStartTime = 0
+            let timeSinceLastLoopStart = globalElapsedTime - lastLoopStartTime
+            // let currentLoopTime = globalElapsedTime;
+            if (timeSinceLastLoopStart > totalLoopTime){
+                lastLoopStartTime = globalElapsedTime
+            }
+            let loopPositionAngleRadians = mapV(timeSinceLastLoopStart, 0, totalLoopTime, 0 , (2 * Math.PI)) - Math.PI / 2
+            
+            let loopPositionX = originX + Math.cos(loopPositionAngleRadians) * circleRadius
+            let loopPositionY = originY + Math.sin(loopPositionAngleRadians) * circleRadius
+            sketch.stroke('white')
+            sketch.strokeWeight(2)
+            sketch.line(originX, originY, loopPositionX, loopPositionY)
+        };
+    };
+    return circleNotation
 }
 
 let circleNotationOne = creatCircleNotation()
