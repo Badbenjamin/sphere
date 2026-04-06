@@ -1027,12 +1027,12 @@ class Circle {
 function creatCircleNotation (){
     const circleNotation= (sketch) => {
 
-        let canvasHeight = 175
-        let canvasWidth = 175
+        let canvasHeight = 200
+        let canvasWidth = 200
         let numberOfPulses = 8
         let originX = canvasWidth / 2
         let originY = canvasHeight / 2
-        let circleDiameter = canvasHeight - 50
+        let circleDiameter = canvasHeight - 70
         let circleRadius = circleDiameter / 2
         
         sketch.setup = () => {
@@ -1048,17 +1048,28 @@ function creatCircleNotation (){
             // sketch.background(30);
             sketch.noFill();
             sketch.stroke(255);
-            sketch.strokeWeight(2);
+            sketch.strokeWeight(3);
             sketch.circle(originX, originY, circleDiameter);
 
             //DOTS FOR PULSES
             for(let i = 0; i < numberOfPulses; i++){
                 const angle = (i / numberOfPulses) * (Math.PI * 2) - Math.PI / 2
-                const x = originX + Math.cos(angle) * circleRadius
-                const y = originY + Math.sin(angle) * circleRadius
+                const dotX = originX + Math.cos(angle) * circleRadius
+                const dotY = originY + Math.sin(angle) * circleRadius
+
+                const extraDistForText = 18
+                const textX = originX + Math.cos(angle) * (circleRadius + extraDistForText)
+                const textY = originY + Math.sin(angle) * (circleRadius + extraDistForText)
                 // if circle selected, fill and push i to notesArray
                 sketch.fill(255)
-                sketch.circle(x,y,12)
+                sketch.circle(dotX,dotY,15)
+
+                sketch.textAlign(sketch.CENTER, sketch.CENTER);
+                sketch.textStyle(sketch.NORMAL)
+                sketch.textFont('Arial')
+                sketch.textSize(12)
+                sketch.strokeWeight(0.1)
+                sketch.text(i + 1, textX, textY);
             }
 
             //animation
