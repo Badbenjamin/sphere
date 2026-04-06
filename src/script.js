@@ -1022,6 +1022,13 @@ class Circle {
 
 }
 
+// Helper Funcs
+
+function euclidianDistance(xOrigin,yOrigin, xPoint, yPoint){
+    let dist = Math.sqrt((xPoint - xOrigin)**2 + (yPoint - yOrigin)**2)
+    return dist
+}
+
 
 // THIS IS THE ANIMATED UI
 function creatCircleNotation (){
@@ -1033,7 +1040,32 @@ function creatCircleNotation (){
         let originX = canvasWidth / 2
         let originY = canvasHeight / 2
         let circleDiameter = canvasHeight - 70
+        let dotDiameter = 15
         let circleRadius = circleDiameter / 2
+        let selectedDots = []
+
+        sketch.mouseClicked = () => {
+                for(let i = 0; i < numberOfPulses; i++){
+                    const angle = (i / numberOfPulses) * (Math.PI * 2) - Math.PI / 2
+                    const dotX = originX + Math.cos(angle) * circleRadius
+                    const dotY = originY + Math.sin(angle) * circleRadius
+                    const dist = euclidianDistance(dotX, dotY, sketch.mouseX, sketch.mouseY)
+                    if (dist < dotDiameter / 2){
+                        if (!selectedDots.includes(i)){
+                            selectedDots.push(i)
+                        } else {
+                            // console.log('else')
+                            // remove from selectedDots
+                            for(let j = 0; j < selectedDots.length; j++){
+                                if (j == i){
+                                    selectedDots.slice(i, i + 1)
+                                }
+                            }
+                        }
+                    }
+                }
+                    
+        }
         
         sketch.setup = () => {
                 const container = document.getElementById('controls');
@@ -1042,7 +1074,7 @@ function creatCircleNotation (){
 
         
         sketch.draw = () => {
-            
+            console.log(selectedDots)
             // CIRCLE 
             sketch.clear();
             // sketch.background(30);
@@ -1052,6 +1084,8 @@ function creatCircleNotation (){
             sketch.circle(originX, originY, circleDiameter);
 
             //DOTS FOR PULSES
+            
+            
             for(let i = 0; i < numberOfPulses; i++){
                 const angle = (i / numberOfPulses) * (Math.PI * 2) - Math.PI / 2
                 const dotX = originX + Math.cos(angle) * circleRadius
@@ -1060,10 +1094,27 @@ function creatCircleNotation (){
                 const extraDistForText = 18
                 const textX = originX + Math.cos(angle) * (circleRadius + extraDistForText)
                 const textY = originY + Math.sin(angle) * (circleRadius + extraDistForText)
-                // if circle selected, fill and push i to notesArray
-                sketch.fill(255)
-                sketch.circle(dotX,dotY,15)
 
+                
+
+                // if circle selected, fill and push i to notesArray
+                for (let j = 0; j < selectedDots.length; j ++){
+                    let currentDot = selectedDots[j]
+                    
+                }
+                // if (i == 5){
+                //     sketch.noFill()
+                //     sketch.strokeWeight(2.5)
+                //     sketch.stroke(255)
+                //     // sketch.fill(255)
+                // } else {
+                //     sketch.fill(255)
+                // }
+                
+                sketch.circle(dotX,dotY,dotDiameter)
+
+                // NUMBERS
+                sketch.fill(255)
                 sketch.textAlign(sketch.CENTER, sketch.CENTER);
                 sketch.textStyle(sketch.NORMAL)
                 sketch.textFont('Arial')
@@ -1071,6 +1122,9 @@ function creatCircleNotation (){
                 sketch.strokeWeight(0.1)
                 sketch.text(i + 1, textX, textY);
             }
+
+            // Onset Select
+            
 
             //animation
             // METRONOME SHOULD RETURN LOOP TIME FOR SSOT
