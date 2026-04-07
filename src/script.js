@@ -579,14 +579,26 @@ padGainControl.addEventListener("input", () => {
 // METRONOME
 
 let bpm = 20;
+// numberOfPulses should be changeable
 let numberOfPulses = 8;
 let lastPulseTime = 0;
+let lastLoopStartTime = 0
 let currentPulse = 1;
 let beatLengthSeconds = null
-// console.log(numberOfPulses)
+let timeSinceLoopStart = null
+// METRONOME SHOULD RETURN BOTH BEATS AND TIME COMPLETED OF LOOP
 function metronome(currentTime, numberOfPulses, bpm){
     
     beatLengthSeconds = 60.0 / bpm;
+    // delta since last pulse global?
+    // timeSinceLoopStart global?
+    let totalLoopTime = beatLengthSeconds * numberOfPulses
+    let deltaSinceLoopStart = currentTime - lastLoopStartTime
+    if(deltaSinceLoopStart <= totalLoopTime){
+        timeSinceLoopStart = deltaSinceLoopStart
+    } else {
+        lastLoopStartTime = currentTime
+    }
 
     let deltaTimeSinceLastPulse = currentTime - lastPulseTime;
     
@@ -599,7 +611,7 @@ function metronome(currentTime, numberOfPulses, bpm){
             currentPulse = 1
         }
     }; 
-
+    console.log(timeSinceLoopStart)
     return currentPulse
 };
 
@@ -1031,6 +1043,11 @@ function euclidianDistance(xOrigin,yOrigin, xPoint, yPoint){
 
 
 // THIS IS THE ANIMATED UI
+// currently for LEAD
+// 1- selection triggers osc
+// 2- change number of onsets
+// 3- dot animation on trig
+// 4- repeat for all instruments
 function creatCircleNotation (){
     const circleNotation= (sketch) => {
 
@@ -1055,14 +1072,12 @@ function creatCircleNotation (){
                     // sense click on dot
                     if (dist < dotDiameter / 2){
                         if (!selectedDots.includes(i)){
-                            // should be sorted
                             selectedDots.push(i);
                             selectedDots.sort();
                         } else {
-                            // console.log('sd else', selectedDots, i)
-                            const indexOfi = selectedDots.indexOf(i)
+                            const indexOfi = selectedDots.indexOf(i);
                             if (indexOfi != -1){
-                                selectedDots.splice(indexOfi, 1)
+                                selectedDots.splice(indexOfi, 1);
                             }
                         }
                     };
@@ -1077,7 +1092,7 @@ function creatCircleNotation (){
 
         
         sketch.draw = () => {
-            console.log('sd',selectedDots)
+            // console.log('sd',selectedDots)
             // CIRCLE 
             sketch.clear();
             // sketch.background(30);
@@ -1130,6 +1145,7 @@ function creatCircleNotation (){
             // METRONOME SHOULD RETURN LOOP TIME FOR SSOT
             const totalLoopTime = beatLengthSeconds * numberOfPulses;
             let lastLoopStartTime = 0
+
             let timeSinceLastLoopStart = globalElapsedTime - lastLoopStartTime
             // let currentLoopTime = globalElapsedTime;
             if (timeSinceLastLoopStart > totalLoopTime){
