@@ -1042,30 +1042,33 @@ function creatCircleNotation (){
         let circleDiameter = canvasHeight - 70
         let dotDiameter = 15
         let circleRadius = circleDiameter / 2
+        // this should be a global param later
         let selectedDots = []
+        // selectedDots.sort()
 
         sketch.mouseClicked = () => {
                 for(let i = 0; i < numberOfPulses; i++){
-                    const angle = (i / numberOfPulses) * (Math.PI * 2) - Math.PI / 2
-                    const dotX = originX + Math.cos(angle) * circleRadius
-                    const dotY = originY + Math.sin(angle) * circleRadius
-                    const dist = euclidianDistance(dotX, dotY, sketch.mouseX, sketch.mouseY)
+                    const angle = (i / numberOfPulses) * (Math.PI * 2) - Math.PI / 2;
+                    const dotX = originX + Math.cos(angle) * circleRadius;
+                    const dotY = originY + Math.sin(angle) * circleRadius;
+                    const dist = euclidianDistance(dotX, dotY, sketch.mouseX, sketch.mouseY);
+                    // sense click on dot
                     if (dist < dotDiameter / 2){
                         if (!selectedDots.includes(i)){
-                            selectedDots.push(i)
+                            // should be sorted
+                            selectedDots.push(i);
+                            selectedDots.sort();
                         } else {
-                            // console.log('else')
-                            // remove from selectedDots
-                            for(let j = 0; j < selectedDots.length; j++){
-                                if (j == i){
-                                    selectedDots.slice(i, i + 1)
-                                }
+                            // console.log('sd else', selectedDots, i)
+                            const indexOfi = selectedDots.indexOf(i)
+                            if (indexOfi != -1){
+                                selectedDots.splice(indexOfi, 1)
                             }
                         }
-                    }
-                }
-                    
-        }
+                    };
+                };
+            };       
+        
         
         sketch.setup = () => {
                 const container = document.getElementById('controls');
@@ -1074,7 +1077,7 @@ function creatCircleNotation (){
 
         
         sketch.draw = () => {
-            console.log(selectedDots)
+            console.log('sd',selectedDots)
             // CIRCLE 
             sketch.clear();
             // sketch.background(30);
@@ -1097,20 +1100,17 @@ function creatCircleNotation (){
 
                 
 
-                // if circle selected, fill and push i to notesArray
-                for (let j = 0; j < selectedDots.length; j ++){
-                    let currentDot = selectedDots[j]
-                    
+                // if circle selected, fill circle
+                // im slightly confused as to why this works
+                if (selectedDots.includes(i)){
+                    sketch.fill(255)
+                } else {
+                    sketch.noFill();
+                    sketch.strokeWeight(2.5);
+                    sketch.stroke(255)
                 }
-                // if (i == 5){
-                //     sketch.noFill()
-                //     sketch.strokeWeight(2.5)
-                //     sketch.stroke(255)
-                //     // sketch.fill(255)
-                // } else {
-                //     sketch.fill(255)
-                // }
-                
+               
+                // this is the final dot draw
                 sketch.circle(dotX,dotY,dotDiameter)
 
                 // NUMBERS
