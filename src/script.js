@@ -2,6 +2,7 @@ import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import GUI from 'lil-gui'
 import * as MathUtils from 'three/src/math/MathUtils.js'
+import Stats from 'three/examples/jsm/libs/stats.module'
 // import { GodRaysCombineShader } from 'three/examples/jsm/Addons.js'
 // import { element, notEqual } from 'three/tsl'
 // import {chorusStrings} from '../wavetables/Chorus_Strings.js'
@@ -10,6 +11,9 @@ import * as MathUtils from 'three/src/math/MathUtils.js'
  * Base
  */
 // Debug
+const stats = Stats()
+document.body.appendChild(stats.dom)
+
 const gui = new GUI({width : 800})
 
 // Canvas
@@ -585,6 +589,7 @@ let lastPulseTime = 0;
 let lastLoopStartTime = 0
 let currentPulse = 1;
 let beatLengthSeconds = null
+let totalLoopTime = null
 let timeSinceLoopStart = null
 // METRONOME SHOULD RETURN BOTH BEATS AND TIME COMPLETED OF LOOP
 function metronome(currentTime, numberOfPulses, bpm){
@@ -592,7 +597,7 @@ function metronome(currentTime, numberOfPulses, bpm){
     beatLengthSeconds = 60.0 / bpm;
     // delta since last pulse global?
     // timeSinceLoopStart global?
-    let totalLoopTime = beatLengthSeconds * numberOfPulses
+    totalLoopTime = beatLengthSeconds * numberOfPulses
     let deltaSinceLoopStart = currentTime - lastLoopStartTime
     if(deltaSinceLoopStart <= totalLoopTime){
         timeSinceLoopStart = deltaSinceLoopStart
@@ -611,31 +616,33 @@ function metronome(currentTime, numberOfPulses, bpm){
             currentPulse = 1
         }
     }; 
-    console.log(timeSinceLoopStart)
+    // console.log(timeSinceLoopStart)
     return currentPulse
 };
 
 
 // SEQUENCER
 
+// how do I make lead Note Sequence sound good at many lengths?
 const leadNoteSequence = [783.99, 622.25, 932.35, 587.33, 1174.66, 783.99, 622.25, 932.35, 587.33]
 let leadNoteIndex = 0
-let leadSequence = [1, 3, 5]
-// let leadSequence = [1, 1.25, 1.5, 1.75, 2]
-let leadSequenceStep = 0
+let leadSequence = []
+let lastPlayedBeat = null
 function leadSequencer(time, metronomeBeat, sequence) {
-
-    let beat = metronomeBeat
     
-    if (sequence[leadSequenceStep] == beat){
-        playLeadOsc(time, 'triangle', 0.1, 1, leadNoteSequence, leadNoteIndex)
-        leadStartTimeArray.push(time)
-        if (leadSequenceStep < sequence.length-1){
-            leadSequenceStep ++
-        } else {
-            leadSequenceStep = 0
-        }
-    }
+    let currentBeat = metronomeBeat
+
+    for (let i = 0; i < leadSequence.length; i++){
+        let currentSequenceOnset = leadSequence[i]
+        if (currentSequenceOnset === currentBeat && lastPlayedBeat !== currentBeat){
+            // leadNoteIndex is advanced withing playLeadOsc()
+            playLeadOsc(time, 'triangle', 0.1, 1, leadNoteSequence, leadNoteIndex)
+            // this should prevent osc from playiing multiple times per beat
+            lastPlayedBeat = currentBeat
+            // lead start time array is for animation
+            leadStartTimeArray.push(time)
+        } 
+    } 
 }
 
 
@@ -814,6 +821,7 @@ function changeColorOfParticlesWithinBandwidth(positionBetweenBoundsArray, outer
                 let blueInverse = 1.0 - originalBlue
 
                 // need to make lower edge 0 and upper edge PI
+                // What if i desaturated instea of white???
                 let gradient = mapV(outerRadius, lowerEdge, upperEdge, 0 , Math.PI)
                 
                 colors[i3] = originalRed + (redInverse * Math.sin(gradient)) // r
@@ -859,15 +867,18 @@ let globalMetronomeTime = null
 const clock = new THREE.Clock()
 
 const tick = () =>
-{
+{   
     const elapsedTime = clock.getElapsedTime();
-
+    
     globalElapsedTime = elapsedTime
+
+    stats.update()
 
     let metronomeTime = metronome(elapsedTime, 8, bpm);
 
     globalMetronomeTime = metronomeTime
-
+    // console.log('ls',leadSequence)
+    // should this take global vars as args? does that do anything differently? 
     leadSequencer(elapsedTime, metronomeTime, leadSequence)
     tremGain.gain.value = lfoValue(.5, 1.5, 40, elapsedTime)
  
@@ -914,7 +925,7 @@ const tick = () =>
     let newColorCenter = colorCenter - saturationChange
     let newColorAmplitude = 1.0 - newColorCenter
     
-
+    // What if i didn't clamp and set max to animation completion * 2?
     let newAmplitude = amplitude + easeInOutSine(mapV(clampedAnimationValuesSum, 0, 100, 0 , .15))
 
     
@@ -1061,9 +1072,11 @@ function creatCircleNotation (){
         let circleRadius = circleDiameter / 2
         // this should be a global param later
         let selectedDots = []
-        // selectedDots.sort()
-
+       
+        
+        // DOT/ONSET SELECT CLIC
         sketch.mouseClicked = () => {
+            console.log('cliky')
                 for(let i = 0; i < numberOfPulses; i++){
                     const angle = (i / numberOfPulses) * (Math.PI * 2) - Math.PI / 2;
                     const dotX = originX + Math.cos(angle) * circleRadius;
@@ -1074,10 +1087,16 @@ function creatCircleNotation (){
                         if (!selectedDots.includes(i)){
                             selectedDots.push(i);
                             selectedDots.sort();
+                            // music notation starts at 1, not 0
+                            leadSequence.push(i+1);
+                            leadSequence.sort();
+                            
                         } else {
-                            const indexOfi = selectedDots.indexOf(i);
+                            const indexOfiSelectedDots = selectedDots.indexOf(i);
+                            const indexOfiLeadSequence = leadSequence.indexOfi(i+1)
                             if (indexOfi != -1){
-                                selectedDots.splice(indexOfi, 1);
+                                selectedDots.splice(indexOfiSelectedDots, 1);
+                                leadSequence.splice(indexOfiLeadSequence, 1);
                             }
                         }
                     };
@@ -1114,7 +1133,7 @@ function creatCircleNotation (){
                 const textY = originY + Math.sin(angle) * (circleRadius + extraDistForText)
 
                 
-
+                //
                 // if circle selected, fill circle
                 // im slightly confused as to why this works
                 if (selectedDots.includes(i)){
@@ -1140,18 +1159,7 @@ function creatCircleNotation (){
 
             // Onset Select
             
-
-            //animation
-            // METRONOME SHOULD RETURN LOOP TIME FOR SSOT
-            const totalLoopTime = beatLengthSeconds * numberOfPulses;
-            let lastLoopStartTime = 0
-
-            let timeSinceLastLoopStart = globalElapsedTime - lastLoopStartTime
-            // let currentLoopTime = globalElapsedTime;
-            if (timeSinceLastLoopStart > totalLoopTime){
-                lastLoopStartTime = globalElapsedTime
-            }
-            let loopPositionAngleRadians = mapV(timeSinceLastLoopStart, 0, totalLoopTime, 0 , (2 * Math.PI)) - Math.PI / 2
+            let loopPositionAngleRadians = mapV(timeSinceLoopStart, 0, totalLoopTime, 0 , (2 * Math.PI)) - Math.PI / 2
             
             let loopPositionX = originX + Math.cos(loopPositionAngleRadians) * circleRadius
             let loopPositionY = originY + Math.sin(loopPositionAngleRadians) * circleRadius
