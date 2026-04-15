@@ -212,30 +212,6 @@ function checkForChildName(scene, name){
     return childPresent
 }
 
-function getWaveInfo(points, waveLength){
-    // return range between peak and trough when found
-    // return number of waves in points
-    let wavelengths = []
-    let count = 0
-   
-    for (let i = 1; i <= points - 1; i++){
-        // console.log(i-1)
-        const left = i - 1;
-        const middle = i;
-        const right = i + 1;
-
-        const leftSineValue = Math.sin(left * waveLength) 
-        const middleSineValue = Math.sin(middle * waveLength)
-        const rightSineValue = Math.sin(right * waveLength) 
-        
-        if((leftSineValue < middleSineValue) && (middleSineValue > rightSineValue)){
-            let currentPeak = middle;
-            count += 1;
-            wavelengths.push(currentPeak)
-        } 
-    }
-    return points / count
-}
 
 // AUDIO
 
@@ -628,6 +604,7 @@ const leadNoteSequence = [783.99, 622.25, 932.35, 587.33, 1174.66, 783.99, 622.2
 let leadNoteIndex = 0
 let leadSequence = []
 let lastPlayedBeat = null
+// make this work for all instruments by taking diff args
 function leadSequencer(time, metronomeBeat, sequence) {
     
     let currentBeat = metronomeBeat
@@ -902,7 +879,7 @@ const tick = () =>
 
     // LEAD OSC
     sphereParticles.rotation.z = elapsedTime * rotationSpeed   
-    waveLengthDiv.textContent = `${getWaveInfo(points, waveLength)}`;
+  
     
     // ANIMATIONS 
     // LEAD ANIMATIONS
@@ -1030,21 +1007,6 @@ import p5 from 'p5';
 // lets try to get a dot to move around the circle in bpm time
 
 
-class Circle {
-    constructor (x, y, radius, color, sketch){
-        this.x = x
-        this.y = y
-        this.radius = radius
-        this.color = color
-    }
-    draw(){
-        sketch.circle(Circle.x, Circle.y, Circle.radius, Circle.Color)
-        sketch.fill(0)
-        sketch.stroke(Circle.color)
-    }
-
-}
-
 // Helper Funcs
 
 function euclidianDistance(xOrigin,yOrigin, xPoint, yPoint){
@@ -1052,19 +1014,30 @@ function euclidianDistance(xOrigin,yOrigin, xPoint, yPoint){
     return dist
 }
 
+// UI global vars
+const leadPulsesInput = document.getElementById('lead-pulses-input');
+// let leadPulsesInputValue = parseInt(leadPulsesInput.value);
+let leadConfig = {'pulses' : 8}
+leadPulsesInput.addEventListener('input', function () {
+    leadConfig.pulses = parseInt(this.value);
+    console.log(leadConfig.pulses)
+})
+
+// let numberOfPulsesLead = leadPulsesInputValue;
 
 // THIS IS THE ANIMATED UI
 // currently for LEAD
-// 1- selection triggers osc
-// 2- change number of onsets
-// 3- dot animation on trig
+// 2- change number of onsets 
 // 4- repeat for all instruments
-function creatCircleNotation (){
+// console.log('lpiv',leadPulsesInputValue)
+function creatCircleNotation (config){
+    // console.log('lpiv func',leadPulsesInputValue)
     const circleNotation= (sketch) => {
+        // let testPulseNum = 8
 
         let canvasHeight = 200
         let canvasWidth = 200
-        let numberOfPulses = 8
+        // let numberOfPulses = 8s
         let originX = canvasWidth / 2
         let originY = canvasHeight / 2
         let circleDiameter = canvasHeight - 70
@@ -1075,10 +1048,11 @@ function creatCircleNotation (){
        
         
         // DOT/ONSET SELECT CLIC
+        // how does lead sequence stay in sync with this?
         sketch.mouseClicked = () => {
-            console.log('cliky')
-                for(let i = 0; i < numberOfPulses; i++){
-                    const angle = (i / numberOfPulses) * (Math.PI * 2) - Math.PI / 2;
+            // console.log('cliky')
+                for(let i = 0; i < config.pulses; i++){
+                    const angle = (i / config.pulses) * (Math.PI * 2) - Math.PI / 2;
                     const dotX = originX + Math.cos(angle) * circleRadius;
                     const dotY = originY + Math.sin(angle) * circleRadius;
                     const dist = euclidianDistance(dotX, dotY, sketch.mouseX, sketch.mouseY);
@@ -1088,13 +1062,14 @@ function creatCircleNotation (){
                             selectedDots.push(i);
                             selectedDots.sort();
                             // music notation starts at 1, not 0
+                            // look at lead sequence to make sure it stays in sync with UI
                             leadSequence.push(i+1);
                             leadSequence.sort();
                             
                         } else {
                             const indexOfiSelectedDots = selectedDots.indexOf(i);
-                            const indexOfiLeadSequence = leadSequence.indexOfi(i+1)
-                            if (indexOfi != -1){
+                            const indexOfiLeadSequence = leadSequence.indexOf(i+1)
+                            if (indexOfiLeadSequence != -1){
                                 selectedDots.splice(indexOfiSelectedDots, 1);
                                 leadSequence.splice(indexOfiLeadSequence, 1);
                             }
@@ -1111,7 +1086,13 @@ function creatCircleNotation (){
 
         
         sketch.draw = () => {
+            let currentPulseNumber = config.pulses
+            // console.log('pulls num',currentPulseNumber, 'leadseq',leadSequence,'selected-dots', selectedDots)
             // console.log('sd',selectedDots)
+            // console.log(leadPulsesInputValue)
+            // why undefined?
+            // console.log('drawloop',leadPulsesInputValue)
+            // console.log(numberOfPulsesLead)
             // CIRCLE 
             sketch.clear();
             // sketch.background(30);
@@ -1122,9 +1103,9 @@ function creatCircleNotation (){
 
             //DOTS FOR PULSES
             
-            
-            for(let i = 0; i < numberOfPulses; i++){
-                const angle = (i / numberOfPulses) * (Math.PI * 2) - Math.PI / 2
+            // numberofPulsesLead needs to change for other instruments
+            for(let i = 0; i < currentPulseNumber; i++){
+                const angle = (i / currentPulseNumber) * (Math.PI * 2) - Math.PI / 2
                 const dotX = originX + Math.cos(angle) * circleRadius
                 const dotY = originY + Math.sin(angle) * circleRadius
 
@@ -1171,16 +1152,15 @@ function creatCircleNotation (){
     return circleNotation
 }
 
-let circleNotationOne = creatCircleNotation()
+// this value appears not to change? 
+// rename these variables
+let circleNotationOne = creatCircleNotation(leadConfig)
 
 
 
 let myp5 = new p5(circleNotationOne);
 
 
-
-
-getWaveInfo(points, waveLength)
 
 // NOTES ON SPHERE
 
