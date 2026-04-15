@@ -560,7 +560,9 @@ padGainControl.addEventListener("input", () => {
 
 let bpm = 20;
 // numberOfPulses should be changeable
-let numberOfPulses = 8;
+// this should be the config object 
+// let numberOfPulses = 8;
+let leadObj = {'numberOfPulses' : 8}
 let lastPulseTime = 0;
 let lastLoopStartTime = 0
 let currentPulse = 1;
@@ -599,18 +601,32 @@ function metronome(currentTime, numberOfPulses, bpm){
 
 // SEQUENCER
 
+// modify leadNoteSequence to match lenght of leadSequence
+// must not sound like shit
+function createNewNoteSequence(inputSequece, length){
+    // first and last note should be the same
+    let originalSequence = [...inputSequece]
+    console.log(originalSequence)
+}
+
+// no pulses in sequence should have a beat higher than the number of pulses in the sequence
+// this will live in the sketch.draw() loop
+function modifyLeadSequence(oldOnsetSequence){
+
+}
+
 // how do I make lead Note Sequence sound good at many lengths?
 const leadNoteSequence = [783.99, 622.25, 932.35, 587.33, 1174.66, 783.99, 622.25, 932.35, 587.33]
 let leadNoteIndex = 0
-let leadSequence = []
+let leadOnsetSequence = []
 let lastPlayedBeat = null
 // make this work for all instruments by taking diff args
 function leadSequencer(time, metronomeBeat, sequence) {
     
     let currentBeat = metronomeBeat
 
-    for (let i = 0; i < leadSequence.length; i++){
-        let currentSequenceOnset = leadSequence[i]
+    for (let i = 0; i < leadOnsetSequence.length; i++){
+        let currentSequenceOnset = leadOnsetSequence[i]
         if (currentSequenceOnset === currentBeat && lastPlayedBeat !== currentBeat){
             // leadNoteIndex is advanced withing playLeadOsc()
             playLeadOsc(time, 'triangle', 0.1, 1, leadNoteSequence, leadNoteIndex)
@@ -850,13 +866,14 @@ const tick = () =>
     globalElapsedTime = elapsedTime
 
     stats.update()
-
-    let metronomeTime = metronome(elapsedTime, 8, bpm);
+    // put leadConfig.pulses into numberof pulses arg
+    // will later need a differnet metronome for each instrument
+    let metronomeTime = metronome(elapsedTime, leadObj.numberOfPulses, bpm);
 
     globalMetronomeTime = metronomeTime
-    // console.log('ls',leadSequence)
+    // console.log('ls',leadOnsetSequence)
     // should this take global vars as args? does that do anything differently? 
-    leadSequencer(elapsedTime, metronomeTime, leadSequence)
+    leadSequencer(elapsedTime, metronomeTime, leadOnsetSequence)
     tremGain.gain.value = lfoValue(.5, 1.5, 40, elapsedTime)
  
     droneSequencer(elapsedTime, metronomeTime, droneSequence)
@@ -1016,11 +1033,11 @@ function euclidianDistance(xOrigin,yOrigin, xPoint, yPoint){
 
 // UI global vars
 const leadPulsesInput = document.getElementById('lead-pulses-input');
-// let leadPulsesInputValue = parseInt(leadPulsesInput.value);
-let leadConfig = {'pulses' : 8}
+// this leadConfig object stores the # of pulses 
+// this 
 leadPulsesInput.addEventListener('input', function () {
-    leadConfig.pulses = parseInt(this.value);
-    console.log(leadConfig.pulses)
+    leadObj.numberOfPulses = parseInt(this.value);
+    // console.log(leadConfig.pulses)
 })
 
 // let numberOfPulsesLead = leadPulsesInputValue;
@@ -1030,7 +1047,7 @@ leadPulsesInput.addEventListener('input', function () {
 // 2- change number of onsets 
 // 4- repeat for all instruments
 // console.log('lpiv',leadPulsesInputValue)
-function creatCircleNotation (config){
+function creatCircleNotation (instrumentObj){
     // console.log('lpiv func',leadPulsesInputValue)
     const circleNotation= (sketch) => {
         // let testPulseNum = 8
@@ -1051,27 +1068,28 @@ function creatCircleNotation (config){
         // how does lead sequence stay in sync with this?
         sketch.mouseClicked = () => {
             // console.log('cliky')
-                for(let i = 0; i < config.pulses; i++){
-                    const angle = (i / config.pulses) * (Math.PI * 2) - Math.PI / 2;
+                for(let i = 0; i < instrumentObj.numberOfPulses; i++){
+                    const angle = (i / instrumentObj.numberOfPulses) * (Math.PI * 2) - Math.PI / 2;
                     const dotX = originX + Math.cos(angle) * circleRadius;
                     const dotY = originY + Math.sin(angle) * circleRadius;
                     const dist = euclidianDistance(dotX, dotY, sketch.mouseX, sketch.mouseY);
                     // sense click on dot
                     if (dist < dotDiameter / 2){
+                        console.log('dot clik')
                         if (!selectedDots.includes(i)){
                             selectedDots.push(i);
                             selectedDots.sort();
                             // music notation starts at 1, not 0
                             // look at lead sequence to make sure it stays in sync with UI
-                            leadSequence.push(i+1);
-                            leadSequence.sort();
+                            leadOnsetSequence.push(i+1);
+                            leadOnsetSequence.sort();
                             
                         } else {
                             const indexOfiSelectedDots = selectedDots.indexOf(i);
-                            const indexOfiLeadSequence = leadSequence.indexOf(i+1)
+                            const indexOfiLeadSequence = leadOnsetSequence.indexOf(i+1)
                             if (indexOfiLeadSequence != -1){
                                 selectedDots.splice(indexOfiSelectedDots, 1);
-                                leadSequence.splice(indexOfiLeadSequence, 1);
+                                leadOnsetSequence.splice(indexOfiLeadSequence, 1);
                             }
                         }
                     };
@@ -1086,7 +1104,7 @@ function creatCircleNotation (config){
 
         
         sketch.draw = () => {
-            let currentPulseNumber = config.pulses
+            let currentPulseNumber = instrumentObj.numberOfPulses
             // console.log('pulls num',currentPulseNumber, 'leadseq',leadSequence,'selected-dots', selectedDots)
             // console.log('sd',selectedDots)
             // console.log(leadPulsesInputValue)
@@ -1154,7 +1172,7 @@ function creatCircleNotation (config){
 
 // this value appears not to change? 
 // rename these variables
-let circleNotationOne = creatCircleNotation(leadConfig)
+let circleNotationOne = creatCircleNotation(leadObj)
 
 
 
