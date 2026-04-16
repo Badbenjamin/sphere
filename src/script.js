@@ -562,6 +562,8 @@ let bpm = 20;
 // numberOfPulses should be changeable
 // this should be the config object 
 // let numberOfPulses = 8;
+// leadObj should contain, BPM, number of pulses, onsetSequence noteSequence?
+// if replaced with an array of booleans for each beat (turned on or off if selected), might be better
 let leadObj = {'numberOfPulses' : 8}
 let lastPulseTime = 0;
 let lastLoopStartTime = 0
@@ -611,14 +613,18 @@ function createNewNoteSequence(inputSequece, length){
 
 // no pulses in sequence should have a beat higher than the number of pulses in the sequence
 // this will live in the sketch.draw() loop
-function modifyLeadSequence(oldOnsetSequence){
-
+// also invoked with leadPulsesInput html form change
+function modifyOnsetSequence(oldOnsetSequence, numberOfPulsesInSequence){
+    let newOnsetSequence = oldOnsetSequence.filter((onset) => onset <= numberOfPulsesInSequence)
+    newOnsetSequence.sort()
+    return newOnsetSequence
 }
 
 // how do I make lead Note Sequence sound good at many lengths?
 const leadNoteSequence = [783.99, 622.25, 932.35, 587.33, 1174.66, 783.99, 622.25, 932.35, 587.33]
 let leadNoteIndex = 0
 let leadOnsetSequence = []
+let leadPulseBooleanArray = [true, false, false, true, false, false, true, false]
 let lastPlayedBeat = null
 // make this work for all instruments by taking diff args
 function leadSequencer(time, metronomeBeat, sequence) {
@@ -636,6 +642,26 @@ function leadSequencer(time, metronomeBeat, sequence) {
             leadStartTimeArray.push(time)
         } 
     } 
+}
+
+function leadSequencerBooleanArray (time, metronomeBeat, pulseArray){
+    // beat is music time starting at one
+    // but array starts at 0
+    let currentBeat = metronomeBeat - 1
+
+    for (let i = 0; i < pulseArray.length; i++){
+        let currentSequenceOnsetBoolean = pulseArray[i]
+        let currentSequenceOnset = i
+        if (currentSequenceOnsetBoolean == true && currentSequenceOnset === currentBeat && lastPlayedBeat !== currentBeat){
+            // leadNoteIndex is advanced withing playLeadOsc()
+            playLeadOsc(time, 'triangle', 0.1, 1, leadNoteSequence, leadNoteIndex)
+            // this should prevent osc from playiing multiple times per beat
+            lastPlayedBeat = currentBeat
+            // lead start time array is for animation
+            leadStartTimeArray.push(time)
+        } 
+    } 
+
 }
 
 
@@ -873,7 +899,9 @@ const tick = () =>
     globalMetronomeTime = metronomeTime
     // console.log('ls',leadOnsetSequence)
     // should this take global vars as args? does that do anything differently? 
-    leadSequencer(elapsedTime, metronomeTime, leadOnsetSequence)
+    // leadSequencer(elapsedTime, metronomeTime, leadOnsetSequence)
+    leadSequencerBooleanArray(elapsedTime, metronomeTime, leadPulseBooleanArray)
+    console.log(leadPulseBooleanArray, metronomeTime)
     tremGain.gain.value = lfoValue(.5, 1.5, 40, elapsedTime)
  
     droneSequencer(elapsedTime, metronomeTime, droneSequence)
@@ -1037,6 +1065,8 @@ const leadPulsesInput = document.getElementById('lead-pulses-input');
 // this 
 leadPulsesInput.addEventListener('input', function () {
     leadObj.numberOfPulses = parseInt(this.value);
+    leadOnsetSequence = modifyOnsetSequence(leadOnsetSequence, leadObj.numberOfPulses)
+    // do I need to modify leadPulseSequence with this event?
     // console.log(leadConfig.pulses)
 })
 
@@ -1078,11 +1108,14 @@ function creatCircleNotation (instrumentObj){
                         console.log('dot clik')
                         if (!selectedDots.includes(i)){
                             selectedDots.push(i);
+                            
                             selectedDots.sort();
                             // music notation starts at 1, not 0
                             // look at lead sequence to make sure it stays in sync with UI
+                            // sort could be replaced with the modify function variable
                             leadOnsetSequence.push(i+1);
-                            leadOnsetSequence.sort();
+                            leadOnsetSequence = modifyOnsetSequence(leadOnsetSequence, leadObj.numberOfPulses)
+                            
                             
                         } else {
                             const indexOfiSelectedDots = selectedDots.indexOf(i);
@@ -1090,6 +1123,7 @@ function creatCircleNotation (instrumentObj){
                             if (indexOfiLeadSequence != -1){
                                 selectedDots.splice(indexOfiSelectedDots, 1);
                                 leadOnsetSequence.splice(indexOfiLeadSequence, 1);
+                                leadOnsetSequence = modifyOnsetSequence(leadOnsetSequence, leadObj.numberOfPulses)
                             }
                         }
                     };
@@ -1104,6 +1138,9 @@ function creatCircleNotation (instrumentObj){
 
         
         sketch.draw = () => {
+            // this slows shite down!!!
+            // leadOnsetSequence = modifyOnsetSequence(leadOnsetSequence, leadObj.numberOfPulses)
+            // console.log(leadOnsetSequence)
             let currentPulseNumber = instrumentObj.numberOfPulses
             // console.log('pulls num',currentPulseNumber, 'leadseq',leadSequence,'selected-dots', selectedDots)
             // console.log('sd',selectedDots)
