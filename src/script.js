@@ -581,27 +581,9 @@ function modifyOnsetSequence(oldOnsetSequence, numberOfPulsesInSequence){
 // how do I make lead Note Sequence sound good at many lengths?
 const leadNoteSequence = [783.99, 622.25, 932.35, 587.33, 1174.66, 783.99, 622.25, 932.35, 587.33]
 let leadNoteIndex = 0
-// let leadOnsetSequence = []
 let leadPulseBooleanArray = [true, false, false, true, false, false, true, false]
 let lastPlayedBeat = null
 // make this work for all instruments by taking diff args
-// function leadSequencer(time, metronomeBeat, sequence) {
-    
-//     let currentBeat = metronomeBeat
-
-//     for (let i = 0; i < leadOnsetSequence.length; i++){
-//         let currentSequenceOnset = leadOnsetSequence[i]
-//         if (currentSequenceOnset === currentBeat && lastPlayedBeat !== currentBeat){
-//             // leadNoteIndex is advanced withing playLeadOsc()
-//             playLeadOsc(time, 'triangle', 0.1, 1, leadNoteSequence, leadNoteIndex)
-//             // this should prevent osc from playiing multiple times per beat
-//             lastPlayedBeat = currentBeat
-//             // lead start time array is for animation
-//             leadStartTimeArray.push(time)
-//         } 
-//     } 
-// }
-
 function leadSequencerBooleanArray (time, metronomeBeat, pulseArray){
     // beat is music time starting at one
     // but array starts at 0
@@ -610,6 +592,8 @@ function leadSequencerBooleanArray (time, metronomeBeat, pulseArray){
     for (let i = 0; i < pulseArray.length; i++){
         let currentSequenceOnsetBoolean = pulseArray[i]
         let currentSequenceOnset = i
+        // bug occurs when sequence only has length of 1 because lastPlayed beat is same as currentBeat
+        // not sure how to fix this just yet
         if (currentSequenceOnsetBoolean == true && currentSequenceOnset === currentBeat && lastPlayedBeat !== currentBeat){
             // leadNoteIndex is advanced withing playLeadOsc()
             playLeadOsc(time, 'triangle', 0.1, 1, leadNoteSequence, leadNoteIndex)
@@ -859,6 +843,7 @@ function changeColorOfParticlesWithinBandwidth(positionBetweenBoundsArray, outer
 
 function changePositionParticlesWithinBandwidth(positionBetweenBoundsArray, polarAngle, azimuth, outerRadius, i3, bandwidth){
     // OUTER RADIUS is the distance of the particle from the center (Maybe rename var?)
+    const radiusAdditionAmmount = .1
     if (positionBetweenBoundsArray.length > 0){
         for (let j = 0; j < positionBetweenBoundsArray.length; j++){
             let currentBandPosition = positionBetweenBoundsArray[j]
@@ -867,15 +852,16 @@ function changePositionParticlesWithinBandwidth(positionBetweenBoundsArray, pola
 
             if ((outerRadius)  >= lowerEdge  && (outerRadius) <= upperEdge){
                 
-
+                // sine gradient
                 // lowerEdge should equal 0, middle should equal 1, upper edge should equal 0
                 let radiusGradient = mapV(outerRadius, lowerEdge, upperEdge, 0 , Math.PI)
-                let radiusModified = mapV(Math.sin(radiusGradient), 0, 1, 0 , .02)
+                let radiusModified = mapV(Math.sin(radiusGradient), 0, 1, 0 , radiusAdditionAmmount)
+                let radiusModifiedEase = -(Math.cos(Math.PI * radiusModified) - 1) / 2
 
                 // spherical to cartesian with extra radius
-                positions[i3] = Math.sin(polarAngle) * Math.cos(azimuth) * (outerRadius + radiusModified);     // x
-                positions[i3 + 1] = Math.sin(polarAngle) * Math.sin(azimuth) * (outerRadius + radiusModified); // y
-                positions[i3 + 2] = Math.cos(polarAngle) * (outerRadius + radiusModified) ; // z
+                positions[i3] = Math.sin(polarAngle) * Math.cos(azimuth) * (outerRadius + radiusModifiedEase);     // x
+                positions[i3 + 1] = Math.sin(polarAngle) * Math.sin(azimuth) * (outerRadius + radiusModifiedEase); // y
+                positions[i3 + 2] = Math.cos(polarAngle) * (outerRadius + radiusModifiedEase) ; // z
 
             }
         }
@@ -889,6 +875,7 @@ let globalMetronomeTime = null
  */
 
 const clock = new THREE.Clock()
+
 
 const tick = () =>
 {   
