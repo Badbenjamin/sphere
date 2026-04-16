@@ -556,49 +556,7 @@ padGainControl.addEventListener("input", () => {
 });
 
 
-// METRONOME
 
-let bpm = 20;
-// numberOfPulses should be changeable
-// this should be the config object 
-// let numberOfPulses = 8;
-// leadObj should contain, BPM, number of pulses, onsetSequence noteSequence?
-// if replaced with an array of booleans for each beat (turned on or off if selected), might be better
-let leadObj = {'numberOfPulses' : 8}
-let lastPulseTime = 0;
-let lastLoopStartTime = 0
-let currentPulse = 1;
-let beatLengthSeconds = null
-let totalLoopTime = null
-let timeSinceLoopStart = null
-// METRONOME SHOULD RETURN BOTH BEATS AND TIME COMPLETED OF LOOP
-function metronome(currentTime, numberOfPulses, bpm){
-    
-    beatLengthSeconds = 60.0 / bpm;
-    // delta since last pulse global?
-    // timeSinceLoopStart global?
-    totalLoopTime = beatLengthSeconds * numberOfPulses
-    let deltaSinceLoopStart = currentTime - lastLoopStartTime
-    if(deltaSinceLoopStart <= totalLoopTime){
-        timeSinceLoopStart = deltaSinceLoopStart
-    } else {
-        lastLoopStartTime = currentTime
-    }
-
-    let deltaTimeSinceLastPulse = currentTime - lastPulseTime;
-    
-    if (deltaTimeSinceLastPulse >= beatLengthSeconds){
-        lastPulseTime = currentTime;
-        if (currentPulse < numberOfPulses){
-            currentPulse += 1;
-
-        } else {
-            currentPulse = 1
-        }
-    }; 
-    // console.log(timeSinceLoopStart)
-    return currentPulse
-};
 
 
 // SEQUENCER
@@ -706,6 +664,53 @@ function padSequencer(time, metronomeBeat, sequence) {
     
     // increaseSaturationWithPadPlay(time)
 }
+
+// METRONOME
+
+let bpm = 20;
+// numberOfPulses should be changeable
+// this should be the config object 
+// let numberOfPulses = 8;
+// leadObj should contain, BPM, number of pulses, onsetSequence noteSequence?
+// if replaced with an array of booleans for each beat (turned on or off if selected), might be better
+// let leadObj = {'numberOfPulses' : 8}
+let lastPulseTime = 0;
+let lastLoopStartTime = 0
+let currentPulse = 1;
+let beatLengthSeconds = null
+let totalLoopTime = null
+let timeSinceLoopStart = null
+// METRONOME SHOULD RETURN BOTH BEATS AND TIME COMPLETED OF LOOP
+
+function metronome(currentTime, pulseBooleanArrayLength, bpm){
+    
+    beatLengthSeconds = 60.0 / bpm;
+    // delta since last pulse global?
+    // timeSinceLoopStart global?
+    totalLoopTime = beatLengthSeconds * pulseBooleanArrayLength
+    let deltaSinceLoopStart = currentTime - lastLoopStartTime
+    if(deltaSinceLoopStart <= totalLoopTime){
+        timeSinceLoopStart = deltaSinceLoopStart
+    } else {
+        lastLoopStartTime = currentTime
+    }
+
+    let deltaTimeSinceLastPulse = currentTime - lastPulseTime;
+    // bug when len == 1 because sequencer works on lastBeat 
+    // quick fix is to just not let user do one beat loops
+    console.log(currentPulse)
+    if (deltaTimeSinceLastPulse >= beatLengthSeconds){
+        lastPulseTime = currentTime;
+        if (currentPulse < pulseBooleanArrayLength){
+            currentPulse += 1;
+
+        } else {
+            currentPulse = 1
+        }
+    }; 
+    // console.log(timeSinceLoopStart)
+    return currentPulse
+};
 
 // UTILITY FUNCTIONS
 
@@ -894,7 +899,7 @@ const tick = () =>
     stats.update()
     // put leadConfig.pulses into numberof pulses arg
     // will later need a differnet metronome for each instrument
-    let metronomeTime = metronome(elapsedTime, leadObj.numberOfPulses, bpm);
+    let metronomeTime = metronome(elapsedTime, leadPulseBooleanArray.length, bpm);
 
     globalMetronomeTime = metronomeTime
     // console.log('ls',leadOnsetSequence)
@@ -1059,15 +1064,20 @@ function euclidianDistance(xOrigin,yOrigin, xPoint, yPoint){
     return dist
 }
 
-// UI global vars
+// HTML element sets number of pulses (currently lead)
 const leadPulsesInput = document.getElementById('lead-pulses-input');
-// this leadConfig object stores the # of pulses 
-// this 
 leadPulsesInput.addEventListener('input', function () {
-    leadObj.numberOfPulses = parseInt(this.value);
-    leadOnsetSequence = modifyOnsetSequence(leadOnsetSequence, leadObj.numberOfPulses)
-    // do I need to modify leadPulseSequence with this event?
-    // console.log(leadConfig.pulses)
+    let numberOfPulses = this.value
+    // metronome beats!!!!
+    let leadPulseBooleanArrayCopy = [...leadPulseBooleanArray]
+    if(numberOfPulses < leadPulseBooleanArrayCopy.length){
+        leadPulseBooleanArrayCopy.length = numberOfPulses
+    } else {
+        while(leadPulseBooleanArrayCopy.length < numberOfPulses){
+            leadPulseBooleanArrayCopy.push(false)
+        }
+    }
+    leadPulseBooleanArray = leadPulseBooleanArrayCopy
 })
 
 // let numberOfPulsesLead = leadPulsesInputValue;
@@ -1099,10 +1109,10 @@ function creatCircleNotation (instrumentObj){
         // DOT/ONSET SELECT CLIC
         // how does lead sequence stay in sync with this?
         sketch.mouseClicked = () => {
-            console.log(leadPulseBooleanArray.length)
+            // console.log(leadPulseBooleanArray.length)
                 for(let i = 0; i < leadPulseBooleanArray.length; i++){
                     let currentPulse = i
-                    console.log(currentPulse)
+                    // console.log(currentPulse)
                     const angle = (currentPulse / leadPulseBooleanArray.length) * (Math.PI * 2) - Math.PI / 2;
                     const dotX = originX + Math.cos(angle) * circleRadius;
                     const dotY = originY + Math.sin(angle) * circleRadius;
@@ -1131,6 +1141,7 @@ function creatCircleNotation (instrumentObj){
 
         
         sketch.draw = () => {
+            // console.log(leadPulseBooleanArray)
             // this slows shite down!!!
             // leadOnsetSequence = modifyOnsetSequence(leadOnsetSequence, leadObj.numberOfPulses)
             // console.log(leadOnsetSequence)
@@ -1204,7 +1215,7 @@ function creatCircleNotation (instrumentObj){
 
 // this value appears not to change? 
 // rename these variables
-let circleNotationOne = creatCircleNotation(leadObj)
+let circleNotationOne = creatCircleNotation()
 
 
 
