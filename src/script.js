@@ -623,26 +623,26 @@ function modifyOnsetSequence(oldOnsetSequence, numberOfPulsesInSequence){
 // how do I make lead Note Sequence sound good at many lengths?
 const leadNoteSequence = [783.99, 622.25, 932.35, 587.33, 1174.66, 783.99, 622.25, 932.35, 587.33]
 let leadNoteIndex = 0
-let leadOnsetSequence = []
+// let leadOnsetSequence = []
 let leadPulseBooleanArray = [true, false, false, true, false, false, true, false]
 let lastPlayedBeat = null
 // make this work for all instruments by taking diff args
-function leadSequencer(time, metronomeBeat, sequence) {
+// function leadSequencer(time, metronomeBeat, sequence) {
     
-    let currentBeat = metronomeBeat
+//     let currentBeat = metronomeBeat
 
-    for (let i = 0; i < leadOnsetSequence.length; i++){
-        let currentSequenceOnset = leadOnsetSequence[i]
-        if (currentSequenceOnset === currentBeat && lastPlayedBeat !== currentBeat){
-            // leadNoteIndex is advanced withing playLeadOsc()
-            playLeadOsc(time, 'triangle', 0.1, 1, leadNoteSequence, leadNoteIndex)
-            // this should prevent osc from playiing multiple times per beat
-            lastPlayedBeat = currentBeat
-            // lead start time array is for animation
-            leadStartTimeArray.push(time)
-        } 
-    } 
-}
+//     for (let i = 0; i < leadOnsetSequence.length; i++){
+//         let currentSequenceOnset = leadOnsetSequence[i]
+//         if (currentSequenceOnset === currentBeat && lastPlayedBeat !== currentBeat){
+//             // leadNoteIndex is advanced withing playLeadOsc()
+//             playLeadOsc(time, 'triangle', 0.1, 1, leadNoteSequence, leadNoteIndex)
+//             // this should prevent osc from playiing multiple times per beat
+//             lastPlayedBeat = currentBeat
+//             // lead start time array is for animation
+//             leadStartTimeArray.push(time)
+//         } 
+//     } 
+// }
 
 function leadSequencerBooleanArray (time, metronomeBeat, pulseArray){
     // beat is music time starting at one
@@ -901,7 +901,7 @@ const tick = () =>
     // should this take global vars as args? does that do anything differently? 
     // leadSequencer(elapsedTime, metronomeTime, leadOnsetSequence)
     leadSequencerBooleanArray(elapsedTime, metronomeTime, leadPulseBooleanArray)
-    console.log(leadPulseBooleanArray, metronomeTime)
+    // console.log(leadPulseBooleanArray, metronomeTime)
     tremGain.gain.value = lfoValue(.5, 1.5, 40, elapsedTime)
  
     droneSequencer(elapsedTime, metronomeTime, droneSequence)
@@ -1077,6 +1077,7 @@ leadPulsesInput.addEventListener('input', function () {
 // 2- change number of onsets 
 // 4- repeat for all instruments
 // console.log('lpiv',leadPulsesInputValue)
+// do I need instrumentObj any more?
 function creatCircleNotation (instrumentObj){
     // console.log('lpiv func',leadPulsesInputValue)
     const circleNotation= (sketch) => {
@@ -1091,40 +1092,32 @@ function creatCircleNotation (instrumentObj){
         let dotDiameter = 15
         let circleRadius = circleDiameter / 2
         // this should be a global param later
-        let selectedDots = []
+        // selectedDots replaced with leadPulseBooleanArray
+        // let selectedDots = []
        
         
         // DOT/ONSET SELECT CLIC
         // how does lead sequence stay in sync with this?
         sketch.mouseClicked = () => {
-            // console.log('cliky')
-                for(let i = 0; i < instrumentObj.numberOfPulses; i++){
-                    const angle = (i / instrumentObj.numberOfPulses) * (Math.PI * 2) - Math.PI / 2;
+            console.log(leadPulseBooleanArray.length)
+                for(let i = 0; i < leadPulseBooleanArray.length; i++){
+                    let currentPulse = i
+                    console.log(currentPulse)
+                    const angle = (currentPulse / leadPulseBooleanArray.length) * (Math.PI * 2) - Math.PI / 2;
                     const dotX = originX + Math.cos(angle) * circleRadius;
                     const dotY = originY + Math.sin(angle) * circleRadius;
                     const dist = euclidianDistance(dotX, dotY, sketch.mouseX, sketch.mouseY);
                     // sense click on dot
                     if (dist < dotDiameter / 2){
                         console.log('dot clik')
-                        if (!selectedDots.includes(i)){
-                            selectedDots.push(i);
+                        // click on empty dot to turn pulse into onset
+                        if (leadPulseBooleanArray[currentPulse] == false){
+                           
+                            leadPulseBooleanArray[currentPulse] = true
                             
-                            selectedDots.sort();
-                            // music notation starts at 1, not 0
-                            // look at lead sequence to make sure it stays in sync with UI
-                            // sort could be replaced with the modify function variable
-                            leadOnsetSequence.push(i+1);
-                            leadOnsetSequence = modifyOnsetSequence(leadOnsetSequence, leadObj.numberOfPulses)
-                            
-                            
+                        // click on filled dot (onset) to turn back into pulse (empty)
                         } else {
-                            const indexOfiSelectedDots = selectedDots.indexOf(i);
-                            const indexOfiLeadSequence = leadOnsetSequence.indexOf(i+1)
-                            if (indexOfiLeadSequence != -1){
-                                selectedDots.splice(indexOfiSelectedDots, 1);
-                                leadOnsetSequence.splice(indexOfiLeadSequence, 1);
-                                leadOnsetSequence = modifyOnsetSequence(leadOnsetSequence, leadObj.numberOfPulses)
-                            }
+                            leadPulseBooleanArray[currentPulse] = false
                         }
                     };
                 };
@@ -1141,7 +1134,7 @@ function creatCircleNotation (instrumentObj){
             // this slows shite down!!!
             // leadOnsetSequence = modifyOnsetSequence(leadOnsetSequence, leadObj.numberOfPulses)
             // console.log(leadOnsetSequence)
-            let currentPulseNumber = instrumentObj.numberOfPulses
+            // let currentPulseNumber = instrumentObj.numberOfPulses
             // console.log('pulls num',currentPulseNumber, 'leadseq',leadSequence,'selected-dots', selectedDots)
             // console.log('sd',selectedDots)
             // console.log(leadPulsesInputValue)
@@ -1159,8 +1152,10 @@ function creatCircleNotation (instrumentObj){
             //DOTS FOR PULSES
             
             // numberofPulsesLead needs to change for other instruments
-            for(let i = 0; i < currentPulseNumber; i++){
-                const angle = (i / currentPulseNumber) * (Math.PI * 2) - Math.PI / 2
+            let numberOfPulses = leadPulseBooleanArray.length
+            for(let i = 0; i < leadPulseBooleanArray.length; i++){
+                let currentPulse = i
+                const angle = (currentPulse / leadPulseBooleanArray.length) * (Math.PI * 2) - Math.PI / 2
                 const dotX = originX + Math.cos(angle) * circleRadius
                 const dotY = originY + Math.sin(angle) * circleRadius
 
@@ -1172,7 +1167,7 @@ function creatCircleNotation (instrumentObj){
                 //
                 // if circle selected, fill circle
                 // im slightly confused as to why this works
-                if (selectedDots.includes(i)){
+                if (leadPulseBooleanArray[currentPulse] == true){
                     sketch.fill(255)
                 } else {
                     sketch.noFill();
