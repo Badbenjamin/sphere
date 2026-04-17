@@ -659,40 +659,68 @@ let bpm = 20;
 // if replaced with an array of booleans for each beat (turned on or off if selected), might be better
 // let leadObj = {'numberOfPulses' : 8}
 let lastPulseTime = 0;
-let lastLoopStartTime = 0
+let startTime = 0
+// is currentPulse needed?
 let currentPulse = 1;
 let beatLengthSeconds = null
 let totalLoopTime = null
-let timeSinceLoopStart = null
+let timeWithinLoopSeconds= null
 // METRONOME SHOULD RETURN BOTH BEATS AND TIME COMPLETED OF LOOP
 
 function metronome(currentTime, pulseBooleanArrayLength, bpm){
     
     beatLengthSeconds = 60.0 / bpm;
-    // delta since last pulse global?
-    // timeSinceLoopStart global?
     totalLoopTime = beatLengthSeconds * pulseBooleanArrayLength
-    let deltaSinceLoopStart = currentTime - lastLoopStartTime
-    if(deltaSinceLoopStart <= totalLoopTime){
-        timeSinceLoopStart = deltaSinceLoopStart
-    } else {
-        lastLoopStartTime = currentTime
-    }
 
-    let deltaTimeSinceLastPulse = currentTime - lastPulseTime;
-    // bug when len == 1 because sequencer works on lastBeat 
-    // quick fix is to just not let user do one beat loops
-    console.log(currentPulse)
-    if (deltaTimeSinceLastPulse >= beatLengthSeconds){
-        lastPulseTime = currentTime;
-        if (currentPulse < pulseBooleanArrayLength){
-            currentPulse += 1;
+    // MY OLD METRONOME
+    // let deltaSinceLoopStart = currentTime - lastLoopStartTime
+    // // delta greater than tlt when switched on last beat? ***** this is the prob
+    // // dsls remains the same??
+    // console.log('llst',lastLoopStartTime ,'dsls',deltaSinceLoopStart,'tlt', totalLoopTime)
+    // if(deltaSinceLoopStart <= totalLoopTime){
+    //     // if else for change?
+    //     timeSinceLoopStart = deltaSinceLoopStart
+    // } else {
+    //     lastLoopStartTime = currentTime
+    // }
+    // // console.log('tlt',totalLoopTime, 'tsls',timeSinceLoopStart)
+    // let deltaTimeSinceLastPulse = currentTime - lastPulseTime;
+    // // bug when len == 1 because sequencer works on lastBeat 
+    // // quick fix is to just not let user do one beat loops
+    // // console.log(currentPulse)
+    // if (deltaTimeSinceLastPulse >= beatLengthSeconds){
+    //     lastPulseTime = currentTime;
+    //     if (currentPulse < pulseBooleanArrayLength){
+    //         currentPulse += 1;
 
-        } else {
-            currentPulse = 1
-        }
-    }; 
+    //     } else {
+    //         currentPulse = 1
+    //     }
+    // }; 
     // console.log(timeSinceLoopStart)
+
+    // GEMINI's Metronome (modulo method to wrap with floor division to count)
+
+    let deltaSinceStart = currentTime - startTime
+    // mod operator restarts timeWithinLoopSeconds at 0 whenever deltaSinceStart(or a multiple of deltaSinceStart that is divisible by TotalLoopTime) excedes totalLoopTime 
+    // this counts up to total loop time, then resets to zero when it goes over, repeating indefinetily 
+    timeWithinLoopSeconds = (deltaSinceStart) % totalLoopTime
+    
+    // timeWithinLoopSeconds is counting up to totalLoopTime then wraps back to 0 after
+    // lets say timeWithinLoopSeconds is 1.5, and beatLenghSeconds is 3. This would equal .5, rounded down 0. 
+    // any time value less than one beat lenght will be rounded to zero, and any over a beat length will be rounded to the lower beat 
+    // add one to go from zero index to music convention of starting at 1
+    let newPulse = Math.floor(timeWithinLoopSeconds / beatLengthSeconds) + 1
+
+    // only rewrite currentPulse global var if the newPulse is not the same as currentPulse
+    // DOKUBLE BACK TO SEE WHY THIS IS IMPORTANT
+    // console.log(newPulse, currentPulse)
+    // currentPulse = newPulse
+    if (newPulse !== currentPulse) {
+        currentPulse = newPulse;
+        lastPulseTime = currentTime;
+        // This is where you'd trigger a sound/on-beat event
+    }
     return currentPulse
 };
 
@@ -1052,11 +1080,22 @@ function euclidianDistance(xOrigin,yOrigin, xPoint, yPoint){
 }
 
 // HTML element sets number of pulses (currently lead)
+// bug when pulse is shifted down during last beat!!! goes out of sync
+// dig into this
 const leadPulsesInput = document.getElementById('lead-pulses-input');
 leadPulsesInput.addEventListener('input', function () {
     let numberOfPulses = this.value
+    // remainder of time after elpased time is divided by beats
+    let timeIntoCurrentBeat = (globalElapsedTime ) % (60 / bpm);
+    // console.log(timeIntoCurrentBeat)
+    // leadPulseBooleanArray = Array.from
     // metronome beats!!!!
+    // mBeat needs to change as well
+    // console.log('et', globalElapsedTime, 'tlt',totalLoopTime, 'tsls',timeSinceLoopStart, leadPulseBooleanArray.length)
+    
+    // MY ARRAY CHANGE
     let leadPulseBooleanArrayCopy = [...leadPulseBooleanArray]
+
     if(numberOfPulses < leadPulseBooleanArrayCopy.length){
         leadPulseBooleanArrayCopy.length = numberOfPulses
     } else {
@@ -1065,6 +1104,37 @@ leadPulsesInput.addEventListener('input', function () {
         }
     }
     leadPulseBooleanArray = leadPulseBooleanArrayCopy
+
+    // GEMINI startTime change
+    // currentPulse = leadPulseBooleanArray.length -1
+    startTime = globalElapsedTime - ((currentPulse - 1) * (60 / bpm)) - timeIntoCurrentBeat;
+    // startTime = globalElapsedTime - ((currentPulse - 1) * (60 / bpm)) - timeIntoCurrentBeat;
+    // total loop time should change!!!
+    // does this do anything or is it bs?
+    // let localBeatLengthSecs = 60 / bpm 
+    // totalLoopTime = localBeatLengthSecs * leadPulseBooleanArray.length
+    // lastLoopStartTime and currentPulse might need to change?
+    // metronome beat needs to change (currentPulse)
+    // console.log('cp', currentPulse, leadPulseBooleanArray.length)
+    if (currentPulse > leadPulseBooleanArray.length){
+        // same bs?
+        // elapsedTime needs to be reconfig
+        // total loop time - one beat time
+        // lastLoopStartTime = totalLoopTime - localBeatLengthSecs 
+        // console.log('1',timeSinceLoopStart, totalLoopTime)
+        // totalLoopTime = localBeatLengthSecs * leadPulseBooleanArray.length
+        // timeSinceLoopStart = timeSinceLoopStart - localBeatLengthSecs
+        // does currentPulse do anything?
+        // startTime = globalElapsedTime - ((currentPulse - 1) * (60 / bpm)) - timeIntoCurrentBeat;
+        currentPulse = leadPulseBooleanArray.length -1
+        // time since last played beat?
+        
+        // lastLoopStartTime - localBeatLengthSecs
+        
+        
+    }
+    // console.log('locbeatlensec', localBeatLengthSecs, totalLoopTime)
+    // console.log('2',timeSinceLoopStart, totalLoopTime)
 })
 
 // let numberOfPulsesLead = leadPulsesInputValue;
@@ -1095,6 +1165,7 @@ function creatCircleNotation (instrumentObj){
         
         // DOT/ONSET SELECT CLIC
         // how does lead sequence stay in sync with this?
+        // time since loopStart? is this a closure issue?
         sketch.mouseClicked = () => {
             // console.log(leadPulseBooleanArray.length)
                 for(let i = 0; i < leadPulseBooleanArray.length; i++){
@@ -1153,7 +1224,7 @@ function creatCircleNotation (instrumentObj){
             let numberOfPulses = leadPulseBooleanArray.length
             for(let i = 0; i < leadPulseBooleanArray.length; i++){
                 let currentPulse = i
-                const angle = (currentPulse / leadPulseBooleanArray.length) * (Math.PI * 2) - Math.PI / 2
+                const angle = (currentPulse / numberOfPulses) * (Math.PI * 2) - Math.PI / 2
                 const dotX = originX + Math.cos(angle) * circleRadius
                 const dotY = originY + Math.sin(angle) * circleRadius
 
@@ -1187,9 +1258,10 @@ function creatCircleNotation (instrumentObj){
             }
 
             // Onset Select
-            
-            let loopPositionAngleRadians = mapV(timeSinceLoopStart, 0, totalLoopTime, 0 , (2 * Math.PI)) - Math.PI / 2
-            
+            // shifted back to 12oclock with - pi*2
+            // console.log('time since loop start draw()',timeSinceLoopStart, totalLoopTime)
+            let loopPositionAngleRadians = mapV(timeWithinLoopSeconds, 0, totalLoopTime, 0 , (2 * Math.PI)) - Math.PI / 2
+            // console.log(loopPositionAngleRadians)
             let loopPositionX = originX + Math.cos(loopPositionAngleRadians) * circleRadius
             let loopPositionY = originY + Math.sin(loopPositionAngleRadians) * circleRadius
             sketch.stroke('white')

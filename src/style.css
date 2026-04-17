@@ -108,3 +108,12 @@ body
     position: fixed;
     color: white;
 }
+
+.instrument-pulses-input{
+    background-color: transparent; /* Or a specific dark color so white text shows */
+    color: white;
+    border: 1px solid white;
+    border-radius: 4px;
+    padding: 5px;
+    outline: none; /* Removes the default blue focus ring */
+}
