@@ -3,10 +3,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import GUI from 'lil-gui'
 import * as MathUtils from 'three/src/math/MathUtils.js'
 import Stats from 'three/examples/jsm/libs/stats.module'
-// import { GodRaysCombineShader } from 'three/examples/jsm/Addons.js'
-// import { element, notEqual } from 'three/tsl'
-// import {chorusStrings} from '../wavetables/Chorus_Strings.js'
-// console.log(chorusStrings)
+
 /**
  * Base
  */
@@ -78,6 +75,8 @@ gui.add( guiParams, 'amplitude', -50, 50, .1
 gui.add( guiParams, 'speedOfWaves', 0, 10, .1 ).onChange(value =>{
     speedOfWaves = value
 });
+
+// this param isnt my fav
 gui.add( guiParams, 'rotationSpeed', 0, 1, .01 ).onChange(value =>{
     rotationSpeed = value
 });
@@ -87,21 +86,10 @@ gui.add( guiParams, 'waveLength', 0,(Math.PI), .00005 ).onChange(value =>{
 
 gui.add( guiParams, 'scopeOn' );
 
-const waveLengthDiv = document.getElementById('wavelength')
-
-function radiansToDegrees(radians){
-    return radians * (180/Math.PI)
-}
-// console.log(radiansToDegrees(goldenAngleRadians))
-
 
 // for each point, we need 3 positions, so positions is 3x points. 
 const positions = new Float32Array(points * 3) // each point requires xyz cordinates
-const linePositions = new Float32Array(points * 3)
 const colors = new Float32Array(points * 3) // each point requires rbg values
-const lineColor = new Float32Array(points * 3)
-
-
 
 fibSphereGeometry.setAttribute(
     'position',
@@ -109,19 +97,9 @@ fibSphereGeometry.setAttribute(
     new THREE.BufferAttribute(positions, 3)
 )
 
-lineGeometry.setAttribute(
-    'position',
-    new THREE.BufferAttribute(linePositions, 3)
-)
-
 fibSphereGeometry .setAttribute(
     'color',
     new THREE.BufferAttribute(colors, 3)
-)
-
-lineGeometry.setAttribute(
-    'color',
-    new THREE.BufferAttribute(lineColor, 3)
 )
 
 const particlesMaterial = new THREE.PointsMaterial({
@@ -129,33 +107,18 @@ const particlesMaterial = new THREE.PointsMaterial({
     sizeAttenuation: true
 })
 
-const lineParticlesMaterial = new THREE.PointsMaterial({
-    size : 0.2,
-    sizeAttenuation: true
-})
-// particlesMaterial.color = new THREE.Color('lightgreen')
 particlesMaterial.transparent = true
 particlesMaterial.alphaMap = particleTexture
 particlesMaterial.depthWrite = false
 particlesMaterial.vertexColors = true
 particlesMaterial.blendAlpha = false
 
-lineParticlesMaterial.transparent = true
-lineParticlesMaterial.alphaMap = particleTexture
-lineParticlesMaterial.depthWrite = false
-lineParticlesMaterial.vertexColors = true
-lineParticlesMaterial.blendAlpha = false
-
 // Points
 // same as mesh, geometry and material
 const sphereParticles= new THREE.Points(fibSphereGeometry , particlesMaterial)
-const lineParticles = new THREE.Points(lineGeometry, lineParticlesMaterial)
 sphereParticles.name = 'sphereParticles'
-lineParticles.name = 'lineParticles'
 
 scene.add(sphereParticles)
-scene.add(lineParticles)
-
 
 /**
  * Sizes
@@ -278,7 +241,6 @@ function playLeadOsc(time, wave, attackTime, releaseTime, noteSequence, currentN
 const bpFilterNodePad = createFilterNode('bandpass', '150')
 
 let padGain = audioContext.createGain();
-// padGain.gain.value = 0.7
 
 function playAdditivePad(time, oscType, fundamental){
 
@@ -402,8 +364,6 @@ function playAdditivePad(time, oscType, fundamental){
     overtoneSixGain.connect(masterGain)
     overtoneSevenGain.connect(masterGain)
     overtoneEightGain.connect(masterGain)
-
-    // filterNode2.connect(judsonReverb).connect(plateReverb).connect(masterGain)
     
     masterGain.connect(bpFilterNodePad).connect(convolutionDistortion2).connect(judsonReverb2).connect(plateReverb2).connect(padGain).connect(audioContext.destination)
 
@@ -444,9 +404,7 @@ async function createJudsonReverb() {
 
   return convolver;
 }
-// let judsonReverb1 = await createJudsonReverb();
 let judsonReverb2 = await createJudsonReverb();
-// let judsonReverb3 = await createJudsonReverb();
 
 async function createPlateReverb() {
   let convolver = audioContext.createConvolver();
@@ -480,7 +438,6 @@ const droneLfoFilterNode = createFilterNode('bandpass', '1')
 const droneGain = audioContext.createGain();
 
 const dronePan = audioContext.createStereoPanner()
-// console.log(dronePan.pan.value = -1)
 
 function playDrone(time, wave, freqency, attack, release){
 
@@ -497,7 +454,6 @@ function playDrone(time, wave, freqency, attack, release){
     droneOscSub.frequency.value = freqency / 2
     const droneOscSubGain = audioContext.createGain()
     droneOscSubGain.gain.value = 0.1
-    // console.log(droneOscSub.frequency.value)
 
     const droneOsc5th = audioContext.createOscillator()
     droneOsc5th.type = wave
@@ -545,38 +501,15 @@ const leadGainControl = document.querySelector("#lead-volume");
 
 leadGainControl.addEventListener("input", () => {
   leadGain.gain.value = leadGainControl.value;
-//   console.log(leadGain.gain.value)
 });
 
 const padGainControl = document.querySelector("#pad-volume");
 
 padGainControl.addEventListener("input", () => {
   padGain.gain.value = padGainControl.value;
-//   console.log(leadGain.gain.value)
 });
 
-
-
-
-
 // SEQUENCER
-
-// modify leadNoteSequence to match lenght of leadSequence
-// must not sound like shit
-function createNewNoteSequence(inputSequece, length){
-    // first and last note should be the same
-    let originalSequence = [...inputSequece]
-    console.log(originalSequence)
-}
-
-// no pulses in sequence should have a beat higher than the number of pulses in the sequence
-// this will live in the sketch.draw() loop
-// also invoked with leadPulsesInput html form change
-function modifyOnsetSequence(oldOnsetSequence, numberOfPulsesInSequence){
-    let newOnsetSequence = oldOnsetSequence.filter((onset) => onset <= numberOfPulsesInSequence)
-    newOnsetSequence.sort()
-    return newOnsetSequence
-}
 
 // how do I make lead Note Sequence sound good at many lengths?
 const leadNoteSequence = [783.99, 622.25, 932.35, 587.33, 1174.66, 783.99, 622.25, 932.35, 587.33]
@@ -644,23 +577,13 @@ function padSequencer(time, metronomeBeat, sequence) {
             padSequenceStep = 0
         }
     } 
-    
-    
-    // increaseSaturationWithPadPlay(time)
 }
 
 // METRONOME
 
 let bpm = 20;
-// numberOfPulses should be changeable
-// this should be the config object 
-// let numberOfPulses = 8;
-// leadObj should contain, BPM, number of pulses, onsetSequence noteSequence?
-// if replaced with an array of booleans for each beat (turned on or off if selected), might be better
-// let leadObj = {'numberOfPulses' : 8}
 let lastPulseTime = 0;
 let startTime = 0
-// is currentPulse needed?
 let currentPulse = 1;
 let beatLengthSeconds = null
 let totalLoopTime = null
@@ -671,33 +594,6 @@ function metronome(currentTime, pulseBooleanArrayLength, bpm){
     
     beatLengthSeconds = 60.0 / bpm;
     totalLoopTime = beatLengthSeconds * pulseBooleanArrayLength
-
-    // MY OLD METRONOME
-    // let deltaSinceLoopStart = currentTime - lastLoopStartTime
-    // // delta greater than tlt when switched on last beat? ***** this is the prob
-    // // dsls remains the same??
-    // console.log('llst',lastLoopStartTime ,'dsls',deltaSinceLoopStart,'tlt', totalLoopTime)
-    // if(deltaSinceLoopStart <= totalLoopTime){
-    //     // if else for change?
-    //     timeSinceLoopStart = deltaSinceLoopStart
-    // } else {
-    //     lastLoopStartTime = currentTime
-    // }
-    // // console.log('tlt',totalLoopTime, 'tsls',timeSinceLoopStart)
-    // let deltaTimeSinceLastPulse = currentTime - lastPulseTime;
-    // // bug when len == 1 because sequencer works on lastBeat 
-    // // quick fix is to just not let user do one beat loops
-    // // console.log(currentPulse)
-    // if (deltaTimeSinceLastPulse >= beatLengthSeconds){
-    //     lastPulseTime = currentTime;
-    //     if (currentPulse < pulseBooleanArrayLength){
-    //         currentPulse += 1;
-
-    //     } else {
-    //         currentPulse = 1
-    //     }
-    // }; 
-    // console.log(timeSinceLoopStart)
 
     // GEMINI's Metronome (modulo method to wrap with floor division to count)
 
@@ -713,13 +609,10 @@ function metronome(currentTime, pulseBooleanArrayLength, bpm){
     let newPulse = Math.floor(timeWithinLoopSeconds / beatLengthSeconds) + 1
 
     // only rewrite currentPulse global var if the newPulse is not the same as currentPulse
-    // DOKUBLE BACK TO SEE WHY THIS IS IMPORTANT
-    // console.log(newPulse, currentPulse)
-    // currentPulse = newPulse
+    // this appears to keep metronome in sync with pulse changes
     if (newPulse !== currentPulse) {
         currentPulse = newPulse;
         lastPulseTime = currentTime;
-        // This is where you'd trigger a sound/on-beat event
     }
     return currentPulse
 };
@@ -1045,13 +938,9 @@ const tick = () =>
     fibSphereGeometry.attributes.position.needsUpdate = true
     fibSphereGeometry.attributes.color.needsUpdate = true
 
-    lineGeometry.attributes.position.needsUpdate = true
-    lineGeometry.attributes.color.needsUpdate = true
 
-    // updateColorsOnPulse(colors, elapsedTime)
-
+    // MIGRATE ARAY FROM CONTROLS UI
     controls.update()
-    // console.log(Math.sin(waveLength))
     // Render
     renderer.render(scene, camera)
 
@@ -1065,12 +954,6 @@ tick()
 
 // UI
 import p5 from 'p5';
-// import { circle } from 'three/examples/jsm/tsl/display/Shape.js'
-// import { circle } from 'three/examples/jsm/tsl/display/Shape.js'
-
-// three render loop and this component need to share time
-// lets try to get a dot to move around the circle in bpm time
-
 
 // Helper Funcs
 
@@ -1079,19 +962,14 @@ function euclidianDistance(xOrigin,yOrigin, xPoint, yPoint){
     return dist
 }
 
-// HTML element sets number of pulses (currently lead)
-// bug when pulse is shifted down during last beat!!! goes out of sync
-// dig into this
+// CHANGE NUMBER OF PULSES
 const leadPulsesInput = document.getElementById('lead-pulses-input');
 leadPulsesInput.addEventListener('input', function () {
     let numberOfPulses = this.value
+    // study this
     // remainder of time after elpased time is divided by beats
+    // returns the position of remainder of time after a beat, before the next beat starts
     let timeIntoCurrentBeat = (globalElapsedTime ) % (60 / bpm);
-    // console.log(timeIntoCurrentBeat)
-    // leadPulseBooleanArray = Array.from
-    // metronome beats!!!!
-    // mBeat needs to change as well
-    // console.log('et', globalElapsedTime, 'tlt',totalLoopTime, 'tsls',timeSinceLoopStart, leadPulseBooleanArray.length)
     
     // MY ARRAY CHANGE
     let leadPulseBooleanArrayCopy = [...leadPulseBooleanArray]
@@ -1106,83 +984,42 @@ leadPulsesInput.addEventListener('input', function () {
     leadPulseBooleanArray = leadPulseBooleanArrayCopy
 
     // GEMINI startTime change
-    // currentPulse = leadPulseBooleanArray.length -1
+    // STUDY THIS 
+    // remove one pulse, 
     startTime = globalElapsedTime - ((currentPulse - 1) * (60 / bpm)) - timeIntoCurrentBeat;
-    // startTime = globalElapsedTime - ((currentPulse - 1) * (60 / bpm)) - timeIntoCurrentBeat;
-    // total loop time should change!!!
-    // does this do anything or is it bs?
-    // let localBeatLengthSecs = 60 / bpm 
-    // totalLoopTime = localBeatLengthSecs * leadPulseBooleanArray.length
-    // lastLoopStartTime and currentPulse might need to change?
-    // metronome beat needs to change (currentPulse)
-    // console.log('cp', currentPulse, leadPulseBooleanArray.length)
     if (currentPulse > leadPulseBooleanArray.length){
-        // same bs?
-        // elapsedTime needs to be reconfig
-        // total loop time - one beat time
-        // lastLoopStartTime = totalLoopTime - localBeatLengthSecs 
-        // console.log('1',timeSinceLoopStart, totalLoopTime)
-        // totalLoopTime = localBeatLengthSecs * leadPulseBooleanArray.length
-        // timeSinceLoopStart = timeSinceLoopStart - localBeatLengthSecs
-        // does currentPulse do anything?
-        // startTime = globalElapsedTime - ((currentPulse - 1) * (60 / bpm)) - timeIntoCurrentBeat;
         currentPulse = leadPulseBooleanArray.length -1
-        // time since last played beat?
-        
-        // lastLoopStartTime - localBeatLengthSecs
-        
-        
     }
-    // console.log('locbeatlensec', localBeatLengthSecs, totalLoopTime)
-    // console.log('2',timeSinceLoopStart, totalLoopTime)
 })
 
-// let numberOfPulsesLead = leadPulsesInputValue;
-
 // THIS IS THE ANIMATED UI
-// currently for LEAD
-// 2- change number of onsets 
 // 4- repeat for all instruments
-// console.log('lpiv',leadPulsesInputValue)
-// do I need instrumentObj any more?
-function creatCircleNotation (instrumentObj){
+
+function creatCircleNotation (){
     // console.log('lpiv func',leadPulsesInputValue)
     const circleNotation= (sketch) => {
-        // let testPulseNum = 8
 
         let canvasHeight = 200
         let canvasWidth = 200
-        // let numberOfPulses = 8s
         let originX = canvasWidth / 2
         let originY = canvasHeight / 2
         let circleDiameter = canvasHeight - 70
         let dotDiameter = 15
         let circleRadius = circleDiameter / 2
-        // this should be a global param later
-        // selectedDots replaced with leadPulseBooleanArray
-        // let selectedDots = []
        
-        
         // DOT/ONSET SELECT CLIC
-        // how does lead sequence stay in sync with this?
-        // time since loopStart? is this a closure issue?
         sketch.mouseClicked = () => {
-            // console.log(leadPulseBooleanArray.length)
                 for(let i = 0; i < leadPulseBooleanArray.length; i++){
                     let currentPulse = i
-                    // console.log(currentPulse)
                     const angle = (currentPulse / leadPulseBooleanArray.length) * (Math.PI * 2) - Math.PI / 2;
                     const dotX = originX + Math.cos(angle) * circleRadius;
                     const dotY = originY + Math.sin(angle) * circleRadius;
                     const dist = euclidianDistance(dotX, dotY, sketch.mouseX, sketch.mouseY);
                     // sense click on dot
                     if (dist < dotDiameter / 2){
-                        console.log('dot clik')
                         // click on empty dot to turn pulse into onset
                         if (leadPulseBooleanArray[currentPulse] == false){
-                           
                             leadPulseBooleanArray[currentPulse] = true
-                            
                         // click on filled dot (onset) to turn back into pulse (empty)
                         } else {
                             leadPulseBooleanArray[currentPulse] = false
@@ -1199,20 +1036,9 @@ function creatCircleNotation (instrumentObj){
 
         
         sketch.draw = () => {
-            // console.log(leadPulseBooleanArray)
-            // this slows shite down!!!
-            // leadOnsetSequence = modifyOnsetSequence(leadOnsetSequence, leadObj.numberOfPulses)
-            // console.log(leadOnsetSequence)
-            // let currentPulseNumber = instrumentObj.numberOfPulses
-            // console.log('pulls num',currentPulseNumber, 'leadseq',leadSequence,'selected-dots', selectedDots)
-            // console.log('sd',selectedDots)
-            // console.log(leadPulsesInputValue)
-            // why undefined?
-            // console.log('drawloop',leadPulsesInputValue)
-            // console.log(numberOfPulsesLead)
+     
             // CIRCLE 
             sketch.clear();
-            // sketch.background(30);
             sketch.noFill();
             sketch.stroke(255);
             sketch.strokeWeight(3);
@@ -1233,7 +1059,6 @@ function creatCircleNotation (instrumentObj){
                 const textY = originY + Math.sin(angle) * (circleRadius + extraDistForText)
 
                 
-                //
                 // if circle selected, fill circle
                 // im slightly confused as to why this works
                 if (leadPulseBooleanArray[currentPulse] == true){
@@ -1259,9 +1084,7 @@ function creatCircleNotation (instrumentObj){
 
             // Onset Select
             // shifted back to 12oclock with - pi*2
-            // console.log('time since loop start draw()',timeSinceLoopStart, totalLoopTime)
             let loopPositionAngleRadians = mapV(timeWithinLoopSeconds, 0, totalLoopTime, 0 , (2 * Math.PI)) - Math.PI / 2
-            // console.log(loopPositionAngleRadians)
             let loopPositionX = originX + Math.cos(loopPositionAngleRadians) * circleRadius
             let loopPositionY = originY + Math.sin(loopPositionAngleRadians) * circleRadius
             sketch.stroke('white')
