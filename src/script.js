@@ -519,7 +519,7 @@ let lastPlayedBeatLead = null
 let leadObj = {
     noteSequence: [783.99, 622.25, 932.35, 587.33, 1174.66, 783.99, 622.25, 932.35, 587.33],
     noteIndex: 0,
-    pulseBooleanArray: [true, false, false, true, false, false, true, false],
+    pulseBooleanArray : [true, false, false, true, false, false, true, false],
     lastPlayedBeat: null
 }
 
@@ -597,39 +597,49 @@ function padSequencer(time, metronomeBeat, sequence) {
 // METRONOME
 
 let bpm = 20;
-let lastPulseTime = 0;
-let startTime = 0
-let currentPulse = 1;
-let beatLengthSeconds = null
-let totalLoopTime = null
-let timeWithinLoopSeconds= null
+// let lastPulseTime = 0;
+// let startTime = 0
+// let currentPulse = 1;
+// let beatLengthSeconds = null
+// let totalLoopTime = null
+// let timeWithinLoopSeconds= null
+
+// instrumentObj has length of loop in beats? does this make sense?
+let leadMetronomeObj = {
+    lastPulseTime: 0,
+    startTime: 0,
+    currentPulse: 1,
+    // beatLengthSeconds: null,
+    totalLoopTime: null,
+    timeWithinLoopSeconds: null
+}
 // METRONOME SHOULD RETURN BOTH BEATS AND TIME COMPLETED OF LOOP
 
-function metronome(currentTime, pulseBooleanArrayLength, bpm){
+function metronome(currentTime, metronomeObj, instrumentObj, bpm){
     
-    beatLengthSeconds = 60.0 / bpm;
-    totalLoopTime = beatLengthSeconds * pulseBooleanArrayLength
+    let beatLengthSeconds = 60.0 / bpm;
+    metronomeObj.totalLoopTime = beatLengthSeconds * instrumentObj.pulseBooleanArray.length
 
     // GEMINI's Metronome (modulo method to wrap with floor division to count)
 
-    let deltaSinceStart = currentTime - startTime
+    let deltaSinceStart = currentTime - leadMetronomeObj.startTime
     // mod operator restarts timeWithinLoopSeconds at 0 whenever deltaSinceStart(or a multiple of deltaSinceStart that is divisible by TotalLoopTime) excedes totalLoopTime 
     // this counts up to total loop time, then resets to zero when it goes over, repeating indefinetily 
-    timeWithinLoopSeconds = (deltaSinceStart) % totalLoopTime
+    metronomeObj.timeWithinLoopSeconds = (deltaSinceStart) % metronomeObj.totalLoopTime
     
     // timeWithinLoopSeconds is counting up to totalLoopTime then wraps back to 0 after
     // lets say timeWithinLoopSeconds is 1.5, and beatLenghSeconds is 3. This would equal .5, rounded down 0. 
     // any time value less than one beat lenght will be rounded to zero, and any over a beat length will be rounded to the lower beat 
     // add one to go from zero index to music convention of starting at 1
-    let newPulse = Math.floor(timeWithinLoopSeconds / beatLengthSeconds) + 1
+    let newPulse = Math.floor(metronomeObj.timeWithinLoopSeconds / beatLengthSeconds) + 1
 
     // only rewrite currentPulse global var if the newPulse is not the same as currentPulse
     // this appears to keep metronome in sync with pulse changes
-    if (newPulse !== currentPulse) {
-        currentPulse = newPulse;
-        lastPulseTime = currentTime;
+    if (newPulse !== metronomeObj.currentPulse) {
+        metronomeObj.currentPulse = newPulse;
+        metronomeObj.lastPulseTime = currentTime;
     }
-    return currentPulse
+    return metronomeObj.currentPulse
 };
 
 // UTILITY FUNCTIONS
@@ -822,7 +832,7 @@ const tick = () =>
     stats.update()
     // put leadConfig.pulses into numberof pulses arg
     // will later need a differnet metronome for each instrument
-    let metronomeTime = metronome(elapsedTime, leadPulseBooleanArray.length, bpm);
+    let metronomeTime = metronome(elapsedTime, leadMetronomeObj, leadObj, bpm);
 
 
     globalMetronomeTime = metronomeTime
@@ -923,25 +933,7 @@ const tick = () =>
         changeColorOfParticlesWithinBandwidth(positionBetweenBoundsArray, outerRadius, i3, 1)
         easeInOutSine(changePositionParticlesWithinBandwidth(positionBetweenBoundsArray, polarAngle, azimuth, outerRadius, i3, 1))
         
-        // SCOPE
-        if (guiParams.scopeOn == true ){
-           
-            linePositions[i3] = 0//x
-            linePositions[i3 + 1] = ((Math.sin((elapsedTime * speedOfWaves) + (i * waveLength))))  * amplitude //y
-            linePositions[i3+2] = i / 50 //z
-
-            const zPosition = positions[i3 + 2]
-            lineColor[i3] = ((Math.sin(elapsedTime + zPosition)+1) / 2) // r
-            lineColor[i3+1] = ((Math.sin((elapsedTime + zPosition)+2)+1) / 2) // g
-            lineColor[i3+2] = ((Math.sin((elapsedTime + zPosition)+4)+1) / 2) // b
-            if (!checkForChildName(scene, 'lineParticles')){
-                scene.add(lineParticles)
-            }
-
-        } else if (guiParams.scopeOn == false && checkForChildName(scene, 'lineParticles')){
-            // console.log('i worked')
-            scene.remove(lineParticles)
-        }
+        
     }
 
 
@@ -976,37 +968,46 @@ function euclidianDistance(xOrigin,yOrigin, xPoint, yPoint){
 // CHANGE NUMBER OF PULSES
 const leadPulsesInput = document.getElementById('lead-pulses-input');
 leadPulsesInput.addEventListener('input', function () {
+    let instrumentId = this.id
     let numberOfPulses = this.value
+    let instrumentObj = null
+    let metronomeObj = null
+
+    if (instrumentId == 'lead-pulses-input'){
+        instrumentObj = leadObj
+        metronomeObj = leadMetronomeObj
+    }
+    
     // study this
     // remainder of time after elpased time is divided by beats
     // returns the position of remainder of time after a beat, before the next beat starts
     let timeIntoCurrentBeat = (globalElapsedTime ) % (60 / bpm);
     
     // MY ARRAY CHANGE
-    let leadPulseBooleanArrayCopy = [...leadPulseBooleanArray]
+    let pulseBooleanArrayCopy = [...instrumentObj.pulseBooleanArray]
 
-    if(numberOfPulses < leadPulseBooleanArrayCopy.length){
-        leadPulseBooleanArrayCopy.length = numberOfPulses
+    if(numberOfPulses < pulseBooleanArrayCopy.length){
+        pulseBooleanArrayCopy.length = numberOfPulses
     } else {
-        while(leadPulseBooleanArrayCopy.length < numberOfPulses){
-            leadPulseBooleanArrayCopy.push(false)
+        while(pulseBooleanArrayCopy.length < numberOfPulses){
+            pulseBooleanArrayCopy.push(false)
         }
     }
-    leadPulseBooleanArray = leadPulseBooleanArrayCopy
+    instrumentObj.pulseBooleanArray = pulseBooleanArrayCopy
 
     // GEMINI startTime change
     // STUDY THIS 
     // remove one pulse, 
-    startTime = globalElapsedTime - ((currentPulse - 1) * (60 / bpm)) - timeIntoCurrentBeat;
-    if (currentPulse > leadPulseBooleanArray.length){
-        currentPulse = leadPulseBooleanArray.length -1
+    metronomeObj.startTime = globalElapsedTime - ((metronomeObj.currentPulse - 1) * (60 / bpm)) - timeIntoCurrentBeat;
+    if (metronomeObj.currentPulse > instrumentObj.pulseBooleanArray.length){
+        metronomeObj.currentPulse = instrumentObj.pulseBooleanArray.length -1
     }
 })
 
 // THIS IS THE ANIMATED UI
 // 4- repeat for all instruments
 
-function creatCircleNotation (){
+function creatCircleNotation (instrumentObj, metronomeObj){
     // console.log('lpiv func',leadPulsesInputValue)
     const circleNotation= (sketch) => {
 
@@ -1020,20 +1021,20 @@ function creatCircleNotation (){
        
         // DOT/ONSET SELECT CLIC
         sketch.mouseClicked = () => {
-                for(let i = 0; i < leadPulseBooleanArray.length; i++){
+                for(let i = 0; i < instrumentObj.pulseBooleanArray.length; i++){
                     let currentPulse = i
-                    const angle = (currentPulse / leadPulseBooleanArray.length) * (Math.PI * 2) - Math.PI / 2;
+                    const angle = (currentPulse / instrumentObj.pulseBooleanArray.length) * (Math.PI * 2) - Math.PI / 2;
                     const dotX = originX + Math.cos(angle) * circleRadius;
                     const dotY = originY + Math.sin(angle) * circleRadius;
                     const dist = euclidianDistance(dotX, dotY, sketch.mouseX, sketch.mouseY);
                     // sense click on dot
                     if (dist < dotDiameter / 2){
                         // click on empty dot to turn pulse into onset
-                        if (leadPulseBooleanArray[currentPulse] == false){
-                            leadPulseBooleanArray[currentPulse] = true
+                        if (instrumentObj.pulseBooleanArray[currentPulse] == false){
+                            instrumentObj.pulseBooleanArray[currentPulse] = true
                         // click on filled dot (onset) to turn back into pulse (empty)
                         } else {
-                            leadPulseBooleanArray[currentPulse] = false
+                            instrumentObj.pulseBooleanArray[currentPulse] = false
                         }
                     };
                 };
@@ -1058,8 +1059,8 @@ function creatCircleNotation (){
             //DOTS FOR PULSES
             
             // numberofPulsesLead needs to change for other instruments
-            let numberOfPulses = leadPulseBooleanArray.length
-            for(let i = 0; i < leadPulseBooleanArray.length; i++){
+            let numberOfPulses = instrumentObj.pulseBooleanArray.length
+            for(let i = 0; i < instrumentObj.pulseBooleanArray.length; i++){
                 let currentPulse = i
                 const angle = (currentPulse / numberOfPulses) * (Math.PI * 2) - Math.PI / 2
                 const dotX = originX + Math.cos(angle) * circleRadius
@@ -1072,7 +1073,7 @@ function creatCircleNotation (){
                 
                 // if circle selected, fill circle
                 // im slightly confused as to why this works
-                if (leadPulseBooleanArray[currentPulse] == true){
+                if (instrumentObj.pulseBooleanArray[currentPulse] == true){
                     sketch.fill(255)
                 } else {
                     sketch.noFill();
@@ -1095,7 +1096,9 @@ function creatCircleNotation (){
 
             // Onset Select
             // shifted back to 12oclock with - pi*2
-            let loopPositionAngleRadians = mapV(timeWithinLoopSeconds, 0, totalLoopTime, 0 , (2 * Math.PI)) - Math.PI / 2
+            // console.log(instrumentObj.timeWithinLoopSeconds, instrumentObj.totalLoopTime)
+            let loopPositionAngleRadians = mapV(metronomeObj.timeWithinLoopSeconds, 0, metronomeObj.totalLoopTime, 0 , (2 * Math.PI)) - Math.PI / 2
+            // console.log(loopPositionAngleRadians)
             let loopPositionX = originX + Math.cos(loopPositionAngleRadians) * circleRadius
             let loopPositionY = originY + Math.sin(loopPositionAngleRadians) * circleRadius
             sketch.stroke('white')
@@ -1108,7 +1111,7 @@ function creatCircleNotation (){
 
 // this value appears not to change? 
 // rename these variables
-let circleNotationOne = creatCircleNotation()
+let circleNotationOne = creatCircleNotation(leadObj, leadMetronomeObj)
 
 
 
