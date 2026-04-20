@@ -32,7 +32,6 @@ const particleTexture = textureLoader.load('/textures/particles/4.png')
  */
 // const particlesGeometry = new THREE.SphereGeometry(1,32,32)
 const fibSphereGeometry = new THREE.BufferGeometry()
-const lineGeometry = new THREE.BufferGeometry()
 
 let points = 100000
 
@@ -226,12 +225,12 @@ function playLeadOsc(time, wave, attackTime, releaseTime, noteSequence, currentN
     } else {
         leadPan.pan.value = -.3
     }
-
+    console.log(leadObj.noteIndex)
     // Advance notes
-    if (leadNoteIndex< notesLength - 1){
-        leadNoteIndex = leadNoteIndex + 1
+    if (currentNoteIndex< notesLength - 1){
+        leadObj.noteIndex = leadObj.noteIndex + 1
     } else {
-        leadNoteIndex = 0
+        leadObj.noteIndex = 0
     }
 }
 
@@ -515,28 +514,44 @@ padGainControl.addEventListener("input", () => {
 const leadNoteSequence = [783.99, 622.25, 932.35, 587.33, 1174.66, 783.99, 622.25, 932.35, 587.33]
 let leadNoteIndex = 0
 let leadPulseBooleanArray = [true, false, false, true, false, false, true, false]
-let lastPlayedBeat = null
+let lastPlayedBeatLead = null
+
+let leadObj = {
+    noteSequence: [783.99, 622.25, 932.35, 587.33, 1174.66, 783.99, 622.25, 932.35, 587.33],
+    noteIndex: 0,
+    pulseBooleanArray: [true, false, false, true, false, false, true, false],
+    lastPlayedBeat: null
+}
+
+
 // make this work for all instruments by taking diff args
-function leadSequencerBooleanArray (time, metronomeBeat, pulseArray){
+function sequencer (time, metronomeBeat, instrument){
+    // noteIndex, playOsc(), noteSequence, timeStartArray(animationStartArray?)
+    let playOsc
+    if (instrument = leadObj){
+        playOsc = () => playLeadOsc(time, 'triangle', 0.1, 1, instrument.noteSequence, instrument.noteIndex);
+    }
     // beat is music time starting at one
     // but array starts at 0
     let currentBeat = metronomeBeat - 1
 
-    for (let i = 0; i < pulseArray.length; i++){
-        let currentSequenceOnsetBoolean = pulseArray[i]
+    for (let i = 0; i < instrument.pulseBooleanArray.length; i++){
+        let currentSequenceOnsetBoolean = instrument.pulseBooleanArray[i]
         let currentSequenceOnset = i
         // bug occurs when sequence only has length of 1 because lastPlayed beat is same as currentBeat
         // not sure how to fix this just yet
-        if (currentSequenceOnsetBoolean == true && currentSequenceOnset === currentBeat && lastPlayedBeat !== currentBeat){
+        if (currentSequenceOnsetBoolean == true && currentSequenceOnset === currentBeat && instrument.lastPlayedBeat !== currentBeat){
             // leadNoteIndex is advanced withing playLeadOsc()
-            playLeadOsc(time, 'triangle', 0.1, 1, leadNoteSequence, leadNoteIndex)
+            playOsc()
             // this should prevent osc from playiing multiple times per beat
-            lastPlayedBeat = currentBeat
+            instrument.lastPlayedBeat = currentBeat
+            // trouble with variables for lastPlayedBeat
+            
             // lead start time array is for animation
             leadStartTimeArray.push(time)
         } 
     } 
-
+ 
 }
 
 
@@ -809,11 +824,10 @@ const tick = () =>
     // will later need a differnet metronome for each instrument
     let metronomeTime = metronome(elapsedTime, leadPulseBooleanArray.length, bpm);
 
+
     globalMetronomeTime = metronomeTime
-    // console.log('ls',leadOnsetSequence)
-    // should this take global vars as args? does that do anything differently? 
-    // leadSequencer(elapsedTime, metronomeTime, leadOnsetSequence)
-    leadSequencerBooleanArray(elapsedTime, metronomeTime, leadPulseBooleanArray)
+   
+    let leadSequencer = sequencer(elapsedTime, metronomeTime, leadObj)
     // console.log(leadPulseBooleanArray, metronomeTime)
     tremGain.gain.value = lfoValue(.5, 1.5, 40, elapsedTime)
  
@@ -822,7 +836,6 @@ const tick = () =>
 
     padSequencer(elapsedTime, metronomeTime, padSequence)
     
-    // console.log(saturationLevel)
 
     // DRONE FILTER SWEEP
     droneLfoFilterNode.frequency.value = lfoValue(39, 156, .5, elapsedTime)
@@ -840,10 +853,8 @@ const tick = () =>
   
     
     // ANIMATIONS 
-    // LEAD ANIMATIONS
-    
-    // console.log(leadStartTimeArray)
 
+    // LEAD ANIMATIONS ARE IN PARTICLE FOR LOOP
 
     // PAD ANIMATIONS
     removeStartTimesOfCompletedAnimations(elapsedTime, padStartTimeArray, padAnimationLength)
@@ -851,7 +862,7 @@ const tick = () =>
     let clampedAnimationValuesSum = MathUtils.clamp(summedAnimationValues, 0 ,100)
 
     // change fib spiral pattern with pad play
-    // could use non clamped vals but would need to know
+    // could use non clamped vals but would need to know max value
     waveLength = mapV(clampedAnimationValuesSum, 1 , 100 , waveLength, waveLength + .00000005)
     
     // THIS COULD LOOK BETTER!!!
