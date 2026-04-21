@@ -241,7 +241,10 @@ const bpFilterNodePad = createFilterNode('bandpass', '150')
 
 let padGain = audioContext.createGain();
 
-function playAdditivePad(time, oscType, fundamental){
+function playAdditivePad(time, oscType, fundamental, chordSequence, currentChordIndex){
+
+    const  chordSequenceLength= chordSequence.length
+    // console.log(chordSequence[currentChordIndex])
 
     let fundamentalOsc = new OscillatorNode(audioContext, {
         frequency: fundamental,
@@ -523,52 +526,53 @@ let leadObj = {
 
 let chordObj = {
     "EbM7" : [311.13, 392, 587.33,  466.16], // check to see what chord it really is
-    "EbM" : [311.13, 369.99, 466.16], // Eb, Gb, Bb — Ebm
+    "EbM7inv" : [466.16, 587.33, 392.00, 311.13],
     "CM7" : [261.63, 311.13, 392.00, 466.16], // C, Eb, G, Bb — Cm7
-    "CM" : [261.63, 311.13, 392.00], // C, Eb, G — Cm
-    "AM7" : [220.00, 261.63, 329.63, 392.00], // A, C, E, G — Am7
-    "AM" : [220.00, 261.63, 329.63] // A, C, E — Am
+    "CM7inv" : [466.16, 392.00, 311.13, 261.63],
+    "Bb7" : [233.08, 293.66, 349.23, 466.16] // Bb, D, F, A — BbMaj7
 }
 
 let padObj = {
     type : 'pad',
-    chordSequence: ["EbM7", "CM7", "AM7"],
+    chordSequence: ["EbM7", "CM7", "EbM7inv", "CM7inv", "Bb7"],
     noteIndex: 0,
-    pulseBooleanArray : [true, false, false, true, true, false, false, true],
+    // adjust length of pad to fit into seq?
+    pulseBooleanArray : [true, false, false, true, false, false, false, true],
     lastPlayedBeat: null
 }
 
 
 // make this work for all instruments by taking diff args
 function sequencer(time, metronomeBeat, instrument){
-    // noteIndex, playOsc(), noteSequence, timeStartArray(animationStartArray?)
-    // console.log(instrument)
+    // setup for each differnet instrument
+    // load notes to be played into playOscArray
     let playOscArray = []
     if (instrument.type == 'lead'){
-        console.log('lead')
         let playOsc = () => playLeadOsc(time, 'triangle', 0.1, 1, instrument.noteSequence, instrument.noteIndex);
         playOscArray.push(playOsc)
     } else if (instrument.type == 'pad'){
-        console.log('pad')
-        console.log(instrument.chordSequence[instrument.noteIndex])
         let currentChord = instrument.chordSequence[instrument.noteIndex]
         let currentChordNotes = chordObj[currentChord]
-        console.log(currentChordNotes)
-        // let chordOscArray = []
         let timeStagger = 0
+        // console.log(currentChord, currentChordNotes)
         for (let i = 0; i < currentChordNotes.length; i++){
             let chordNote = currentChordNotes[i]
-            
-            let playOsc = () => playAdditivePad(time + timeStagger, "sine", chordNote)
+            console.log(instrument.chordSequence[instrument.noteIndex])
+            let playOsc = () => playAdditivePad(time + timeStagger, "sine", chordNote, instrument.chordSequence, instrument.noteIndex)
             playOscArray.push(playOsc)
             timeStagger += .5
         }
+        // if (instrument.noteIndex < instrument.chordSequence.length - 1){
+        //     padObj.noteIndex = padObj.noteIndex + 1
+        // } else {
+        //     padObj.noteIndex = 0
+        // }
         
     }
     // down beat for music is 1
     // but boolean pulse array starts at 0
     let currentBeat = metronomeBeat - 1
-
+    
     for (let i = 0; i < instrument.pulseBooleanArray.length; i++){
         let currentSequenceOnsetBoolean = instrument.pulseBooleanArray[i]
         let currentSequenceOnset = i
@@ -579,6 +583,13 @@ function sequencer(time, metronomeBeat, instrument){
             // playOsc()
             for (const ocsPlayFunc of playOscArray){
                 ocsPlayFunc()
+            }
+            if (instrument.type == 'pad'){
+                if (instrument.noteIndex < instrument.chordSequence.length - 1){
+                    padObj.noteIndex = padObj.noteIndex + 1
+                } else {
+                    padObj.noteIndex = 0
+                }
             }
             // this should prevent osc from playiing multiple times per beat
             instrument.lastPlayedBeat = currentBeat
