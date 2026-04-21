@@ -225,7 +225,7 @@ function playLeadOsc(time, wave, attackTime, releaseTime, noteSequence, currentN
     } else {
         leadPan.pan.value = -.3
     }
-    console.log(leadObj.noteIndex)
+    // console.log(leadObj.noteIndex)
     // Advance notes
     if (currentNoteIndex< notesLength - 1){
         leadObj.noteIndex = leadObj.noteIndex + 1
@@ -511,28 +511,62 @@ padGainControl.addEventListener("input", () => {
 // SEQUENCER
 
 // how do I make lead Note Sequence sound good at many lengths?
-const leadNoteSequence = [783.99, 622.25, 932.35, 587.33, 1174.66, 783.99, 622.25, 932.35, 587.33]
-let leadNoteIndex = 0
-let leadPulseBooleanArray = [true, false, false, true, false, false, true, false]
-let lastPlayedBeatLead = null
+// would pulse array (rhtyhm) be better included in instrumentObj than metronomeObj? 
 
 let leadObj = {
+    type : 'lead',
     noteSequence: [783.99, 622.25, 932.35, 587.33, 1174.66, 783.99, 622.25, 932.35, 587.33],
     noteIndex: 0,
     pulseBooleanArray : [true, false, false, true, false, false, true, false],
     lastPlayedBeat: null
 }
 
+let chordObj = {
+    "EbM7" : [311.13, 392, 587.33,  466.16], // check to see what chord it really is
+    "EbM" : [311.13, 369.99, 466.16], // Eb, Gb, Bb — Ebm
+    "CM7" : [261.63, 311.13, 392.00, 466.16], // C, Eb, G, Bb — Cm7
+    "CM" : [261.63, 311.13, 392.00], // C, Eb, G — Cm
+    "AM7" : [220.00, 261.63, 329.63, 392.00], // A, C, E, G — Am7
+    "AM" : [220.00, 261.63, 329.63] // A, C, E — Am
+}
+
+let padObj = {
+    type : 'pad',
+    chordSequence: ["EbM7", "CM7", "AM7"],
+    noteIndex: 0,
+    pulseBooleanArray : [true, false, false, true, true, false, false, true],
+    lastPlayedBeat: null
+}
+
 
 // make this work for all instruments by taking diff args
-function sequencer (time, metronomeBeat, instrument){
+function sequencer(time, metronomeBeat, instrument){
     // noteIndex, playOsc(), noteSequence, timeStartArray(animationStartArray?)
-    let playOsc
-    if (instrument = leadObj){
-        playOsc = () => playLeadOsc(time, 'triangle', 0.1, 1, instrument.noteSequence, instrument.noteIndex);
+    // console.log(instrument)
+    let playOscArray = []
+    if (instrument.type == 'lead'){
+        console.log('lead')
+        let playOsc = () => playLeadOsc(time, 'triangle', 0.1, 1, instrument.noteSequence, instrument.noteIndex);
+        playOscArray.push(playOsc)
+    } else if (instrument.type == 'pad'){
+        console.log('pad')
+        console.log(instrument.chordSequence[instrument.noteIndex])
+        let currentChord = instrument.chordSequence[instrument.noteIndex]
+        let currentChordNotes = chordObj[currentChord]
+        console.log(currentChordNotes)
+        // let chordOscArray = []
+        let timeStagger = 0
+        for (let i = 0; i < currentChordNotes.length; i++){
+            let chordNote = currentChordNotes[i]
+            
+            let playOsc = () => playAdditivePad(time + timeStagger, "sine", chordNote)
+            playOscArray.push(playOsc)
+            timeStagger += .5
+        }
+        
     }
-    // beat is music time starting at one
-    // but array starts at 0
+    // down beat for music is 1
+    // but boolean pulse array starts at 0
     let currentBeat = metronomeBeat - 1
 
     for (let i = 0; i < instrument.pulseBooleanArray.length; i++){
@@ -542,19 +576,24 @@ function sequencer (time, metronomeBeat, instrument){
         // not sure how to fix this just yet
         if (currentSequenceOnsetBoolean == true && currentSequenceOnset === currentBeat && instrument.lastPlayedBeat !== currentBeat){
             // leadNoteIndex is advanced withing playLeadOsc()
-            playOsc()
+            // playOsc()
+            for (const ocsPlayFunc of playOscArray){
+                ocsPlayFunc()
+            }
             // this should prevent osc from playiing multiple times per beat
             instrument.lastPlayedBeat = currentBeat
             // trouble with variables for lastPlayedBeat
             
             // lead start time array is for animation
+            // will need to update for pad
             leadStartTimeArray.push(time)
         } 
     } 
  
 }
 
-
+let droneNoteSequence = []
+let droneNoteSequenceStep = 0
 let droneSequence = [1, 5]
 let droneSequenceStep = 0
 function droneSequencer(time, metronomeBeat, sequence) {
@@ -571,9 +610,9 @@ function droneSequencer(time, metronomeBeat, sequence) {
     }
 }
 
+// PADS PLAY CHORDS NOT NOTES!
 
-let padSequence = [1, 4, 5 , 8]
-let padSequenceStep = 0
+
 function padSequencer(time, metronomeBeat, sequence) {
     
     let beat = metronomeBeat
@@ -597,19 +636,20 @@ function padSequencer(time, metronomeBeat, sequence) {
 // METRONOME
 
 let bpm = 20;
-// let lastPulseTime = 0;
-// let startTime = 0
-// let currentPulse = 1;
-// let beatLengthSeconds = null
-// let totalLoopTime = null
-// let timeWithinLoopSeconds= null
 
 // instrumentObj has length of loop in beats? does this make sense?
 let leadMetronomeObj = {
     lastPulseTime: 0,
     startTime: 0,
     currentPulse: 1,
-    // beatLengthSeconds: null,
+    totalLoopTime: null,
+    timeWithinLoopSeconds: null
+}
+
+let padMetronomeObj = {
+    lastPulseTime: 0,
+    startTime: 0,
+    currentPulse: 1,
     totalLoopTime: null,
     timeWithinLoopSeconds: null
 }
@@ -662,7 +702,7 @@ let padStartTimeArray = []
 const padAnimationLength = 9
 
 let leadStartTimeArray = []
-const leadAnimationLength = 3.5 // 1 sec and some reverb
+const leadAnimationLength = 3 // 1 sec and some reverb
 
 function removeStartTimesOfCompletedAnimations(elapsedTime, startTimeArray, animationLength){
     for (let i = 0; i < startTimeArray.length; i++){
@@ -789,7 +829,7 @@ function changeColorOfParticlesWithinBandwidth(positionBetweenBoundsArray, outer
 
 function changePositionParticlesWithinBandwidth(positionBetweenBoundsArray, polarAngle, azimuth, outerRadius, i3, bandwidth){
     // OUTER RADIUS is the distance of the particle from the center (Maybe rename var?)
-    const radiusAdditionAmmount = .1
+    const radiusAdditionAmmount = .165
     if (positionBetweenBoundsArray.length > 0){
         for (let j = 0; j < positionBetweenBoundsArray.length; j++){
             let currentBandPosition = positionBetweenBoundsArray[j]
@@ -830,33 +870,29 @@ const tick = () =>
     globalElapsedTime = elapsedTime
 
     stats.update()
-    // put leadConfig.pulses into numberof pulses arg
+
     // will later need a differnet metronome for each instrument
-    let metronomeTime = metronome(elapsedTime, leadMetronomeObj, leadObj, bpm);
-
-
-    globalMetronomeTime = metronomeTime
+    let leadMetronomeTime = metronome(elapsedTime, leadMetronomeObj, leadObj, bpm);
+    let padMetronomeTime = metronome(elapsedTime, padMetronomeObj, padObj, bpm);
+    
+    // globalMetronomeTime = metronomeTime
    
-    let leadSequencer = sequencer(elapsedTime, metronomeTime, leadObj)
-    // console.log(leadPulseBooleanArray, metronomeTime)
+    let leadSequencer = sequencer(elapsedTime, leadMetronomeTime, leadObj)
+    // sinwave controlled tremelo on lead gain node
     tremGain.gain.value = lfoValue(.5, 1.5, 40, elapsedTime)
  
-    droneSequencer(elapsedTime, metronomeTime, droneSequence)
+    // droneSequencer(elapsedTime, metronomeTime, droneSequence)
     dronePan.pan.value = Math.sin(elapsedTime) / 6
 
-    padSequencer(elapsedTime, metronomeTime, padSequence)
-    
+    // padSequencer(elapsedTime, metronomeTime, padSequence)
+    let padSequencer = sequencer(elapsedTime, padMetronomeTime, padObj)
 
     // DRONE FILTER SWEEP
     droneLfoFilterNode.frequency.value = lfoValue(39, 156, .5, elapsedTime)
-    // console.log(droneLfoFilterNode.frequency.value)
     // PAD FILTER SWEEP
     bpFilterNodePad.frequency.value = lfoValue(100, 200, 15, elapsedTime)
-
     // LEAD FILTER SWEEP
     bpFilterNodeLead.frequency.value = lfoValue(500, 1500, 10, elapsedTime)
-
-    
 
     // LEAD OSC
     sphereParticles.rotation.z = elapsedTime * rotationSpeed   
