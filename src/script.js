@@ -164,17 +164,6 @@ renderer.setSize(sizes.width, sizes.height)
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 
 
-function checkForChildName(scene, name){
-    let childPresent = false
-    scene.children.map((child)=>{
-        if (child['name'] == name){
-            childPresent = true
-        } 
-    })
-    return childPresent
-}
-
-
 // AUDIO
 
 const audioContext = new AudioContext();
@@ -197,6 +186,8 @@ function createFilterNode(type,Q){
 
 const bpFilterNodeLead = createFilterNode('bandpass', '5')
 const leadGain = audioContext.createGain();
+// this is a quick fix and should later be tied to the slider value
+leadGain.gain.value = .4
 const tremGain = new GainNode(audioContext)
 const leadPan = audioContext.createStereoPanner()
 
@@ -435,33 +426,34 @@ async function createConvolutionDistortion() {
 let convolutionDistortion1 = await createConvolutionDistortion();
 let convolutionDistortion2 = await createConvolutionDistortion();
 
-const droneLfoFilterNode = createFilterNode('bandpass', '1')
+const bassLfoFilterNode = createFilterNode('bandpass', '1')
 
-const droneGain = audioContext.createGain();
+const bassGain = audioContext.createGain();
 
-const dronePan = audioContext.createStereoPanner()
-
-function playDrone(time, wave, freqency, attack, release){
-
+const bassPan = audioContext.createStereoPanner()
+//playBass(time, 'sine', instrument.noteSequence[instrument.noteIndex], .5, 1)
+function playBass(time, wave, attack, release, noteSequence, currentNoteIndex){
+    const notesLength = noteSequence.length
+    let frequency = noteSequence[currentNoteIndex]
     // fundamental osc goes straight to sweepEnvGain envelope
     // sub osc and 5th osc are attenuated before linking to sweepEnvGain
 
-    const droneOscFundamental = audioContext.createOscillator()
-    droneOscFundamental.type = wave
-    droneOscFundamental.frequency.value = freqency
+    const bassOscFundamental = audioContext.createOscillator()
+    bassOscFundamental.type = wave
+    bassOscFundamental.frequency.value = frequency
     
 
-    const droneOscSub = audioContext.createOscillator()
-    droneOscSub.type = wave
-    droneOscSub.frequency.value = freqency / 2
-    const droneOscSubGain = audioContext.createGain()
-    droneOscSubGain.gain.value = 0.1
+    const bassOscSub = audioContext.createOscillator()
+    bassOscSub.type = wave
+    bassOscSub.frequency.value = frequency / 2
+    const bassOscSubGain = audioContext.createGain()
+    bassOscSubGain.gain.value = 0.1
 
-    const droneOsc5th = audioContext.createOscillator()
-    droneOsc5th.type = wave
-    droneOsc5th.frequency.value = freqency * 2
-    const droneOsc5thGain = audioContext.createGain()
-    droneOsc5thGain.gain.value = 0.01
+    const bassOsc5th = audioContext.createOscillator()
+    bassOsc5th.type = wave
+    bassOsc5th.frequency.value = frequency * 2
+    const bassOsc5thGain = audioContext.createGain()
+    bassOsc5thGain.gain.value = 0.01
 
 
     const sweepEnvGain = new GainNode(audioContext);
@@ -472,38 +464,46 @@ function playDrone(time, wave, freqency, attack, release){
 
     // create sub osc and fifth above fundamental and link to chain at lower volumes
 
-    droneOsc5th.connect(droneOsc5thGain)
-    droneOscSub.connect(droneOscSubGain)
+    bassOsc5th.connect(bassOsc5thGain)
+    bassOscSub.connect(bassOscSubGain)
 
-    droneOsc5thGain.connect(sweepEnvGain)
-    droneOscSubGain.connect(sweepEnvGain)
+    bassOsc5thGain.connect(sweepEnvGain)
+    bassOscSubGain.connect(sweepEnvGain)
 
-    droneOscFundamental.connect(sweepEnvGain)
+    bassOscFundamental.connect(sweepEnvGain)
 
 
-    sweepEnvGain.connect(droneLfoFilterNode).connect(convolutionDistortion2).connect(dronePan).connect(plateReverb3).connect(droneGain).connect(audioContext.destination)
-    droneOscFundamental.start(time)
-    droneOscFundamental.stop(time + (attack + release))
+    sweepEnvGain.connect(bassLfoFilterNode).connect(convolutionDistortion2).connect(bassPan).connect(plateReverb3).connect(bassGain).connect(audioContext.destination)
+    bassOscFundamental.start(time)
+    bassOscFundamental.stop(time + (attack + release))
 
-    droneOsc5th.start(time)
-    droneOsc5th.stop(time + (attack + release))
+    bassOsc5th.start(time)
+    bassOsc5th.stop(time + (attack + release))
 
-    droneOscSub.start(time)
-    droneOscSub.stop(time + (attack + release))
+    bassOscSub.start(time)
+    bassOscSub.stop(time + (attack + release))
+
+    // Advance notes
+    if (currentNoteIndex < notesLength - 1){
+        bassObj.noteIndex = bassObj.noteIndex + 1
+    } else {
+        bassObj.noteIndex = 0
+    }
 }
 
-const droneGainControl = document.querySelector("#drone-volume");
+// change drone to bass in variables
+const bassGainControl = document.querySelector("#bass-volume");
 
-droneGainControl.addEventListener("input", () => {
-  droneGain.gain.value = droneGainControl.value;
-  console.log(droneGain.gain.value)
+bassGainControl.addEventListener("input", () => {
+  bassGain.gain.value = bassGainControl.value;
+  console.log(bassGain.gain.value)
 });
 
 const leadGainControl = document.querySelector("#lead-volume");
-
+// console.log(leadGain.gain)
 leadGainControl.addEventListener("input", () => {
-    console.log(leadGainControl.value)
-  leadGain.gain.value = leadGainControl.value;
+    // why does lead gain default to 1???
+    leadGain.gain.value = leadGainControl.value;
 });
 
 const padGainControl = document.querySelector("#pad-volume");
@@ -542,6 +542,14 @@ let padObj = {
     lastPlayedBeat: null
 }
 
+let bassObj = {
+    type : 'bass',
+    noteSequence: [391.995, 311.125, 466.175, 293.665, 587.33, 391.995, 311.125, 466.175, 293.665],
+    noteIndex: 0,
+    pulseBooleanArray : [true, false, false, true, false],
+    lastPlayedBeat: null
+}
+
 
 // make this work for all instruments by taking diff args
 function sequencer(time, metronomeBeat, instrument){
@@ -564,6 +572,11 @@ function sequencer(time, metronomeBeat, instrument){
             timeStagger += .5
         }
         
+    } else if (instrument.type === 'bass'){
+        // make attack release global vars later
+        // playBass(time, wave, attack, release, noteSequence, currentNoteIndex)
+        let playOsc = () => playBass(time, 'sine', .5, 1, instrument.noteSequence, instrument.noteIndex)
+        playOscArray.push(playOsc)
     }
     // down beat for music is 1
     // but boolean pulse array starts at 0
@@ -588,8 +601,10 @@ function sequencer(time, metronomeBeat, instrument){
                     padObj.noteIndex = 0
                 }
                 padStartTimeArray.push(time)
-            } else if (instrument.type = 'lead'){
+            } else if (instrument.type == 'lead'){
                 leadStartTimeArray.push(time)
+            } else if (instrument.type == 'bass'){
+                bassStartTimeArray.push(time)
             }
             instrument.lastPlayedBeat = currentBeat
         } 
@@ -597,52 +612,11 @@ function sequencer(time, metronomeBeat, instrument){
  
 }
 
-let droneNoteSequence = []
-let droneNoteSequenceStep = 0
-let droneSequence = [1, 5]
-let droneSequenceStep = 0
-function droneSequencer(time, metronomeBeat, sequence) {
-
-    let beat = metronomeBeat
-    
-    if (sequence[droneSequenceStep] == beat){
-        playDrone(time, 'sine', '77.78', 2.0, 12.0)
-        if (droneSequenceStep < sequence.length-1){
-            droneSequenceStep ++
-        } else {
-            droneSequenceStep = 0
-        }
-    }
-}
-
-// PADS PLAY CHORDS NOT NOTES!
-
-
-function padSequencer(time, metronomeBeat, sequence) {
-    
-    let beat = metronomeBeat
-    
-    
-    if (sequence[padSequenceStep] == beat){
-            playAdditivePad(time, "sine", 311.13)
-            playAdditivePad((time+.5), "sine", 392)
-            playAdditivePad((time+1), "sine", 587.33)
-            playAdditivePad((time+1.5), "sine", 466.16)
-            // add padTrigTime to array
-            padStartTimeArray.push(time)
-        if (padSequenceStep < sequence.length-1){
-            padSequenceStep ++
-        } else {
-            padSequenceStep = 0
-        }
-    } 
-}
-
 // METRONOME
 
 let bpm = 20;
 
-// instrumentObj has length of loop in beats? does this make sense?
+// Metronome Objects for each instrument, share global bpm
 let leadMetronomeObj = {
     lastPulseTime: 0,
     startTime: 0,
@@ -652,6 +626,14 @@ let leadMetronomeObj = {
 }
 
 let padMetronomeObj = {
+    lastPulseTime: 0,
+    startTime: 0,
+    currentPulse: 1,
+    totalLoopTime: null,
+    timeWithinLoopSeconds: null
+}
+
+let bassMetronomeObj = {
     lastPulseTime: 0,
     startTime: 0,
     currentPulse: 1,
@@ -699,15 +681,17 @@ function easeInOutSine(value) {
 return -(Math.cos(Math.PI * value) - 1) / 2;
 }
 
-// ANIMATIONS
-
-// global vars for pad
+// ANIMATION GLOBAL VARS
 
 let padStartTimeArray = []
 const padAnimationLength = 9
 
 let leadStartTimeArray = []
-const leadAnimationLength = 3 // 1 sec and some reverb
+const leadAnimationLength = 3 
+
+// radius increase? maybe pad only does wavelength increse and not amplitude? 
+let bassStartTimeArray = []
+const bassAnimationLength = 3
 
 function removeStartTimesOfCompletedAnimations(elapsedTime, startTimeArray, animationLength){
     for (let i = 0; i < startTimeArray.length; i++){
@@ -775,6 +759,7 @@ function createLeadAnimationPercentCompleteArray(elapsedTime, leadStartTimeArray
     return percentCompleteArray
 }
 
+// could I use mod operator in any of these functions?
 // this function lives in the main render loop
 // use % to return position between upper and lower bound
 function createPositionBetweenBoundsArray(leadAnimationPercentCompleteArray, lowerBound, upperBound){
@@ -879,7 +864,7 @@ const tick = () =>
     // will later need a differnet metronome for each instrument
     let leadMetronomeTime = metronome(elapsedTime, leadMetronomeObj, leadObj, bpm);
     let padMetronomeTime = metronome(elapsedTime, padMetronomeObj, padObj, bpm);
-    
+    let bassMetronomeTime = metronome(elapsedTime, bassMetronomeObj, bassObj,bpm)
     // globalMetronomeTime = metronomeTime
    
     let leadSequencer = sequencer(elapsedTime, leadMetronomeTime, leadObj)
@@ -887,13 +872,15 @@ const tick = () =>
     tremGain.gain.value = lfoValue(.5, 1.5, 40, elapsedTime)
  
     // droneSequencer(elapsedTime, metronomeTime, droneSequence)
-    dronePan.pan.value = Math.sin(elapsedTime) / 6
+    bassPan.pan.value = Math.sin(elapsedTime) / 6
 
     // padSequencer(elapsedTime, metronomeTime, padSequence)
     let padSequencer = sequencer(elapsedTime, padMetronomeTime, padObj)
 
+    let bassSequencer = sequencer(elapsedTime, bassMetronomeTime, bassObj)
+
     // DRONE FILTER SWEEP
-    droneLfoFilterNode.frequency.value = lfoValue(39, 156, .5, elapsedTime)
+    bassLfoFilterNode.frequency.value = lfoValue(39, 156, .5, elapsedTime)
     // PAD FILTER SWEEP
     bpFilterNodePad.frequency.value = lfoValue(100, 200, 15, elapsedTime)
     // LEAD FILTER SWEEP
@@ -927,7 +914,7 @@ const tick = () =>
 
     
     // DRONE ANIMATION
-    let innerRadius2 = mapV(droneLfoFilterNode.frequency.value, 39, 156, 5, 5.5)
+    let innerRadius2 = mapV(bassLfoFilterNode.frequency.value, 39, 156, 5, 5.5)
     // LEAD ANIMATION
     // band animates from start of innerRadius to 
     
@@ -1020,6 +1007,11 @@ function changeNumberOfPulses (numberOfPulses, instrumentId) {
         instrumentObj = padObj
         metronomeObj = padMetronomeObj
     }
+    else if (instrumentId == 'bass-pulses-input'){
+        // bug on this brance where line position changes due to beat being messed up
+        instrumentObj = bassObj
+        metronomeObj = bassMetronomeObj
+    }
     
     // study this
     // remainder of time after elpased time is divided by beats
@@ -1048,6 +1040,7 @@ function changeNumberOfPulses (numberOfPulses, instrumentId) {
 }
 const leadPulsesInput = document.getElementById('lead-pulses-input');
 const padPulsesInput = document.getElementById('pad-pulses-input');
+const bassPulsesInput = document.getElementById('bass-pulses-input');
 // write this as a function
 leadPulsesInput.addEventListener('input', (e)=>{
     let numberOfPulses = e.target.value
@@ -1056,6 +1049,13 @@ leadPulsesInput.addEventListener('input', (e)=>{
 })
 
 padPulsesInput.addEventListener('input', (e)=>{
+    let numberOfPulses = e.target.value
+    let instrumentId = e.target.id
+    changeNumberOfPulses(numberOfPulses, instrumentId)
+})
+
+bassPulsesInput.addEventListener('input', (e)=>{
+    console.log(e)
     let numberOfPulses = e.target.value
     let instrumentId = e.target.id
     changeNumberOfPulses(numberOfPulses, instrumentId)
@@ -1170,10 +1170,11 @@ function creatCircleNotation (instrumentObj, metronomeObj){
 // rename these variables
 let circleNotationLead = creatCircleNotation(leadObj, leadMetronomeObj)
 let circleNotationPad = creatCircleNotation(padObj, padMetronomeObj)
-
+let circleNotationBass = creatCircleNotation(bassObj, bassMetronomeObj)
 
 new p5(circleNotationLead);
 new p5(circleNotationPad);
+new p5(circleNotationBass)
 
 
 // NOTES ON SPHERE
