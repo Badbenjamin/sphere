@@ -502,6 +502,7 @@ droneGainControl.addEventListener("input", () => {
 const leadGainControl = document.querySelector("#lead-volume");
 
 leadGainControl.addEventListener("input", () => {
+    console.log(leadGainControl.value)
   leadGain.gain.value = leadGainControl.value;
 });
 
@@ -557,16 +558,11 @@ function sequencer(time, metronomeBeat, instrument){
         // console.log(currentChord, currentChordNotes)
         for (let i = 0; i < currentChordNotes.length; i++){
             let chordNote = currentChordNotes[i]
-            console.log(instrument.chordSequence[instrument.noteIndex])
+            // console.log(instrument.chordSequence[instrument.noteIndex])
             let playOsc = () => playAdditivePad(time + timeStagger, "sine", chordNote, instrument.chordSequence, instrument.noteIndex)
             playOscArray.push(playOsc)
             timeStagger += .5
         }
-        // if (instrument.noteIndex < instrument.chordSequence.length - 1){
-        //     padObj.noteIndex = padObj.noteIndex + 1
-        // } else {
-        //     padObj.noteIndex = 0
-        // }
         
     }
     // down beat for music is 1
@@ -585,19 +581,17 @@ function sequencer(time, metronomeBeat, instrument){
                 ocsPlayFunc()
             }
             if (instrument.type == 'pad'){
+                // pad needs special logic to advance chord since multiple oscs are played at once
                 if (instrument.noteIndex < instrument.chordSequence.length - 1){
                     padObj.noteIndex = padObj.noteIndex + 1
                 } else {
                     padObj.noteIndex = 0
                 }
+                padStartTimeArray.push(time)
+            } else if (instrument.type = 'lead'){
+                leadStartTimeArray.push(time)
             }
-            // this should prevent osc from playiing multiple times per beat
             instrument.lastPlayedBeat = currentBeat
-            // trouble with variables for lastPlayedBeat
-            
-            // lead start time array is for animation
-            // will need to update for pad
-            leadStartTimeArray.push(time)
         } 
     } 
  
@@ -877,7 +871,7 @@ const clock = new THREE.Clock()
 const tick = () =>
 {   
     const elapsedTime = clock.getElapsedTime();
-    
+    // console.log(padStartTimeArray)
     globalElapsedTime = elapsedTime
 
     stats.update()
@@ -967,7 +961,6 @@ const tick = () =>
         positions[i3 + 2] = Math.cos(polarAngle) * (outerRadius) ; // z
 
 
-        // RGB
         // color appears white when all rgb values are equal
         // rgb values are between 0 and 1 
         
@@ -1013,16 +1006,19 @@ function euclidianDistance(xOrigin,yOrigin, xPoint, yPoint){
 }
 
 // CHANGE NUMBER OF PULSES
-const leadPulsesInput = document.getElementById('lead-pulses-input');
-leadPulsesInput.addEventListener('input', function () {
-    let instrumentId = this.id
-    let numberOfPulses = this.value
+
+function changeNumberOfPulses (numberOfPulses, instrumentId) {
+    
     let instrumentObj = null
     let metronomeObj = null
 
     if (instrumentId == 'lead-pulses-input'){
         instrumentObj = leadObj
         metronomeObj = leadMetronomeObj
+    } else if (instrumentId == 'pad-pulses-input'){
+        // bug on this brance where line position changes due to beat being messed up
+        instrumentObj = padObj
+        metronomeObj = padMetronomeObj
     }
     
     // study this
@@ -1049,6 +1045,20 @@ leadPulsesInput.addEventListener('input', function () {
     if (metronomeObj.currentPulse > instrumentObj.pulseBooleanArray.length){
         metronomeObj.currentPulse = instrumentObj.pulseBooleanArray.length -1
     }
+}
+const leadPulsesInput = document.getElementById('lead-pulses-input');
+const padPulsesInput = document.getElementById('pad-pulses-input');
+// write this as a function
+leadPulsesInput.addEventListener('input', (e)=>{
+    let numberOfPulses = e.target.value
+    let instrumentId = e.target.id
+    changeNumberOfPulses(numberOfPulses, instrumentId)
+})
+
+padPulsesInput.addEventListener('input', (e)=>{
+    let numberOfPulses = e.target.value
+    let instrumentId = e.target.id
+    changeNumberOfPulses(numberOfPulses, instrumentId)
 })
 
 // THIS IS THE ANIMATED UI
@@ -1158,12 +1168,12 @@ function creatCircleNotation (instrumentObj, metronomeObj){
 
 // this value appears not to change? 
 // rename these variables
-let circleNotationOne = creatCircleNotation(leadObj, leadMetronomeObj)
+let circleNotationLead = creatCircleNotation(leadObj, leadMetronomeObj)
+let circleNotationPad = creatCircleNotation(padObj, padMetronomeObj)
 
 
-
-let myp5 = new p5(circleNotationOne);
-
+new p5(circleNotationLead);
+new p5(circleNotationPad);
 
 
 // NOTES ON SPHERE
