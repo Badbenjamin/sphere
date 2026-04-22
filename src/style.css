@@ -19,105 +19,41 @@ body
     z-index: 0;
 }
 
-.wavelength{
-    position: fixed;
-    top: 20px;
-    left: 20px;
-    z-index: 100;
-    color: white;
-    font-family: Arial, sans-serif;
-    font-size: 18px;
-}
 
-.play-drone-button{
-    z-index: 100;
-    position: fixed;
-    bottom: 20px;
-    left: 20px;
-    color: white;
-    font-family: Arial, sans-serif;
-    font-size: 18px;
-}
-
-.play-lead-button{
-    z-index: 100;
-    position: fixed;
-    bottom: 60px;
-    left: 40px;
-    color: white;
-    font-family: Arial, sans-serif;
-    font-size: 18px;
-}
-
-.play-pad-button{
-    z-index: 100;
-    position: fixed;
-    bottom: 90px;
-    left: 40px;
-    color: white;
-    font-family: Arial, sans-serif;
-    font-size: 18px;
-}
-
-.drone-gain-range{
-    z-index: 100;
-    position: fixed;
-    bottom: 40px;
-    left: 40px;
-}
-
-.lead-gain-range{
-    z-index: 100;
-    position: fixed;
-    bottom: 50px;
-    left: 40px;
-}
-
-.pad-gain-range{
-    z-index: 100;
-    position: fixed;
-    bottom: 60px;
-    left: 40px;
-}
-
-.freq-range{
-    z-index: 100;
-    bottom: 90px;
-    left: 90px;
-    position: fixed;
-}
-
-.filter-range{
-    z-index: 100;
-    bottom: 110px;
-    left: 110px;
-    position: fixed;
-}
-
-.attack-release{
-    z-index: 100;
-    bottom: 210px;
-    left: 10px;
-    position: fixed;
-}
-
-.drum-machine-controls{
+.instrument-controls{
     z-index: 200;
-    bottom: 100px;
+    bottom: 50px;
     left: 10px;
     position: fixed;
-    color: white;
+    display: flex;
+    /* width: 100%; */
+     border: 1px solid white;
 }
 
+.circle-UI-container {
+    display: flex;
+    flex-direction: column;
+    /* align-items: center; */
+    /* flex: 1; */
+    /* border: 1px solid rgb(255, 33, 33); */
+}
 
+.instrument-title{
+    color: white;
+    margin-left: auto;
+    margin-right: auto;
+}
 
-
+.controls{
+    border: 1px solid white;
+}
 
 .instrument-pulses-input{
-    background-color: transparent; /* Or a specific dark color so white text shows */
-    color: white;
-    border: 1px solid white;
-    border-radius: 4px;
-    padding: 5px;
-    outline: none; /* Removes the default blue focus ring */
+    width: 35px;
+    margin-left: auto;
 }
+
+/* .controls {
+    width: 100%;
+    flex: 1;
+} */

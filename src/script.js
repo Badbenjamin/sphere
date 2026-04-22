@@ -426,7 +426,7 @@ async function createConvolutionDistortion() {
 let convolutionDistortion1 = await createConvolutionDistortion();
 let convolutionDistortion2 = await createConvolutionDistortion();
 
-const bassLfoFilterNode = createFilterNode('bandpass', '1')
+const bassLfoFilterNode = createFilterNode('lowpass', '10')
 
 const bassGain = audioContext.createGain();
 
@@ -447,13 +447,19 @@ function playBass(time, wave, attack, release, noteSequence, currentNoteIndex){
     bassOscSub.type = wave
     bassOscSub.frequency.value = frequency / 2
     const bassOscSubGain = audioContext.createGain()
-    bassOscSubGain.gain.value = 0.1
+    bassOscSubGain.gain.value = 0.05
+
+    const bassOsc3rd = audioContext.createOscillator()
+    bassOsc3rd.type = wave
+    bassOsc3rd.frequency.value = frequency * 3
+    const bassOsc3rdGain = audioContext.createGain()
+    bassOsc3rdGain.gain.value = 0.06
 
     const bassOsc5th = audioContext.createOscillator()
     bassOsc5th.type = wave
-    bassOsc5th.frequency.value = frequency * 2
+    bassOsc5th.frequency.value = frequency * 5
     const bassOsc5thGain = audioContext.createGain()
-    bassOsc5thGain.gain.value = 0.01
+    bassOsc5thGain.gain.value = 0.07
 
 
     const sweepEnvGain = new GainNode(audioContext);
@@ -466,9 +472,11 @@ function playBass(time, wave, attack, release, noteSequence, currentNoteIndex){
 
     bassOsc5th.connect(bassOsc5thGain)
     bassOscSub.connect(bassOscSubGain)
+    bassOsc3rd.connect(bassOsc3rdGain)
 
     bassOsc5thGain.connect(sweepEnvGain)
     bassOscSubGain.connect(sweepEnvGain)
+    bassOsc3rdGain.connect(sweepEnvGain)
 
     bassOscFundamental.connect(sweepEnvGain)
 
@@ -477,11 +485,15 @@ function playBass(time, wave, attack, release, noteSequence, currentNoteIndex){
     bassOscFundamental.start(time)
     bassOscFundamental.stop(time + (attack + release))
 
-    bassOsc5th.start(time)
-    bassOsc5th.stop(time + (attack + release))
+    // spice things up with a lil variation in stop, start attack and release?
+    bassOsc3rd.start(time + .1)
+    bassOsc3rd.stop((time + .1) + (attack + (release+.3)))
+
+    bassOsc5th.start(time + .2)
+    bassOsc5th.stop((time + .2) + ((attack + .2) + (release + .3)))
 
     bassOscSub.start(time)
-    bassOscSub.stop(time + (attack + release))
+    bassOscSub.stop(time + (attack + (release + .3)))
 
     // Advance notes
     if (currentNoteIndex < notesLength - 1){
@@ -544,7 +556,8 @@ let padObj = {
 
 let bassObj = {
     type : 'bass',
-    noteSequence: [391.995, 311.125, 466.175, 293.665, 587.33, 391.995, 311.125, 466.175, 293.665],
+    // keep above 100 and lower than 200 to not step on pad
+    noteSequence: [155.562, 116.54, 130.81, 116.54],
     noteIndex: 0,
     pulseBooleanArray : [true, false, false, true, false],
     lastPlayedBeat: null
@@ -575,7 +588,7 @@ function sequencer(time, metronomeBeat, instrument){
     } else if (instrument.type === 'bass'){
         // make attack release global vars later
         // playBass(time, wave, attack, release, noteSequence, currentNoteIndex)
-        let playOsc = () => playBass(time, 'sine', .5, 1, instrument.noteSequence, instrument.noteIndex)
+        let playOsc = () => playBass(time, 'sine', .5, .1, instrument.noteSequence, instrument.noteIndex)
         playOscArray.push(playOsc)
     }
     // down beat for music is 1
@@ -880,7 +893,7 @@ const tick = () =>
     let bassSequencer = sequencer(elapsedTime, bassMetronomeTime, bassObj)
 
     // DRONE FILTER SWEEP
-    bassLfoFilterNode.frequency.value = lfoValue(39, 156, .5, elapsedTime)
+    bassLfoFilterNode.frequency.value = lfoValue(200, 500, .5, elapsedTime)
     // PAD FILTER SWEEP
     bpFilterNodePad.frequency.value = lfoValue(100, 200, 15, elapsedTime)
     // LEAD FILTER SWEEP
@@ -1064,7 +1077,7 @@ bassPulsesInput.addEventListener('input', (e)=>{
 // THIS IS THE ANIMATED UI
 // 4- repeat for all instruments
 
-function creatCircleNotation (instrumentObj, metronomeObj){
+function creatCircleNotation (instrumentObj, metronomeObj, parent){
     // console.log('lpiv func',leadPulsesInputValue)
     const circleNotation= (sketch) => {
 
@@ -1100,7 +1113,7 @@ function creatCircleNotation (instrumentObj, metronomeObj){
         
         sketch.setup = () => {
                 const container = document.getElementById('controls');
-                sketch.createCanvas(canvasHeight, canvasWidth).parent(container);
+                sketch.createCanvas(canvasHeight, canvasWidth).parent(parent);
             };
 
         
@@ -1168,9 +1181,9 @@ function creatCircleNotation (instrumentObj, metronomeObj){
 
 // this value appears not to change? 
 // rename these variables
-let circleNotationLead = creatCircleNotation(leadObj, leadMetronomeObj)
-let circleNotationPad = creatCircleNotation(padObj, padMetronomeObj)
-let circleNotationBass = creatCircleNotation(bassObj, bassMetronomeObj)
+let circleNotationLead = creatCircleNotation(leadObj, leadMetronomeObj, 'lead-controls')
+let circleNotationPad = creatCircleNotation(padObj, padMetronomeObj, 'pad-controls')
+let circleNotationBass = creatCircleNotation(bassObj, bassMetronomeObj, 'bass-controls')
 
 new p5(circleNotationLead);
 new p5(circleNotationPad);
