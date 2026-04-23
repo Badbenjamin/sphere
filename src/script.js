@@ -219,9 +219,9 @@ function playLeadOsc(time, wave, attackTime, releaseTime, noteSequence, currentN
     // console.log(leadObj.noteIndex)
     // Advance notes
     if (currentNoteIndex< notesLength - 1){
-        leadObj.noteIndex = leadObj.noteIndex + 1
+        leadObj.instrument.noteIndex = leadObj.instrument.noteIndex + 1
     } else {
-        leadObj.noteIndex = 0
+        leadObj.instrument.noteIndex = 0
     }
 }
 
@@ -426,13 +426,14 @@ async function createConvolutionDistortion() {
 let convolutionDistortion1 = await createConvolutionDistortion();
 let convolutionDistortion2 = await createConvolutionDistortion();
 
-const bassLfoFilterNode = createFilterNode('lowpass', '10')
+const bassLfoFilterNode = createFilterNode('bandpass', '5')
 
 const bassGain = audioContext.createGain();
 
 const bassPan = audioContext.createStereoPanner()
 //playBass(time, 'sine', instrument.noteSequence[instrument.noteIndex], .5, 1)
 function playBass(time, wave, attack, release, noteSequence, currentNoteIndex){
+    // console.log('pb',noteSequence, currentNoteIndex)
     const notesLength = noteSequence.length
     let frequency = noteSequence[currentNoteIndex]
     // fundamental osc goes straight to sweepEnvGain envelope
@@ -447,7 +448,7 @@ function playBass(time, wave, attack, release, noteSequence, currentNoteIndex){
     bassOscSub.type = wave
     bassOscSub.frequency.value = frequency / 2
     const bassOscSubGain = audioContext.createGain()
-    bassOscSubGain.gain.value = 0.05
+    bassOscSubGain.gain.value = 0.06
 
     const bassOsc3rd = audioContext.createOscillator()
     bassOsc3rd.type = wave
@@ -461,12 +462,23 @@ function playBass(time, wave, attack, release, noteSequence, currentNoteIndex){
     const bassOsc5thGain = audioContext.createGain()
     bassOsc5thGain.gain.value = 0.07
 
-
+    // ADSR but only atk rls
     const sweepEnvGain = new GainNode(audioContext);
     sweepEnvGain.gain.cancelScheduledValues(time);
     sweepEnvGain.gain.setValueAtTime(0, time);
-    sweepEnvGain.gain.linearRampToValueAtTime(1, (time) + attack);
+    sweepEnvGain.gain.linearRampToValueAtTime(1, (time) + attack - .5);
     sweepEnvGain.gain.linearRampToValueAtTime(0, (time) +(attack + release));
+
+    const bassBandpassFilter = new BiquadFilterNode(audioContext, {
+        type: 'bandpass',
+        frequency: 300,  // centre frequency in Hz
+        Q: 2,             // controls bandwidth (higher Q = narrower band)
+    });
+
+    bassBandpassFilter.frequency.cancelScheduledValues(time);
+    bassBandpassFilter.frequency.setValueAtTime(20, time);
+    bassBandpassFilter.frequency.linearRampToValueAtTime(200, time + attack);
+    bassBandpassFilter.frequency.linearRampToValueAtTime(20, time + attack + release);
 
     // create sub osc and fifth above fundamental and link to chain at lower volumes
 
@@ -480,8 +492,8 @@ function playBass(time, wave, attack, release, noteSequence, currentNoteIndex){
 
     bassOscFundamental.connect(sweepEnvGain)
 
-
-    sweepEnvGain.connect(bassLfoFilterNode).connect(convolutionDistortion2).connect(bassPan).connect(plateReverb3).connect(bassGain).connect(audioContext.destination)
+    // removed bass lfo filter. seemed redundant
+    sweepEnvGain.connect(bassBandpassFilter).connect(bassPan).connect(plateReverb3).connect(bassGain).connect(audioContext.destination)
     bassOscFundamental.start(time)
     bassOscFundamental.stop(time + (attack + release))
 
@@ -492,14 +504,14 @@ function playBass(time, wave, attack, release, noteSequence, currentNoteIndex){
     bassOsc5th.start(time + .2)
     bassOsc5th.stop((time + .2) + ((attack + .2) + (release + .3)))
 
-    bassOscSub.start(time)
+    bassOscSub.start(time + .2)
     bassOscSub.stop(time + (attack + (release + .3)))
 
     // Advance notes
     if (currentNoteIndex < notesLength - 1){
-        bassObj.noteIndex = bassObj.noteIndex + 1
+        bassObj.instrument.noteIndex = bassObj.instrument.noteIndex + 1
     } else {
-        bassObj.noteIndex = 0
+        bassObj.instrument.noteIndex = 0
     }
 }
 
@@ -530,13 +542,22 @@ padGainControl.addEventListener("input", () => {
 // would pulse array (rhtyhm) be better included in instrumentObj than metronomeObj? 
 
 let leadObj = {
-    type : 'lead',
-    noteSequence: [783.99, 622.25, 932.35, 587.33, 1174.66, 783.99, 622.25, 932.35, 587.33],
-    noteIndex: 0,
-    pulseBooleanArray : [true, false, false, true, false, false, true, false],
-    lastPlayedBeat: null
+    'instrument' : {
+        type : 'lead',
+        noteSequence: [783.99, 622.25, 932.35, 587.33, 1174.66, 783.99, 622.25, 932.35, 587.33],
+        noteIndex: 0,
+        pulseBooleanArray : [true, false, false, true, false, false, true, false],
+        lastPlayedBeat: null
+    },
+    'metronome' : {
+        lastPulseTime: 0,
+        startTime: 0,
+        currentPulse: 1,
+        totalLoopTime: null,
+        timeWithinLoopSeconds: null
+    }
 }
-
+    
 let chordObj = {
     "EbM7" : [311.13, 392, 587.33,  466.16], // check to see what chord it really is
     "EbM7inv" : [466.16, 587.33, 392.00, 311.13],
@@ -546,80 +567,102 @@ let chordObj = {
 }
 
 let padObj = {
-    type : 'pad',
-    chordSequence: ["EbM7", "CM7", "EbM7inv", "CM7inv", "Bb7"],
-    noteIndex: 0,
-    // adjust length of pad to fit into seq?
-    pulseBooleanArray : [true, false, false, true, false, false, false, true],
-    lastPlayedBeat: null
+    'instrument' : {
+        type : 'pad',
+        chordSequence: ["EbM7", "CM7", "EbM7inv", "CM7inv", "Bb7"],
+        noteIndex: 0,
+        // adjust length of pad to fit into seq?
+        pulseBooleanArray : [true, false, false, true, false, false, false, true],
+        lastPlayedBeat: null
+    },
+    'metronome' : {
+        lastPulseTime: 0,
+        startTime: 0,
+        currentPulse: 1,
+        totalLoopTime: null,
+        timeWithinLoopSeconds: null
+    }
 }
 
 let bassObj = {
-    type : 'bass',
-    // keep above 100 and lower than 200 to not step on pad
-    noteSequence: [155.562, 116.54, 130.81, 116.54],
-    noteIndex: 0,
-    pulseBooleanArray : [true, false, false, true, false],
-    lastPlayedBeat: null
+    'instrument' : {
+        type : 'bass',
+        // keep above 100 and lower than 200 to not step on pad
+        noteSequence: [155.562, 116.54, 130.81, 116.54],
+        noteIndex: 0,
+        pulseBooleanArray : [true, false, false, true, false],
+        lastPlayedBeat: null
+    },
+    'metronome' : {
+        lastPulseTime: 0,
+        startTime: 0,
+        currentPulse: 1,
+        totalLoopTime: null,
+        timeWithinLoopSeconds: null
+    }
 }
 
 
 // make this work for all instruments by taking diff args
-function sequencer(time, metronomeBeat, instrument){
-    // setup for each differnet instrument
-    // load notes to be played into playOscArray
+function sequencer(time, metronomeBeat, instrumentObj){
+   
+    let instrumentType = instrumentObj.instrument.type
+    let noteSequence = instrumentObj.instrument.noteSequence
+    let noteIndex = instrumentObj.instrument.noteIndex
+    let pulseArrayLength = instrumentObj.instrument.pulseBooleanArray.length
+    // multiple playOsc() funcs can be pushed to array
+    // pad plays a chord so n slightly staggered oscs are played at once to form chord
     let playOscArray = []
-    if (instrument.type == 'lead'){
-        let playOsc = () => playLeadOsc(time, 'triangle', 0.1, 1, instrument.noteSequence, instrument.noteIndex);
+    if (instrumentType == 'lead'){
+        let playOsc = () => playLeadOsc(time, 'triangle', 0.1, 1, noteSequence, instrumentObj.instrument.noteIndex);
         playOscArray.push(playOsc)
-    } else if (instrument.type == 'pad'){
-        let currentChord = instrument.chordSequence[instrument.noteIndex]
+    } else if (instrumentType == 'pad'){
+        let chordSequence = instrumentObj.instrument.chordSequence
+        let currentChord = instrumentObj.instrument.chordSequence[instrumentObj.instrument.noteIndex]
         let currentChordNotes = chordObj[currentChord]
         let timeStagger = 0
-        // console.log(currentChord, currentChordNotes)
         for (let i = 0; i < currentChordNotes.length; i++){
             let chordNote = currentChordNotes[i]
-            // console.log(instrument.chordSequence[instrument.noteIndex])
-            let playOsc = () => playAdditivePad(time + timeStagger, "sine", chordNote, instrument.chordSequence, instrument.noteIndex)
+            let playOsc = () => playAdditivePad(time + timeStagger, "sine", chordNote, chordSequence, noteIndex)
             playOscArray.push(playOsc)
             timeStagger += .5
         }
         
-    } else if (instrument.type === 'bass'){
+    } else if (instrumentType === 'bass'){
         // make attack release global vars later
         // playBass(time, wave, attack, release, noteSequence, currentNoteIndex)
-        let playOsc = () => playBass(time, 'sine', .5, .1, instrument.noteSequence, instrument.noteIndex)
+        let playOsc = () => playBass(time, 'sine', 1.2, 2, noteSequence, noteIndex)
         playOscArray.push(playOsc)
     }
     // down beat for music is 1
     // but boolean pulse array starts at 0
     let currentBeat = metronomeBeat - 1
     
-    for (let i = 0; i < instrument.pulseBooleanArray.length; i++){
-        let currentSequenceOnsetBoolean = instrument.pulseBooleanArray[i]
+    for (let i = 0; i < pulseArrayLength; i++){
+        let currentSequenceOnsetBoolean = instrumentObj.instrument.pulseBooleanArray[i]
         let currentSequenceOnset = i
         // bug occurs when sequence only has length of 1 because lastPlayed beat is same as currentBeat
-        // not sure how to fix this just yet
-        if (currentSequenceOnsetBoolean == true && currentSequenceOnset === currentBeat && instrument.lastPlayedBeat !== currentBeat){
-            // leadNoteIndex is advanced withing playLeadOsc()
-            // playOsc()
+        // IF step in seq matches current beat and is true, play note
+        // note seq and pulse seq could be combined into one, but how would notes be stored if turned off?
+        if (currentSequenceOnsetBoolean == true && currentSequenceOnset === currentBeat && instrumentObj.instrument.lastPlayedBeat !== currentBeat){
+            // play all oscilators pushed to array. lead and bass only have one, pad has 4 (currentley)
             for (const ocsPlayFunc of playOscArray){
                 ocsPlayFunc()
             }
-            if (instrument.type == 'pad'){
+            if (instrumentObj.instrument.type == 'pad'){
                 // pad needs special logic to advance chord since multiple oscs are played at once
-                if (instrument.noteIndex < instrument.chordSequence.length - 1){
-                    padObj.noteIndex = padObj.noteIndex + 1
+                if (instrumentObj.instrument.noteIndex < instrumentObj.instrument.chordSequence.length - 1){
+                    padObj.instrument.noteIndex = padObj.instrument.noteIndex + 1
                 } else {
-                    padObj.noteIndex = 0
+                    padObj.instrument.noteIndex = 0
                 }
                 padStartTimeArray.push(time)
-            } else if (instrument.type == 'lead'){
+            } else if (instrumentObj.instrument.type == 'lead'){
                 leadStartTimeArray.push(time)
-            } else if (instrument.type == 'bass'){
+            } else if (instrumentObj.instrument.type == 'bass'){
                 bassStartTimeArray.push(time)
             }
-            instrument.lastPlayedBeat = currentBeat
+            instrumentObj.instrument.lastPlayedBeat = currentBeat
         } 
     } 
  
@@ -655,31 +698,31 @@ let bassMetronomeObj = {
 }
 // METRONOME SHOULD RETURN BOTH BEATS AND TIME COMPLETED OF LOOP
 
-function metronome(currentTime, metronomeObj, instrumentObj, bpm){
-    
+function metronome(currentTime, instrumentObj, bpm){
+    // console.log(instrumentObj)
     let beatLengthSeconds = 60.0 / bpm;
-    metronomeObj.totalLoopTime = beatLengthSeconds * instrumentObj.pulseBooleanArray.length
+    instrumentObj.metronome.totalLoopTime = beatLengthSeconds * instrumentObj.instrument.pulseBooleanArray.length
 
     // GEMINI's Metronome (modulo method to wrap with floor division to count)
 
-    let deltaSinceStart = currentTime - leadMetronomeObj.startTime
+    let deltaSinceStart = currentTime - instrumentObj.metronome.startTime
     // mod operator restarts timeWithinLoopSeconds at 0 whenever deltaSinceStart(or a multiple of deltaSinceStart that is divisible by TotalLoopTime) excedes totalLoopTime 
     // this counts up to total loop time, then resets to zero when it goes over, repeating indefinetily 
-    metronomeObj.timeWithinLoopSeconds = (deltaSinceStart) % metronomeObj.totalLoopTime
+    instrumentObj.metronome.timeWithinLoopSeconds = (deltaSinceStart) % instrumentObj.metronome.totalLoopTime
     
     // timeWithinLoopSeconds is counting up to totalLoopTime then wraps back to 0 after
     // lets say timeWithinLoopSeconds is 1.5, and beatLenghSeconds is 3. This would equal .5, rounded down 0. 
     // any time value less than one beat lenght will be rounded to zero, and any over a beat length will be rounded to the lower beat 
     // add one to go from zero index to music convention of starting at 1
-    let newPulse = Math.floor(metronomeObj.timeWithinLoopSeconds / beatLengthSeconds) + 1
+    let newPulse = Math.floor(instrumentObj.metronome.timeWithinLoopSeconds / beatLengthSeconds) + 1
 
     // only rewrite currentPulse global var if the newPulse is not the same as currentPulse
     // this appears to keep metronome in sync with pulse changes
-    if (newPulse !== metronomeObj.currentPulse) {
-        metronomeObj.currentPulse = newPulse;
-        metronomeObj.lastPulseTime = currentTime;
+    if (newPulse !== instrumentObj.metronome.currentPulse) {
+        instrumentObj.metronome.currentPulse = newPulse;
+        instrumentObj.metronome.lastPulseTime = currentTime;
     }
-    return metronomeObj.currentPulse
+    return instrumentObj.metronome.currentPulse
 };
 
 // UTILITY FUNCTIONS
@@ -875,9 +918,9 @@ const tick = () =>
     stats.update()
 
     // will later need a differnet metronome for each instrument
-    let leadMetronomeTime = metronome(elapsedTime, leadMetronomeObj, leadObj, bpm);
-    let padMetronomeTime = metronome(elapsedTime, padMetronomeObj, padObj, bpm);
-    let bassMetronomeTime = metronome(elapsedTime, bassMetronomeObj, bassObj,bpm)
+    let leadMetronomeTime = metronome(elapsedTime,  leadObj, bpm);
+    let padMetronomeTime = metronome(elapsedTime, padObj, bpm);
+    let bassMetronomeTime = metronome(elapsedTime, bassObj, bpm)
     // globalMetronomeTime = metronomeTime
    
     let leadSequencer = sequencer(elapsedTime, leadMetronomeTime, leadObj)
@@ -1008,28 +1051,22 @@ function euclidianDistance(xOrigin,yOrigin, xPoint, yPoint){
 // CHANGE NUMBER OF PULSES
 
 function changeNumberOfPulses (numberOfPulses, instrumentId) {
+    // this is fucked up
     
-    let instrumentObj = null
-    let metronomeObj = null
+    const instrumentMap = {
+        'lead-pulses-input': leadObj,
+        'pad-pulses-input':  padObj,
+        'bass-pulses-input': bassObj,
+    };
 
-    if (instrumentId == 'lead-pulses-input'){
-        instrumentObj = leadObj
-        metronomeObj = leadMetronomeObj
-    } else if (instrumentId == 'pad-pulses-input'){
-        // bug on this brance where line position changes due to beat being messed up
-        instrumentObj = padObj
-        metronomeObj = padMetronomeObj
-    }
-    else if (instrumentId == 'bass-pulses-input'){
-        // bug on this brance where line position changes due to beat being messed up
-        instrumentObj = bassObj
-        metronomeObj = bassMetronomeObj
-    }
-    
+    const parentObj = instrumentMap[instrumentId];
+    if (!parentObj) return;
+    let instrumentObj = parentObj.instrument
+    let metronomeObj = parentObj.metronome
     // study this
     // remainder of time after elpased time is divided by beats
     // returns the position of remainder of time after a beat, before the next beat starts
-    let timeIntoCurrentBeat = (globalElapsedTime ) % (60 / bpm);
+    let timeIntoCurrentBeat = (globalElapsedTime) % (60 / bpm);
     
     // MY ARRAY CHANGE
     let pulseBooleanArrayCopy = [...instrumentObj.pulseBooleanArray]
@@ -1041,8 +1078,12 @@ function changeNumberOfPulses (numberOfPulses, instrumentId) {
             pulseBooleanArrayCopy.push(false)
         }
     }
-    instrumentObj.pulseBooleanArray = pulseBooleanArrayCopy
-
+    parentObj.instrument.pulseBooleanArray = pulseBooleanArrayCopy
+    console.log(
+        'lead', leadObj.instrument.pulseBooleanArray,
+        'pad', padObj.instrument.pulseBooleanArray,
+        'bass', bassObj.instrument.pulseBooleanArray,
+    )
     // GEMINI startTime change
     // STUDY THIS 
     // remove one pulse, 
@@ -1051,6 +1092,7 @@ function changeNumberOfPulses (numberOfPulses, instrumentId) {
         metronomeObj.currentPulse = instrumentObj.pulseBooleanArray.length -1
     }
 }
+
 const leadPulsesInput = document.getElementById('lead-pulses-input');
 const padPulsesInput = document.getElementById('pad-pulses-input');
 const bassPulsesInput = document.getElementById('bass-pulses-input');
@@ -1058,6 +1100,7 @@ const bassPulsesInput = document.getElementById('bass-pulses-input');
 leadPulsesInput.addEventListener('input', (e)=>{
     let numberOfPulses = e.target.value
     let instrumentId = e.target.id
+    console.log(instrumentId, numberOfPulses)
     changeNumberOfPulses(numberOfPulses, instrumentId)
 })
 
@@ -1077,8 +1120,9 @@ bassPulsesInput.addEventListener('input', (e)=>{
 // THIS IS THE ANIMATED UI
 // 4- repeat for all instruments
 
-function creatCircleNotation (instrumentObj, metronomeObj, parent){
-    // console.log('lpiv func',leadPulsesInputValue)
+function creatCircleNotation (instrumentObj, parent){
+    console.log('inst', instrumentObj)
+
     const circleNotation= (sketch) => {
 
         let canvasHeight = 200
@@ -1089,28 +1133,29 @@ function creatCircleNotation (instrumentObj, metronomeObj, parent){
         let dotDiameter = 15
         let circleRadius = circleDiameter / 2
        
+        // let pulseSeqLength = instrumentObj.instrument.pulseBooleanArray.length
+        // let pulseSequence = instrumentObj.instrument. pulseBooleanArray
+
+        // console.log(pulseSeqLength)
         // DOT/ONSET SELECT CLIC
         sketch.mouseClicked = () => {
-                for(let i = 0; i < instrumentObj.pulseBooleanArray.length; i++){
-                    let currentPulse = i
-                    const angle = (currentPulse / instrumentObj.pulseBooleanArray.length) * (Math.PI * 2) - Math.PI / 2;
-                    const dotX = originX + Math.cos(angle) * circleRadius;
-                    const dotY = originY + Math.sin(angle) * circleRadius;
-                    const dist = euclidianDistance(dotX, dotY, sketch.mouseX, sketch.mouseY);
-                    // sense click on dot
-                    if (dist < dotDiameter / 2){
-                        // click on empty dot to turn pulse into onset
-                        if (instrumentObj.pulseBooleanArray[currentPulse] == false){
-                            instrumentObj.pulseBooleanArray[currentPulse] = true
-                        // click on filled dot (onset) to turn back into pulse (empty)
-                        } else {
-                            instrumentObj.pulseBooleanArray[currentPulse] = false
-                        }
-                    };
+            // problem here. clicks not overwriting old array
+            for(let i = 0; i < instrumentObj.instrument.pulseBooleanArray.length; i++){
+                let currentPulse = i
+                let currentPulseBoolean = instrumentObj.instrument.pulseBooleanArray[currentPulse]
+                
+                const angle = (currentPulse / instrumentObj.instrument.pulseBooleanArray.length) * (Math.PI * 2) - Math.PI / 2;
+                const dotX = originX + Math.cos(angle) * circleRadius;
+                const dotY = originY + Math.sin(angle) * circleRadius;
+                const dist = euclidianDistance(dotX, dotY, sketch.mouseX, sketch.mouseY);
+                // sense click on dot
+                if (dist < dotDiameter / 2){
+                    instrumentObj.instrument.pulseBooleanArray[i] = !instrumentObj.instrument.pulseBooleanArray[i]
                 };
-            };       
+            };
+        };       
         
-        
+        console.log('inst2', instrumentObj)
         sketch.setup = () => {
                 const container = document.getElementById('controls');
                 sketch.createCanvas(canvasHeight, canvasWidth).parent(parent);
@@ -1128,11 +1173,12 @@ function creatCircleNotation (instrumentObj, metronomeObj, parent){
 
             //DOTS FOR PULSES
             
-            // numberofPulsesLead needs to change for other instruments
-            let numberOfPulses = instrumentObj.pulseBooleanArray.length
-            for(let i = 0; i < instrumentObj.pulseBooleanArray.length; i++){
+            
+            for(let i = 0; i < instrumentObj.instrument.pulseBooleanArray.length; i++){
                 let currentPulse = i
-                const angle = (currentPulse / numberOfPulses) * (Math.PI * 2) - Math.PI / 2
+                let currentPulseBoolean = instrumentObj.instrument.pulseBooleanArray[currentPulse]
+                // console.log(currentPulseBoolean)
+                const angle = (currentPulse / instrumentObj.instrument.pulseBooleanArray.length) * (Math.PI * 2) - Math.PI / 2
                 const dotX = originX + Math.cos(angle) * circleRadius
                 const dotY = originY + Math.sin(angle) * circleRadius
 
@@ -1143,7 +1189,7 @@ function creatCircleNotation (instrumentObj, metronomeObj, parent){
                 
                 // if circle selected, fill circle
                 // im slightly confused as to why this works
-                if (instrumentObj.pulseBooleanArray[currentPulse] == true){
+                if (currentPulseBoolean == true){
                     sketch.fill(255)
                 } else {
                     sketch.noFill();
@@ -1167,7 +1213,8 @@ function creatCircleNotation (instrumentObj, metronomeObj, parent){
             // Onset Select
             // shifted back to 12oclock with - pi*2
             // console.log(instrumentObj.timeWithinLoopSeconds, instrumentObj.totalLoopTime)
-            let loopPositionAngleRadians = mapV(metronomeObj.timeWithinLoopSeconds, 0, metronomeObj.totalLoopTime, 0 , (2 * Math.PI)) - Math.PI / 2
+            let metronome = instrumentObj.metronome
+            let loopPositionAngleRadians = mapV(metronome.timeWithinLoopSeconds, 0, metronome.totalLoopTime, 0 , (2 * Math.PI)) - Math.PI / 2
             // console.log(loopPositionAngleRadians)
             let loopPositionX = originX + Math.cos(loopPositionAngleRadians) * circleRadius
             let loopPositionY = originY + Math.sin(loopPositionAngleRadians) * circleRadius
@@ -1181,9 +1228,9 @@ function creatCircleNotation (instrumentObj, metronomeObj, parent){
 
 // this value appears not to change? 
 // rename these variables
-let circleNotationLead = creatCircleNotation(leadObj, leadMetronomeObj, 'lead-controls')
-let circleNotationPad = creatCircleNotation(padObj, padMetronomeObj, 'pad-controls')
-let circleNotationBass = creatCircleNotation(bassObj, bassMetronomeObj, 'bass-controls')
+let circleNotationLead = creatCircleNotation(leadObj, 'lead-controls')
+let circleNotationPad = creatCircleNotation(padObj, 'pad-controls')
+let circleNotationBass = creatCircleNotation(bassObj, 'bass-controls')
 
 new p5(circleNotationLead);
 new p5(circleNotationPad);
