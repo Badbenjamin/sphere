@@ -190,6 +190,8 @@ const leadGain = audioContext.createGain();
 leadGain.gain.value = .4
 const tremGain = new GainNode(audioContext)
 const leadPan = audioContext.createStereoPanner()
+let leadOscDetune = 0
+
 
 leadPan.pan.value = -.3
 
@@ -200,9 +202,11 @@ function playLeadOsc(time, wave, attackTime, releaseTime, noteSequence, currentN
     const leadFundamentalOsc = new OscillatorNode(audioContext, {
         frequency: noteSequence[currentNoteIndex],
         type: wave,
+        detune : leadOscDetune,
+        
     });
     const leadFundamentalOscGain = audioContext.createGain();
-
+    console.log(leadFundamentalOsc.detune.value)
     // CHAIN
     leadFundamentalOsc.connect(leadFundamentalOscGain).connect(bpFilterNodeLead).connect(convolutionDistortion1).connect(tremGain).connect(plateReverb1).connect(leadPan).connect(leadGain).connect(audioContext.destination);
 
@@ -926,6 +930,9 @@ const tick = () =>
     let leadSequencer = sequencer(elapsedTime, leadMetronomeTime, leadObj)
     // sinwave controlled tremelo on lead gain node
     tremGain.gain.value = lfoValue(.5, 1.5, 40, elapsedTime)
+    // lead fast shallow pitch modulation
+    leadOscDetune = lfoValue(0, 5, 10000, elapsedTime) - 2.5
+    // console.log(leadOsc)
  
     // droneSequencer(elapsedTime, metronomeTime, droneSequence)
     bassPan.pan.value = Math.sin(elapsedTime) / 6
