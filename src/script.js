@@ -1009,8 +1009,10 @@ const tick = () =>
     let newWaveLength = mapV(easeInEaseOutAnimationValues, 0 , 1 , waveLengthLowerLimit, wavelengthUpperLimit)
     // console.log(newWaveLength)
     // THIS COULD LOOK BETTER!!!
+    // const colorCenter = .55
+    // let saturationChange = mapV(easeInEaseOutAnimationValues, 0, 1, 0, .07)
     const colorCenter = .55
-    let saturationChange = mapV(easeInEaseOutAnimationValues, 0, 1, 0, .07)
+    let saturationChange = mapV(easeInEaseOutAnimationValues, 0, 1, 0, .1)
     let newColorCenter = colorCenter - saturationChange
     let newColorAmplitude = 1.0 - newColorCenter
     
