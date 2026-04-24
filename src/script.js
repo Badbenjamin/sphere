@@ -232,24 +232,34 @@ function playLeadOsc(time, wave, attackTime, releaseTime, noteSequence, currentN
 // ADDITIVE PAD
 
 // PAD FILTER
-const bpFilterNodePad = createFilterNode('bandpass', '150')
+const bpFilterNodePad = createFilterNode('bandpass', '25')
 
+// fundamental detune global vars
 let padGain = audioContext.createGain();
+let padOvertoneOneDetune = 0
+let padOvertoneFourDetune = 0
+let padOvertoneFiveDetune = 0
+let padOvertoneSixDetune = 0
+let padOvertoneSevenDetune = 0
+let padOvertoneEightDetune = 0
 
+// current chord index not used?
 function playAdditivePad(time, oscType, fundamental, chordSequence, currentChordIndex){
 
     const  chordSequenceLength= chordSequence.length
     // console.log(chordSequence[currentChordIndex])
-
+    // which ones should have detune? keep detune within function?
     let fundamentalOsc = new OscillatorNode(audioContext, {
         frequency: fundamental,
         type: oscType,
     });
     let masterGain = audioContext.createGain();
 
+    
     let overtoneOneOsc = new OscillatorNode(audioContext, {
         frequency: fundamental * 2,
         type: oscType,
+        detune : padOvertoneOneDetune
     });
     let overtoneOneGain = audioContext.createGain();
 
@@ -262,6 +272,7 @@ function playAdditivePad(time, oscType, fundamental, chordSequence, currentChord
     let overtoneThreeOsc= new OscillatorNode(audioContext, {
         frequency: fundamental * 4,
         type: oscType,
+        detune : padOvertoneFourDetune
         
     });
     let overtoneThreeGain = audioContext.createGain();
@@ -275,24 +286,28 @@ function playAdditivePad(time, oscType, fundamental, chordSequence, currentChord
     let overtoneFiveOsc= new OscillatorNode(audioContext, {
         frequency: fundamental * 6,
         type: oscType,
+        detune : padOvertoneFiveDetune 
     });
     let overtoneFiveGain = audioContext.createGain();
 
     let overtoneSixOsc= new OscillatorNode(audioContext, {
         frequency: fundamental * 7,
         type: oscType,
+        detune: padOvertoneSixDetune
     });
     let overtoneSixGain = audioContext.createGain();
 
     let overtoneSevenOsc= new OscillatorNode(audioContext, {
         frequency: fundamental * 8,
         type: oscType,
+        detune: padOvertoneSevenDetune
     });
     let overtoneSevenGain = audioContext.createGain();
 
     let overtoneEightOsc= new OscillatorNode(audioContext, {
         frequency: fundamental * 9,
         type: oscType,
+        detune : padOvertoneEightDetune
     });
     let overtoneEightGain = audioContext.createGain();
 
@@ -361,7 +376,11 @@ function playAdditivePad(time, oscType, fundamental, chordSequence, currentChord
     overtoneSixGain.connect(masterGain)
     overtoneSevenGain.connect(masterGain)
     overtoneEightGain.connect(masterGain)
+
+    // detune lfos (happening once or recouring?)
     
+    
+    // CHAIN
     masterGain.connect(bpFilterNodePad).connect(convolutionDistortion2).connect(judsonReverb2).connect(plateReverb2).connect(padGain).connect(audioContext.destination)
 
     // START STOP
@@ -430,7 +449,7 @@ async function createConvolutionDistortion() {
 let convolutionDistortion1 = await createConvolutionDistortion();
 let convolutionDistortion2 = await createConvolutionDistortion();
 
-const bassLfoFilterNode = createFilterNode('bandpass', '5')
+const bassLfoFilterNode = createFilterNode('lowpass', '5')
 
 const bassGain = audioContext.createGain();
 
@@ -738,7 +757,7 @@ function mapV(value, inMin, inMax, outMin, outMax){
 }
 
 function easeInOutSine(value) {
-return -(Math.cos(Math.PI * value) - 1) / 2;
+    return -(Math.cos(Math.PI * value) - 1) / 2;
 }
 
 // ANIMATION GLOBAL VARS
@@ -916,7 +935,7 @@ const clock = new THREE.Clock()
 const tick = () =>
 {   
     const elapsedTime = clock.getElapsedTime();
-    // console.log(padStartTimeArray)
+    // console.log(padOvertoneOneOscDetune)
     globalElapsedTime = elapsedTime
 
     stats.update()
@@ -931,27 +950,37 @@ const tick = () =>
     // sinwave controlled tremelo on lead gain node
     tremGain.gain.value = lfoValue(.5, 1.5, 40, elapsedTime)
     // lead fast shallow pitch modulation
-    leadOscDetune = lfoValue(0, 5, 10000, elapsedTime) - 2.5
+    leadOscDetune = lfoValue(0, 6, 10000, elapsedTime) - 3
     // console.log(leadOsc)
  
+    // padSequencer(elapsedTime, metronomeTime, padSequence)
+    let padSequencer = sequencer(elapsedTime, padMetronomeTime, padObj)
+    // individual fundamental osc detunes 
+    padOvertoneOneDetune = lfoValue(0, 10, 10, elapsedTime) - 5
+    padOvertoneFourDetune = lfoValue(0, 15, 20, elapsedTime) - 7.5
+    padOvertoneFiveDetune = lfoValue(0, 10, 50, elapsedTime) - 5
+    padOvertoneSixDetune = lfoValue(0, 10, 75, elapsedTime) - 5
+    padOvertoneSevenDetune = lfoValue(0, 10, 20, elapsedTime) - 5
+    padOvertoneEightDetune = lfoValue(0, 20, 40, elapsedTime) - 10
+    
+
+    let bassSequencer = sequencer(elapsedTime, bassMetronomeTime, bassObj)
     // droneSequencer(elapsedTime, metronomeTime, droneSequence)
     bassPan.pan.value = Math.sin(elapsedTime) / 6
 
-    // padSequencer(elapsedTime, metronomeTime, padSequence)
-    let padSequencer = sequencer(elapsedTime, padMetronomeTime, padObj)
 
-    let bassSequencer = sequencer(elapsedTime, bassMetronomeTime, bassObj)
-
+    // go through these and make sure frequencies are not stepping on eachother, compare with notes hz
     // DRONE FILTER SWEEP
-    bassLfoFilterNode.frequency.value = lfoValue(200, 500, .5, elapsedTime)
+    bassLfoFilterNode.frequency.value = lfoValue(50, 100, .5, elapsedTime)
     // PAD FILTER SWEEP
-    bpFilterNodePad.frequency.value = lfoValue(100, 200, 15, elapsedTime)
+    // what is the center freq???
+    bpFilterNodePad.frequency.value = lfoValue(150, 190, 10, elapsedTime) 
     // LEAD FILTER SWEEP
     bpFilterNodeLead.frequency.value = lfoValue(500, 1500, 10, elapsedTime)
 
     // LEAD OSC
     sphereParticles.rotation.z = elapsedTime * rotationSpeed   
-  
+    
     
     // ANIMATIONS 
 
@@ -961,11 +990,12 @@ const tick = () =>
     removeStartTimesOfCompletedAnimations(elapsedTime, padStartTimeArray, padAnimationLength)
     let summedAnimationValues = sumAllAnimationValues(elapsedTime, padStartTimeArray, padAnimationLength)
     let clampedAnimationValuesSum = MathUtils.clamp(summedAnimationValues, 0 ,100)
+    // let easeInEaseOutAnimationValues = easeInOutSine(clampedAnimationValuesSum)
 
     // change fib spiral pattern with pad play
     // could use non clamped vals but would need to know max value
-    waveLength = mapV(clampedAnimationValuesSum, 1 , 100 , waveLength, waveLength + .00000005)
-    
+    waveLength = mapV(clampedAnimationValuesSum, 1 , 100 , waveLength, waveLength + .00000025)
+    console.log(waveLength)
     // THIS COULD LOOK BETTER!!!
     const colorCenter = .55
     let saturationChange = mapV(clampedAnimationValuesSum, 1, 100, 0, .07)
@@ -977,12 +1007,12 @@ const tick = () =>
 
     
     // DRONE ANIMATION
-    let innerRadius2 = mapV(bassLfoFilterNode.frequency.value, 39, 156, 5, 5.5)
+    // let innerRadius2 = mapV(bassLfoFilterNode.frequency.value, 39, 156, 5, 5.5)
     // LEAD ANIMATION
     // band animates from start of innerRadius to 
     
-    let lowerBound = (innerRadius2 - newAmplitude) 
-    let upperBound = (innerRadius2 + newAmplitude) 
+    let lowerBound = (innerRadius - newAmplitude) 
+    let upperBound = (innerRadius + newAmplitude) 
     
     let leadAnimationPercentCompleteArray = createLeadAnimationPercentCompleteArray(elapsedTime, leadStartTimeArray, leadAnimationLength)
     let positionBetweenBoundsArray = createPositionBetweenBoundsArray(leadAnimationPercentCompleteArray, lowerBound, upperBound)
@@ -998,7 +1028,7 @@ const tick = () =>
         const azimuth = goldenAngleRadians * i;
         
         // is there a better name for this variable? Total Radius?
-        let outerRadius = innerRadius2 + ((Math.sin(((elapsedTime * speedOfWaves) + (i * waveLength)))) * newAmplitude)
+        let outerRadius = innerRadius + ((Math.sin(((elapsedTime * speedOfWaves) + (i * waveLength)))) * newAmplitude)
         // how do I send a pulse down the sine wave that multiplies outer radius?
 
 
