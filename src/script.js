@@ -757,14 +757,14 @@ function mapV(value, inMin, inMax, outMin, outMax){
 }
 
 function easeInOutSine(value) {
-    // return -(Math.cos(Math.PI * value) - 1) / 2;
-    return -0.5 * (Math.cos(value * Math.PI) - 1)
+    return -(Math.cos(Math.PI * value) - 1) / 2;
+    // return -0.5 * (Math.cos(value * Math.PI) - 1)
 }
 
 // ANIMATION GLOBAL VARS
 
 let padStartTimeArray = []
-const padAnimationLength = 9
+const padAnimationLength = 12
 
 let leadStartTimeArray = []
 const leadAnimationLength = 3 
@@ -990,21 +990,32 @@ const tick = () =>
     // PAD ANIMATIONS
     removeStartTimesOfCompletedAnimations(elapsedTime, padStartTimeArray, padAnimationLength)
     let summedAnimationValues = sumAllAnimationValues(elapsedTime, padStartTimeArray, padAnimationLength)
-    let clampedAnimationValuesSum = MathUtils.clamp(summedAnimationValues, 0 ,100)
-    // let easeInEaseOutAnimationValues = easeInOutSine(clampedAnimationValuesSum)
+    // console.log(summedAnimationValues)
+    // let maximumPadArrayValue = padStartTimeArray.length * padAnimationLength
+    // console.log(max)
+    let upperClampLimit = 200
+    let clampedAnimationValuesSum = MathUtils.clamp(summedAnimationValues, 0 ,upperClampLimit)
+    // console.log(clampedAnimationValuesSum)
+    // easeInEaseOutSine takes value from 0-1 and outputs smoothed value from 0-1 
+    let easeInEaseOutAnimationValues = easeInOutSine(clampedAnimationValuesSum / upperClampLimit)
     // console.log(easeInEaseOutAnimationValues)
     // change fib spiral pattern with pad play
     // could use non clamped vals but would need to know max value
-    waveLength = mapV(clampedAnimationValuesSum, 0 , 1 , waveLength, waveLength + .000000002)
-    // console.log(waveLength)
+    // why is wavelength going up and not down?
+    // let wavelengthUpperLimit = waveLength + .000000002
+    let waveLengthLowerLimit = waveLength
+    let wavelengthUpperLimit = waveLength + .000005
+
+    let newWaveLength = mapV(easeInEaseOutAnimationValues, 0 , 1 , waveLengthLowerLimit, wavelengthUpperLimit)
+    // console.log(newWaveLength)
     // THIS COULD LOOK BETTER!!!
     const colorCenter = .55
-    let saturationChange = mapV(clampedAnimationValuesSum, 1, 100, 0, .07)
+    let saturationChange = mapV(easeInEaseOutAnimationValues, 0, 1, 0, .07)
     let newColorCenter = colorCenter - saturationChange
     let newColorAmplitude = 1.0 - newColorCenter
     
     // What if i didn't clamp and set max to animation completion * 2?
-    let newAmplitude = amplitude + mapV(clampedAnimationValuesSum, 0, 100, 0 , .15)
+    let newAmplitude = amplitude + mapV(clampedAnimationValuesSum, 0, 1, 0 , .0005)
 
     
     // DRONE ANIMATION
@@ -1029,7 +1040,7 @@ const tick = () =>
         const azimuth = goldenAngleRadians * i;
         
         // is there a better name for this variable? Total Radius?
-        let outerRadius = innerRadius + ((Math.sin(((elapsedTime * speedOfWaves) + (i * waveLength)))) * newAmplitude)
+        let outerRadius = innerRadius + ((Math.sin(((elapsedTime * speedOfWaves) + (i * newWaveLength)))) * newAmplitude)
         // how do I send a pulse down the sine wave that multiplies outer radius?
 
 
