@@ -206,7 +206,7 @@ function playLeadOsc(time, wave, attackTime, releaseTime, noteSequence, currentN
         
     });
     const leadFundamentalOscGain = audioContext.createGain();
-    console.log(leadFundamentalOsc.detune.value)
+    
     // CHAIN
     leadFundamentalOsc.connect(leadFundamentalOscGain).connect(bpFilterNodeLead).connect(convolutionDistortion1).connect(tremGain).connect(plateReverb1).connect(leadPan).connect(leadGain).connect(audioContext.destination);
 
@@ -825,13 +825,13 @@ function sumAllAnimationValues(elapsedTime, startTimeArray, animationLength){
 
 // LEAD ANIMATION FUNCTIONS
 
-function createLeadAnimationPercentCompleteArray(elapsedTime, leadStartTimeArray, leadAnimationLength, lowerBound, upperBound){
+function createAnimationPercentCompleteArray(elapsedTime, startTimeArray, leadAnimationLength){
     let percentCompleteArray = []
-    if (leadStartTimeArray.length == 0){
+    if (startTimeArray.length == 0){
         return []
     } else {
-        for (let i = 0; i < leadStartTimeArray.length; i ++){
-            let currentStartTime = leadStartTimeArray[i]
+        for (let i = 0; i < startTimeArray.length; i ++){
+            let currentStartTime = startTimeArray[i]
             let percentageComplete = returnPercentCompleteAnimation(elapsedTime, currentStartTime, leadAnimationLength)
             percentCompleteArray.push(percentageComplete)
         }
@@ -936,25 +936,26 @@ const clock = new THREE.Clock()
 const tick = () =>
 {   
     const elapsedTime = clock.getElapsedTime();
-    // console.log(padOvertoneOneOscDetune)
+    // console.log(padStartTimeArray)
     globalElapsedTime = elapsedTime
 
     stats.update()
 
-    // will later need a differnet metronome for each instrument
+    // PARTICLE ROTATION
+    sphereParticles.rotation.z = elapsedTime * rotationSpeed  
+
+    // INSTRUMENT MENTRONOMES
     let leadMetronomeTime = metronome(elapsedTime,  leadObj, bpm);
     let padMetronomeTime = metronome(elapsedTime, padObj, bpm);
     let bassMetronomeTime = metronome(elapsedTime, bassObj, bpm)
-    // globalMetronomeTime = metronomeTime
    
+    // INSTRUMENT SEQUENCERS & GLOBAL VAR MODULATORS
     let leadSequencer = sequencer(elapsedTime, leadMetronomeTime, leadObj)
     // sinwave controlled tremelo on lead gain node
     tremGain.gain.value = lfoValue(.5, 1.5, 40, elapsedTime)
     // lead fast shallow pitch modulation
     leadOscDetune = lfoValue(0, 6, 10000, elapsedTime) - 3
-    // console.log(leadOsc)
  
-    // padSequencer(elapsedTime, metronomeTime, padSequence)
     let padSequencer = sequencer(elapsedTime, padMetronomeTime, padObj)
     // individual fundamental osc detunes 
     padOvertoneOneDetune = lfoValue(0, 10, 10, elapsedTime) - 5
@@ -964,9 +965,8 @@ const tick = () =>
     padOvertoneSevenDetune = lfoValue(0, 10, 20, elapsedTime) - 5
     padOvertoneEightDetune = lfoValue(0, 20, 40, elapsedTime) - 10
     
-
     let bassSequencer = sequencer(elapsedTime, bassMetronomeTime, bassObj)
-    // droneSequencer(elapsedTime, metronomeTime, droneSequence)
+    // bass pan
     bassPan.pan.value = Math.sin(elapsedTime) / 6
 
 
@@ -979,61 +979,54 @@ const tick = () =>
     // LEAD FILTER SWEEP
     bpFilterNodeLead.frequency.value = lfoValue(500, 1500, 10, elapsedTime)
 
-    // LEAD OSC
-    sphereParticles.rotation.z = elapsedTime * rotationSpeed   
+ 
     
     
     // ANIMATIONS 
 
-    // LEAD ANIMATIONS ARE IN PARTICLE FOR LOOP
-
     // PAD ANIMATIONS
-    removeStartTimesOfCompletedAnimations(elapsedTime, padStartTimeArray, padAnimationLength)
-    let summedAnimationValues = sumAllAnimationValues(elapsedTime, padStartTimeArray, padAnimationLength)
-    // console.log(summedAnimationValues)
-    // let maximumPadArrayValue = padStartTimeArray.length * padAnimationLength
-    // console.log(max)
+    
+    let summedPadAnimationValues = sumAllAnimationValues(elapsedTime, padStartTimeArray, padAnimationLength)
+    // let maximumPadArrayValue = padStartTimeArray.length * padAnimationLength // this jumps, could possibly figure out max with overlap of animations and beat length
     let upperClampLimit = 200
-    let clampedAnimationValuesSum = MathUtils.clamp(summedAnimationValues, 0 ,upperClampLimit)
-    // console.log(clampedAnimationValuesSum)
+    let clampedPadAnimationValuesSum = MathUtils.clamp(summedPadAnimationValues, 0 ,upperClampLimit)
     // easeInEaseOutSine takes value from 0-1 and outputs smoothed value from 0-1 
-    let easeInEaseOutAnimationValues = easeInOutSine(clampedAnimationValuesSum / upperClampLimit)
-    // console.log(easeInEaseOutAnimationValues)
-    // change fib spiral pattern with pad play
-    // could use non clamped vals but would need to know max value
-    // why is wavelength going up and not down?
-    // let wavelengthUpperLimit = waveLength + .000000002
+    let easeInEaseOutPAdAnimationValues = easeInOutSine(clampedPadAnimationValuesSum / upperClampLimit)
+    
+    // dont += to global vars, use global var aas base and then manpulate new variable in funciton
     let waveLengthLowerLimit = waveLength
-    let wavelengthUpperLimit = waveLength + .000005
+    let wavelengthUpperLimit = waveLength + .00003
 
-    let newWaveLength = mapV(easeInEaseOutAnimationValues, 0 , 1 , waveLengthLowerLimit, wavelengthUpperLimit)
-    // console.log(newWaveLength)
-    // THIS COULD LOOK BETTER!!!
-    // const colorCenter = .55
-    // let saturationChange = mapV(easeInEaseOutAnimationValues, 0, 1, 0, .07)
+    let newWaveLength = mapV(easeInEaseOutPAdAnimationValues, 0 , 1 , waveLengthLowerLimit, wavelengthUpperLimit)
     const colorCenter = .55
-    let saturationChange = mapV(easeInEaseOutAnimationValues, 0, 1, 0, .1)
+    let saturationChange = mapV(easeInEaseOutPAdAnimationValues, 0, 1, 0, .1)
     let newColorCenter = colorCenter - saturationChange
     let newColorAmplitude = 1.0 - newColorCenter
     
-    // What if i didn't clamp and set max to animation completion * 2?
-    let newAmplitude = amplitude + mapV(clampedAnimationValuesSum, 0, 1, 0 , .0005)
+    // subtle wave amplitude addition
+    let newAmplitude = amplitude + mapV(clampedPadAnimationValuesSum, 0, 1, 0 , .001)
 
     
-    // DRONE ANIMATION
-    // let innerRadius2 = mapV(bassLfoFilterNode.frequency.value, 39, 156, 5, 5.5)
-    // LEAD ANIMATION
-    // band animates from start of innerRadius to 
+    // BASS ANIMATION
+    // controling inner radius
+    // let bassAnimationPercentCompleteArray = createAnimationPercentCompleteArray(elapsedTime, bassStartTimeArray, bassAnimationLength)
+    // let summedBassAnimations = sumAllAnimationValues(elapsedTime, bassStartTimeArray, bassAnimationLength)
     
+    
+    // LEAD ANIMATION (position between bounds array stores info for animation that takes place in particle loop)
+    // band animates from start of innerRadius to inneRadius + amplitude
+   
     let lowerBound = (innerRadius - newAmplitude) 
     let upperBound = (innerRadius + newAmplitude) 
     
-    let leadAnimationPercentCompleteArray = createLeadAnimationPercentCompleteArray(elapsedTime, leadStartTimeArray, leadAnimationLength)
+    let leadAnimationPercentCompleteArray = createAnimationPercentCompleteArray(elapsedTime, leadStartTimeArray, leadAnimationLength)
     let positionBetweenBoundsArray = createPositionBetweenBoundsArray(leadAnimationPercentCompleteArray, lowerBound, upperBound)
 
    
-
+    // clear start times that are longer than animation time
     removeStartTimesOfCompletedAnimations(elapsedTime,leadStartTimeArray,leadAnimationLength)
+    removeStartTimesOfCompletedAnimations(elapsedTime, padStartTimeArray, padAnimationLength)
+    removeStartTimesOfCompletedAnimations(elapsedTime, bassStartTimeArray, bassAnimationLength)
 
     for (let i = 0; i <= points; i++){
         const t = ((i / (points)));
