@@ -808,7 +808,7 @@ function raiseAndLowerAnimationValueTo100(percentCompleteAnimation){
     return normalizedValue
 }
 
-function sumAllAnimationValues(elapsedTime, startTimeArray, animationLength){
+function sumStartTimeArrayCompletionPercentages(elapsedTime, startTimeArray, animationLength){
     let res = 0
     if (startTimeArray.length === 0){
         return 0
@@ -924,6 +924,15 @@ function changePositionParticlesWithinBandwidth(positionBetweenBoundsArray, pola
     }
 }
 
+function addRandomnessToPosition(summedAnimationCompletionValues, i3, sineWaveAmplitude){
+
+    let randomDistance = (Math.random() * summedAnimationCompletionValues) / 9000
+
+    positions[i3] = positions[i3] + randomDistance ;     // x
+    positions[i3 + 1] = positions[i3 + 1] + randomDistance ; // y
+    positions[i3 + 2] = positions[i3 + 2] + randomDistance ; // z
+}
+
 let globalElapsedTime = null
 let globalMetronomeTime = null
 /**
@@ -986,12 +995,12 @@ const tick = () =>
 
     // PAD ANIMATIONS
     
-    let summedPadAnimationValues = sumAllAnimationValues(elapsedTime, padStartTimeArray, padAnimationLength)
+    let summedPadAnimationValues = sumStartTimeArrayCompletionPercentages(elapsedTime, padStartTimeArray, padAnimationLength)
     // let maximumPadArrayValue = padStartTimeArray.length * padAnimationLength // this jumps, could possibly figure out max with overlap of animations and beat length
-    let upperClampLimit = 200
-    let clampedPadAnimationValuesSum = MathUtils.clamp(summedPadAnimationValues, 0 ,upperClampLimit)
+    let padUpperClampLimit = 200
+    let clampedPadAnimationValuesSum = MathUtils.clamp(summedPadAnimationValues, 0 ,padUpperClampLimit)
     // easeInEaseOutSine takes value from 0-1 and outputs smoothed value from 0-1 
-    let easeInEaseOutPAdAnimationValues = easeInOutSine(clampedPadAnimationValuesSum / upperClampLimit)
+    let easeInEaseOutPAdAnimationValues = easeInOutSine(clampedPadAnimationValuesSum / padUpperClampLimit)
     
     // dont += to global vars, use global var aas base and then manpulate new variable in funciton
     let waveLengthLowerLimit = waveLength
@@ -1008,10 +1017,11 @@ const tick = () =>
 
     
     // BASS ANIMATION
-    // controling inner radius
+    // controling inner radius OR random particle 'buzz'
     // let bassAnimationPercentCompleteArray = createAnimationPercentCompleteArray(elapsedTime, bassStartTimeArray, bassAnimationLength)
-    // let summedBassAnimations = sumAllAnimationValues(elapsedTime, bassStartTimeArray, bassAnimationLength)
-    
+    let summedBassAnimations = sumStartTimeArrayCompletionPercentages(elapsedTime, bassStartTimeArray, bassAnimationLength)
+    // to clamp or not to clamp?
+    // console.log(summedBassAnimations)
     
     // LEAD ANIMATION (position between bounds array stores info for animation that takes place in particle loop)
     // band animates from start of innerRadius to inneRadius + amplitude
@@ -1035,7 +1045,7 @@ const tick = () =>
         const azimuth = goldenAngleRadians * i;
         
         // is there a better name for this variable? Total Radius?
-        let outerRadius = innerRadius + ((Math.sin(((elapsedTime * speedOfWaves) + (i * newWaveLength)))) * newAmplitude)
+        let sineWaveAmplitude = innerRadius + ((Math.sin(((elapsedTime * speedOfWaves) + (i * newWaveLength)))) * newAmplitude)
         // how do I send a pulse down the sine wave that multiplies outer radius?
 
 
@@ -1043,24 +1053,25 @@ const tick = () =>
         let i3 = i * 3
         
         // spherical to cartesian 
-        positions[i3] = Math.sin(polarAngle) * Math.cos(azimuth) * (outerRadius);     // x
-        positions[i3 + 1] = Math.sin(polarAngle) * Math.sin(azimuth) * (outerRadius); // y
-        positions[i3 + 2] = Math.cos(polarAngle) * (outerRadius) ; // z
+        positions[i3] = Math.sin(polarAngle) * Math.cos(azimuth) * (sineWaveAmplitude);     // x
+        positions[i3 + 1] = Math.sin(polarAngle) * Math.sin(azimuth) * (sineWaveAmplitude); // y
+        positions[i3 + 2] = Math.cos(polarAngle) * (sineWaveAmplitude) ; // z
 
 
         // color appears white when all rgb values are equal
         // rgb values are between 0 and 1 
-        
-
         const zPosition = positions[i3 + 2]
         colors[i3] = ((Math.sin(elapsedTime + zPosition)*newColorAmplitude) + newColorCenter)// r
         colors[i3+ 1] = ((Math.sin((elapsedTime + zPosition)+2)*newColorAmplitude) + newColorCenter)// g
         colors[i3+2] = ((Math.sin((elapsedTime + zPosition)+4)*newColorAmplitude) + newColorCenter) // b
 
-        changeColorOfParticlesWithinBandwidth(positionBetweenBoundsArray, outerRadius, i3, 1)
-        easeInOutSine(changePositionParticlesWithinBandwidth(positionBetweenBoundsArray, polarAngle, azimuth, outerRadius, i3, 1))
+        // lead animation white gradient band
+        changeColorOfParticlesWithinBandwidth(positionBetweenBoundsArray, sineWaveAmplitude, i3, 1)
+        // easing func for radius displacement of particles within gradient 
+        easeInOutSine(changePositionParticlesWithinBandwidth(positionBetweenBoundsArray, polarAngle, azimuth, sineWaveAmplitude, i3, 1))
         
-        
+        // bass animation buzz? xyz randomness?
+        // addRandomnessToPosition(summedBassAnimations, i3, sineWaveAmplitude)
     }
 
 
