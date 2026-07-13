@@ -11,7 +11,7 @@ import Stats from 'three/examples/jsm/libs/stats.module'
 const stats = Stats()
 document.body.appendChild(stats.dom)
 
-const gui = new GUI({width : 800})
+// const gui = new GUI({width : 800})
 
 // Canvas
 const canvas = document.querySelector('canvas.webgl')
@@ -53,18 +53,6 @@ let speedOfWaves = .2
 let rotationSpeed = .1
 let waveLength = 1
 
-
-// GUI PARAMS
-const guiParams = {
-    speedOfWaves: .2,
-    rotationSpeed: .1,
-}
-
-
-// this param isnt my fav
-gui.add( guiParams, 'rotationSpeed', 0, 1, .01 ).onChange(value =>{
-    rotationSpeed = value
-});
 
 // for each point, we need 3 positions, so positions is 3x points. 
 const positions = new Float32Array(points * 3) // each point requires xyz cordinates
@@ -1066,7 +1054,7 @@ const tick = () =>
     controls.update()
     // Render
     renderer.render(scene, camera)
-
+    console.log(rotationSpeed)  
     // Call tick again on the next frame
     window.requestAnimationFrame(tick)
 }
@@ -1135,13 +1123,17 @@ const padPulsesInput = document.getElementById('pad-pulses-input');
 const bassPulsesInput = document.getElementById('bass-pulses-input');
 const bpmInput = document.getElementById('bpm-slider');
 const bpmDisplay = document.getElementById('bpm-number');
-bpmDisplay.textContent = "BPM: " + bpmInput.value
+// bpmDisplay.textContent = "BPM: " + bpmInput.value
 
+// bpm is linked to rotationSpeed
 bpmInput.addEventListener('input', () => {
-    // console.log(bpmInput.value)
-    console.log('1',bpmDisplay.textContent)
-  bpmDisplay.textContent = "BPM: " + bpmInput.value;
+
+    // bpmDisplay.textContent = "BPM: " + bpmInput.value;
+    bpm = bpmInput.value
+    let newRotationSpeed = mapV(bpmInput.value, 10, 40, .01, .15)
+    rotationSpeed = newRotationSpeed
 });
+
 
 leadPulsesInput.addEventListener('input', (e)=>{
     let numberOfPulses = e.target.value
