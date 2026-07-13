@@ -56,35 +56,15 @@ let waveLength = 1
 
 // GUI PARAMS
 const guiParams = {
-	innerRadius : 5,
-    amplitude: 1,
     speedOfWaves: .2,
     rotationSpeed: .1,
-    waveLength : 1,
-    scopeOn : false
 }
 
-gui.add( guiParams, 'innerRadius', .1, 10, .1 ).onChange(value =>{
-    innerRadius = value
-}); 	
-gui.add( guiParams, 'amplitude', -50, 50, .1
- ).onChange(value =>{
-    amplitude = value
-}); 
-gui.add( guiParams, 'speedOfWaves', 0, 10, .1 ).onChange(value =>{
-    speedOfWaves = value
-});
 
 // this param isnt my fav
 gui.add( guiParams, 'rotationSpeed', 0, 1, .01 ).onChange(value =>{
     rotationSpeed = value
 });
-gui.add( guiParams, 'waveLength', 0,(Math.PI), .00005 ).onChange(value =>{
-    waveLength = value
-});
-
-gui.add( guiParams, 'scopeOn' );
-
 
 // for each point, we need 3 positions, so positions is 3x points. 
 const positions = new Float32Array(points * 3) // each point requires xyz cordinates
@@ -120,7 +100,7 @@ sphereParticles.name = 'sphereParticles'
 scene.add(sphereParticles)
 
 /**
- * Sizes
+ * RESPONSIVE WINDOW
  */
 const sizes = {
     width: window.innerWidth,
@@ -692,7 +672,7 @@ function sequencer(time, metronomeBeat, instrumentObj){
 }
 
 // METRONOME
-
+// create bpm slider or input?
 let bpm = 20;
 
 // Metronome Objects for each instrument, share global bpm
@@ -924,6 +904,7 @@ function changePositionParticlesWithinBandwidth(positionBetweenBoundsArray, pola
     }
 }
 
+// this didn't quite work. Maybe use Perlin noise?
 function addRandomnessToPosition(summedAnimationCompletionValues, i3, sineWaveAmplitude){
 
     let randomDistance = (Math.random() * summedAnimationCompletionValues) / 9000
@@ -951,6 +932,7 @@ const tick = () =>
     stats.update()
 
     // PARTICLE ROTATION
+    // rotation speed linked to bpm?
     sphereParticles.rotation.z = elapsedTime * rotationSpeed  
 
     // INSTRUMENT MENTRONOMES
@@ -1003,7 +985,7 @@ const tick = () =>
     let easeInEaseOutPAdAnimationValues = easeInOutSine(clampedPadAnimationValuesSum / padUpperClampLimit)
     
     // dont += to global vars, use global var aas base and then manpulate new variable in funciton
-    let waveLengthLowerLimit = waveLength
+    let waveLengthLowerLimit = 1
     let wavelengthUpperLimit = waveLength + .00003
 
     let newWaveLength = mapV(easeInEaseOutPAdAnimationValues, 0 , 1 , waveLengthLowerLimit, wavelengthUpperLimit)
@@ -1151,7 +1133,16 @@ function changeNumberOfPulses (numberOfPulses, instrumentId) {
 const leadPulsesInput = document.getElementById('lead-pulses-input');
 const padPulsesInput = document.getElementById('pad-pulses-input');
 const bassPulsesInput = document.getElementById('bass-pulses-input');
-// write this as a function
+const bpmInput = document.getElementById('bpm-slider');
+const bpmDisplay = document.getElementById('bpm-number');
+bpmDisplay.textContent = "BPM: " + bpmInput.value
+
+bpmInput.addEventListener('input', () => {
+    // console.log(bpmInput.value)
+    console.log('1',bpmDisplay.textContent)
+  bpmDisplay.textContent = "BPM: " + bpmInput.value;
+});
+
 leadPulsesInput.addEventListener('input', (e)=>{
     let numberOfPulses = e.target.value
     let instrumentId = e.target.id

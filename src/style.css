@@ -53,6 +53,10 @@ body
     margin-left: auto;
 }
 
+.bpm-number{
+    color: white;
+}
+
 /* .controls {
     width: 100%;
     flex: 1;
