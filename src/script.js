@@ -900,10 +900,17 @@ const startAnimationLengthSec = 2
 let startAnimationStartTime = null
 
 const startButton = document.getElementById("start-button")
-let isPaused = true
+let isPaused = false
 
 startButton.addEventListener('click', ()=>{
-    console.log('click')
+    if (isPaused){
+        pauseTime = globalElapsedTime
+        isPaused = false
+    } else {
+        startTime = globalElapsedTime
+        isPaused = true
+    }
+    console.log('s', startTime, 'p', pauseTime, 'isPaused', isPaused)
 })
 
 // one sec elapsed time should map to dif btw start radius and radius
