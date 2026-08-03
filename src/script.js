@@ -135,6 +135,8 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 // AUDIO
 
 const audioContext = new AudioContext();
+// start suspended!
+audioContext.suspend()
 
 function lfoValue(min, max, speed, time){
     const lfoRange = max - min
@@ -164,6 +166,7 @@ let leadOscDetune = 0
 leadPan.pan.value = -.3
 
 function playLeadOsc(time, wave, attackTime, releaseTime, noteSequence, currentNoteIndex) {
+
     const notesLength = noteSequence.length
     const sweepLength = attackTime + releaseTime
 
@@ -933,13 +936,17 @@ startStopButton.addEventListener('click', ()=>{
         // unpause: set pauseTime to null
         pauseTime = null
         animationState.isPaused = false
+        audioContext.resume()
+        startStopButton.innerHTML = "="
     } else if (animationState.isPaused == false) {
         // pause: use animation time, not global elapsed time, as the pause point
         pauseTime = animationState.animationTime
         animationState.isPaused = true
+        audioContext.suspend()
+        startStopButton.innerHTML = ">"
     }
-    console.log('pt', pauseTime, 'tp', animationState.timePaused, 'at', animationState.animationTime, 'get', globalElapsedTime)
 })
+
 /**
  * Animate
  */
@@ -949,6 +956,7 @@ const clock = new THREE.Clock()
 
 const tick = () =>
 {   
+    console.log(audioContext.state)
     const elapsedTime = clock.getElapsedTime();
     globalElapsedTime = elapsedTime
 
