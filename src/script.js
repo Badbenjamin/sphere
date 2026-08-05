@@ -3,6 +3,9 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import GUI from 'lil-gui'
 import * as MathUtils from 'three/src/math/MathUtils.js'
 import Stats from 'three/examples/jsm/libs/stats.module'
+import Noise from 'noisejs'
+
+// console.log(noise)
 
 /**
  * Base
@@ -33,7 +36,7 @@ const particleTexture = textureLoader.load('/textures/particles/4.png')
 // const particlesGeometry = new THREE.SphereGeometry(1,32,32)
 const fibSphereGeometry = new THREE.BufferGeometry()
 
-let points = 100000
+let points = 80000
 
 let innerRadius = 5
 const goldenRatio = (1 + Math.sqrt(5)) / 20;
@@ -48,9 +51,10 @@ const goldenAngleRadians = Math.PI * 2 * goldenRatio;
 // 3.45 : 4 pointed deep spiral
 // 3.311 : large, bulbous waves moving from pole to pole
 // ### 6.2832 : equivalent to 0???
+let bpm = 20; // bpm here for rotation speed
 let amplitude = 1 // number of peaks and valleys in wave
 let speedOfWaves = .2
-let rotationSpeed = .1
+let rotationSpeed = mapV(bpm, 10, 40, .001, .15)
 let waveLength = 1
 
 
@@ -664,7 +668,7 @@ function sequencer(time, metronomeBeat, instrumentObj){
 
 // METRONOME
 // create bpm slider or input?
-let bpm = 20;
+
 
 // Metronome Objects for each instrument, share global bpm
 let leadMetronomeObj = {
@@ -735,14 +739,16 @@ function easeInOutSine(value) {
 // ANIMATION GLOBAL VARS
 
 let padStartTimeArray = []
-const padAnimationLength = 12
+// ofset to compensate for slow attack? 
+const padAnimationOffset = -3
+const padAnimationLength = 18
 
 let leadStartTimeArray = []
 const leadAnimationLength = 3 
 
 // radius increase? maybe pad only does wavelength increse and not amplitude? 
 let bassStartTimeArray = []
-const bassAnimationLength = 3
+const bassAnimationLength = 4.5
 
 function removeStartTimesOfCompletedAnimations(elapsedTime, startTimeArray, animationLength){
     for (let i = 0; i < startTimeArray.length; i++){
@@ -906,15 +912,21 @@ function incrimentRadius(elapsedTime, startRadius, endRadius, startAnimationLeng
 
 }
 
-
+// let myNoise = new Noise(Noise.seed)
+let myNoise = new Noise.Noise
 // this didn't quite work. Maybe use Perlin noise?
-function addRandomnessToPosition(summedAnimationCompletionValues, i3, sineWaveAmplitude){
+function addNoiseToPosition(summedAnimationCompletionValues, i3, time){
+    let normalizedAnimationCompletionValues = summedAnimationCompletionValues/100 // 0-1
+    let easedValues = easeInOutSine(normalizedAnimationCompletionValues)
+    let noiseAmmount = mapV(easedValues, 0, 1, 0, .15)
+    // let noiseDistance = myNoise.simplex3(positions[i3]/denominator, positions[i3 + 1]/denominator, positions[i3 + 2]/denominator) 
+    let noiseDistance = myNoise.simplex3(positions[i3], positions[i3 + 1], time)
 
-    let randomDistance = (Math.random() * summedAnimationCompletionValues) / 9000
+    let displacement = noiseDistance * (noiseAmmount)
 
-    positions[i3] = positions[i3] + randomDistance ;     // x
-    positions[i3 + 1] = positions[i3 + 1] + randomDistance ; // y
-    positions[i3 + 2] = positions[i3 + 2] + randomDistance ; // z
+    positions[i3] = positions[i3] += displacement ;     // x
+    positions[i3 + 1] = positions[i3 + 1] += displacement; // y
+    positions[i3 + 2] = positions[i3 + 2] += displacement ; // z
 }
 
 // globalTime, animationTime, play/pause
@@ -947,6 +959,33 @@ startStopButton.addEventListener('click', ()=>{
     }
 })
 
+// wavelength
+const wavelengthSlider = document.getElementById("wavelength-slider")
+
+wavelengthSlider.addEventListener('input', ()=>{
+    waveLength = parseFloat(wavelengthSlider.value)
+})
+
+wavelengthSlider.addEventListener('wheel', (e)=>{
+    e.preventDefault(); // stop the page from scrolling
+
+  const step = Number(wavelengthSlider.step) || 1;
+  const min = Number(wavelengthSlider.min);
+  const max = Number(wavelengthSlider.max);
+
+  // deltaY < 0 means scrolling up
+  let newValue = Number(wavelengthSlider.value) + (e.deltaY < 0 ? step : -step);
+
+  // clamp to min/max
+  newValue = Math.min(max, Math.max(min, newValue));
+
+  wavelengthSlider.value = newValue;
+
+    waveLength = parseFloat(newValue)
+
+  // fire an input event so any listeners (e.g. a live label) update
+  wavelengthSlider.dispatchEvent(new Event('input', { bubbles: true }));
+})
 /**
  * Animate
  */
@@ -956,7 +995,7 @@ const clock = new THREE.Clock()
 
 const tick = () =>
 {   
-    console.log(audioContext.state)
+    // console.log(newWaveLength)
     const elapsedTime = clock.getElapsedTime();
     globalElapsedTime = elapsedTime
 
@@ -973,7 +1012,8 @@ const tick = () =>
 
     // PARTICLE ROTATION
     // rotation speed linked to bpm?
-    sphereParticles.rotation.z = animationState.animationTime * rotationSpeed  
+    // rotationSpeed = 0 // temp turned off!
+    sphereParticles.rotation.z = -(animationState.animationTime * rotationSpeed ) 
 
     // INSTRUMENT MENTRONOMES
     let leadMetronomeTime = metronome(animationState.animationTime,  leadObj, bpm);
@@ -1021,14 +1061,15 @@ const tick = () =>
     // let maximumPadArrayValue = padStartTimeArray.length * padAnimationLength // this jumps, could possibly figure out max with overlap of animations and beat length
     let padUpperClampLimit = 200
     let clampedPadAnimationValuesSum = MathUtils.clamp(summedPadAnimationValues, 0 ,padUpperClampLimit)
-    // easeInEaseOutSine takes value from 0-1 and outputs smoothed value from 0-1 
+    // easeInEaseOutSine takes value from 0-1 and outputs smoothed value from 0-1, check these input values
     let easeInEaseOutPAdAnimationValues = easeInOutSine(clampedPadAnimationValuesSum / padUpperClampLimit)
     
     // dont += to global vars, use global var aas base and then manpulate new variable in funciton
-    let waveLengthLowerLimit = 1
+    let waveLengthLowerLimit = waveLength
     let wavelengthUpperLimit = waveLength + .00003
-
-    let newWaveLength = mapV(easeInEaseOutPAdAnimationValues, 0 , 1 , waveLengthLowerLimit, wavelengthUpperLimit)
+    // temp swapped newwl with wl
+    let newWaveLength =  mapV(easeInEaseOutPAdAnimationValues, 0 , 1 , waveLengthLowerLimit, wavelengthUpperLimit)
+    // console.log(newWaveLength)
     const colorCenter = .55
     let saturationChange = mapV(easeInEaseOutPAdAnimationValues, 0, 1, 0, .1)
     let newColorCenter = colorCenter - saturationChange
@@ -1069,7 +1110,9 @@ const tick = () =>
         
         //newAmplitude = 0
         //innerRadius = 3
-        // is there a better name for this variable? Total Radius?
+        // is there a better name for this variable? Total Radius? 
+        // newWavelength and waveLength? how do I reconcile these two? 
+
         let sineWaveAmplitude = innerRadius + ((Math.sin(((animationState.animationTime * speedOfWaves) + (i * newWaveLength)))) * newAmplitude)
         // how do I send a pulse down the sine wave that multiplies outer radius?
 
@@ -1093,10 +1136,11 @@ const tick = () =>
         // lead animation white gradient band
         changeColorOfParticlesWithinBandwidth(positionBetweenBoundsArray, sineWaveAmplitude, i3, 1)
         // easing func for radius displacement of particles within gradient 
+        // check if this value is 0 to 1? 
         easeInOutSine(changePositionParticlesWithinBandwidth(positionBetweenBoundsArray, polarAngle, azimuth, sineWaveAmplitude, i3, 1))
         
         // bass animation buzz? xyz randomness?
-        // addRandomnessToPosition(summedBassAnimations, i3, sineWaveAmplitude)
+        addNoiseToPosition(summedBassAnimations, i3, animationState.animationTime)
     }
 
 
