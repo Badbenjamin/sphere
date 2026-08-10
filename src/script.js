@@ -5,8 +5,6 @@ import * as MathUtils from 'three/src/math/MathUtils.js'
 import Stats from 'three/examples/jsm/libs/stats.module'
 import Noise from 'noisejs'
 
-// console.log(noise)
-
 /**
  * Base
  */
@@ -195,7 +193,6 @@ function playLeadOsc(time, wave, attackTime, releaseTime, noteSequence, currentN
     } else {
         leadPan.pan.value = -.3
     }
-    // console.log(leadObj.noteIndex)
     // Advance notes
     if (currentNoteIndex< notesLength - 1){
         leadObj.instrument.noteIndex = leadObj.instrument.noteIndex + 1
@@ -222,7 +219,7 @@ let padOvertoneEightDetune = 0
 function playAdditivePad(time, oscType, fundamental, chordSequence, currentChordIndex){
 
     const  chordSequenceLength= chordSequence.length
-    // console.log(chordSequence[currentChordIndex])
+
     // which ones should have detune? keep detune within function?
     let fundamentalOsc = new OscillatorNode(audioContext, {
         frequency: fundamental,
@@ -429,9 +426,8 @@ const bassLfoFilterNode = createFilterNode('lowpass', '5')
 const bassGain = audioContext.createGain();
 
 const bassPan = audioContext.createStereoPanner()
-//playBass(time, 'sine', instrument.noteSequence[instrument.noteIndex], .5, 1)
+
 function playBass(time, wave, attack, release, noteSequence, currentNoteIndex){
-    // console.log('pb',noteSequence, currentNoteIndex)
     const notesLength = noteSequence.length
     let frequency = noteSequence[currentNoteIndex]
     // fundamental osc goes straight to sweepEnvGain envelope
@@ -518,11 +514,9 @@ const bassGainControl = document.querySelector("#bass-volume");
 
 bassGainControl.addEventListener("input", () => {
   bassGain.gain.value = bassGainControl.value;
-  console.log(bassGain.gain.value)
 });
 
 const leadGainControl = document.querySelector("#lead-volume");
-// console.log(leadGain.gain)
 leadGainControl.addEventListener("input", () => {
     // why does lead gain default to 1???
     leadGain.gain.value = leadGainControl.value;
@@ -697,7 +691,6 @@ let bassMetronomeObj = {
 // METRONOME SHOULD RETURN BOTH BEATS AND TIME COMPLETED OF LOOP
 
 function metronome(currentTime, instrumentObj, bpm){
-    // console.log(instrumentObj)
     let beatLengthSeconds = 60.0 / bpm;
     instrumentObj.metronome.totalLoopTime = beatLengthSeconds * instrumentObj.instrument.pulseBooleanArray.length
 
@@ -774,17 +767,17 @@ function returnPercentCompleteAnimation(elapsedTime, startTime, animationLength)
 }
 
 
+
+
 function raiseAndLowerAnimationValueTo100(percentCompleteAnimation){
-    let value = 0
-    if (percentCompleteAnimation <= 50){
-        value = percentCompleteAnimation
-    } else {
-        value = 100 - percentCompleteAnimation
-    }
-    let normalizedValue = mapV(value, 0, 50, 0, 100)
-    return normalizedValue
+    let value = 100 * (1 - Math.abs((percentCompleteAnimation / 50) - 1))
+    return value
 }
 
+
+
+
+// EASING FUNC ADDED FOR INDIVIDUAL PERCENTAGES
 function sumStartTimeArrayCompletionPercentages(elapsedTime, startTimeArray, animationLength){
     let res = 0
     if (startTimeArray.length === 0){
@@ -794,11 +787,16 @@ function sumStartTimeArrayCompletionPercentages(elapsedTime, startTimeArray, ani
             let currentStartTime = startTimeArray[i]
             let percentageComplete = returnPercentCompleteAnimation(elapsedTime, currentStartTime, animationLength)
             let individualAnimationValue = raiseAndLowerAnimationValueTo100(percentageComplete)
-            res += individualAnimationValue
+            let individualAnimationValueMappedZeroToOne = individualAnimationValue / 100
+            let easedIndividualAnimationValue = easeInOutSine(individualAnimationValueMappedZeroToOne)
+            let easedValueMappedZeroToOneHundred = easedIndividualAnimationValue * 100 
+            res += easedValueMappedZeroToOneHundred
         }
         return res
     }
 }
+
+
 
 // LEAD ANIMATION FUNCTIONS
 
@@ -912,14 +910,13 @@ function incrimentRadius(elapsedTime, startRadius, endRadius, startAnimationLeng
 
 }
 
-// let myNoise = new Noise(Noise.seed)
+
 let myNoise = new Noise.Noise
-// this didn't quite work. Maybe use Perlin noise?
+
 function addNoiseToPosition(summedAnimationCompletionValues, i3, time){
     let normalizedAnimationCompletionValues = summedAnimationCompletionValues/100 // 0-1
     let easedValues = easeInOutSine(normalizedAnimationCompletionValues)
     let noiseAmmount = mapV(easedValues, 0, 1, 0, .15)
-    // let noiseDistance = myNoise.simplex3(positions[i3]/denominator, positions[i3 + 1]/denominator, positions[i3 + 2]/denominator) 
     let noiseDistance = myNoise.simplex3(positions[i3], positions[i3 + 1], time)
 
     let displacement = noiseDistance * (noiseAmmount)
@@ -995,7 +992,6 @@ const clock = new THREE.Clock()
 
 const tick = () =>
 {   
-    // console.log(newWaveLength)
     const elapsedTime = clock.getElapsedTime();
     globalElapsedTime = elapsedTime
 
@@ -1059,17 +1055,16 @@ const tick = () =>
     
     let summedPadAnimationValues = sumStartTimeArrayCompletionPercentages(animationState.animationTime, padStartTimeArray, padAnimationLength)
     // let maximumPadArrayValue = padStartTimeArray.length * padAnimationLength // this jumps, could possibly figure out max with overlap of animations and beat length
-    let padUpperClampLimit = 200
+    let padUpperClampLimit = 150
     let clampedPadAnimationValuesSum = MathUtils.clamp(summedPadAnimationValues, 0 ,padUpperClampLimit)
     // easeInEaseOutSine takes value from 0-1 and outputs smoothed value from 0-1, check these input values
+    // individual values are eased, AND summed array values are eased approaching clamp value
     let easeInEaseOutPAdAnimationValues = easeInOutSine(clampedPadAnimationValuesSum / padUpperClampLimit)
-    
     // dont += to global vars, use global var aas base and then manpulate new variable in funciton
     let waveLengthLowerLimit = waveLength
-    let wavelengthUpperLimit = waveLength + .00003
+    let wavelengthUpperLimit = waveLength + .00007
     // temp swapped newwl with wl
     let newWaveLength =  mapV(easeInEaseOutPAdAnimationValues, 0 , 1 , waveLengthLowerLimit, wavelengthUpperLimit)
-    // console.log(newWaveLength)
     const colorCenter = .55
     let saturationChange = mapV(easeInEaseOutPAdAnimationValues, 0, 1, 0, .1)
     let newColorCenter = colorCenter - saturationChange
