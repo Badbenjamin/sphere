@@ -56,7 +56,9 @@ body
 .bpm-number{
     color: white;
 }
-
+.start-button{
+    margin-top: auto;
+}
 /* .controls {
     width: 100%;
     flex: 1;
