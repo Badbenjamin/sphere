@@ -733,7 +733,7 @@ function easeInOutSine(value) {
 
 let padStartTimeArray = []
 // ofset to compensate for slow attack? 
-const padAnimationOffset = -3
+// const padAnimationOffset = -3
 const padAnimationLength = 18
 
 let leadStartTimeArray = []
@@ -1062,10 +1062,10 @@ const tick = () =>
     let easeInEaseOutPAdAnimationValues = easeInOutSine(clampedPadAnimationValuesSum / padUpperClampLimit)
     // dont += to global vars, use global var aas base and then manpulate new variable in funciton
     let waveLengthLowerLimit = waveLength
-    let wavelengthUpperLimit = waveLength + .00007
+    let wavelengthUpperLimit = waveLength + .00005
     // temp swapped newwl with wl
     let newWaveLength =  mapV(easeInEaseOutPAdAnimationValues, 0 , 1 , waveLengthLowerLimit, wavelengthUpperLimit)
-    const colorCenter = .55
+    const colorCenter = .57
     let saturationChange = mapV(easeInEaseOutPAdAnimationValues, 0, 1, 0, .1)
     let newColorCenter = colorCenter - saturationChange
     let newColorAmplitude = 1.0 - newColorCenter
