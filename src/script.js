@@ -536,6 +536,7 @@ padGainControl.addEventListener("input", () => {
 let leadObj = {
     'instrument' : {
         type : 'lead',
+        // G5 → D#5 → A#5 → D5 → D6 → G5 → D#5 → A#5 → D5
         noteSequence: [783.99, 622.25, 932.35, 587.33, 1174.66, 783.99, 622.25, 932.35, 587.33],
         noteIndex: 0,
         pulseBooleanArray : [true, false, false, true, false, false, true, false],
@@ -580,6 +581,7 @@ let bassObj = {
     'instrument' : {
         type : 'bass',
         // keep above 100 and lower than 200 to not step on pad
+        // Eb3 → Bb2 → C3 → Bb2
         noteSequence: [155.562, 116.54, 130.81, 116.54],
         noteIndex: 0,
         pulseBooleanArray : [true, false, false, true, false],
