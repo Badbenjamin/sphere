@@ -169,9 +169,9 @@ leadPan.pan.value = -.3
 
 // currentScoreIndex vs scoreIndex?
 function playLeadOsc(time, wave, attackTime, releaseTime, scoreIndex, scoreSequence) {
-    console.log('osc', scoreIndex, scoreSequence)
+    // console.log('osc', scoreIndex, scoreSequence)
     // const notesLength = noteSequence.length
-    const scoreLength = scoreSequence.length
+    // const scoreLength = scoreSequence.length
     const sweepLength = attackTime + releaseTime
     // const scoreNote= scoreSequence
 
@@ -196,17 +196,10 @@ function playLeadOsc(time, wave, attackTime, releaseTime, scoreIndex, scoreSeque
     } else {
         leadPan.pan.value = -.3
     }
-    // Advance notes (MAY NEED DEBUGGING)
-    // mod operator version of this? this should wrap! wondering if there was something to my currentScoreIndex variable, though...
-    // leadObj.instrument.scoreIndex += 1
-    // leadObj.instrument.scoreIndex = scoreLength - 1 % scoreIndex 
-    if (scoreIndex< scoreIndex.length - 1){
-        leadObj.instrument.scoreIndex += 1
-        // leadObj.instrument.noteIndex = leadObj.instrument.noteIndex + 1
-    } else {
-        leadObj.instrument.scoreIndex = 0
-        // leadObj.instrument.noteIndex = 0
-    }
+    // ADVANCE SCORE INDEX
+    
+    leadObj.instrument.scoreIndex = (scoreIndex + 1) % scoreSequence.length
+    console.log('lsi', leadObj.instrument.scoreIndex)
 }
 
 // ADDITIVE PAD
@@ -437,7 +430,7 @@ const bassPan = audioContext.createStereoPanner()
 
 function playBass(time, wave, attack, release, scoreSequence, scoreIndex){
     const scoreLength = scoreSequence.length
-    console.log(scoreSequence, scoreIndex)
+    // console.log(scoreSequence, scoreIndex)
     let frequency = scoreSequence[scoreIndex].note
     // fundamental osc goes straight to sweepEnvGain envelope
     // sub osc and 5th osc are attenuated before linking to sweepEnvGain
@@ -580,6 +573,7 @@ let leadObj = {
     }
 }
 // initiate leadObj workingScoreSequence
+// replace with createScore function later
 leadObj.instrument.workingScoreSequence = [...leadObj.instrument.masterScoreSequence]
     
 let chordObj = {
@@ -625,6 +619,7 @@ let padObj = {
     }
 }
 // initiate padObj workingScoreSequence
+// replace with createScore function later
 padObj.instrument.workingScoreSequence = [...padObj.instrument.masterScoreSequence]
 
 let bassObj = {
@@ -661,34 +656,37 @@ let bassObj = {
     }
 }
 // initiate bassObj workingScoreSequence
+// replace with createScore function later
 bassObj.instrument.workingScoreSequence = [...bassObj.instrument.masterScoreSequence]
 
-console.log(leadObj.instrument.workingScoreSequence, padObj.instrument.workingScoreSequence, bassObj.instrument.workingScoreSequence)
+// console.log(leadObj.instrument.workingScoreSequence, padObj.instrument.workingScoreSequence, bassObj.instrument.workingScoreSequence)
 // make this work for all instruments by taking diff args
 function sequencer(time, metronomeBeat, instrumentObj){
-   
+    
+    // is this a scope issue?
     let instrumentType = instrumentObj.instrument.type
     // scoreSequence combines noteSequence and PulseArray
     let instrumentScoreSequence = instrumentObj.instrument.workingScoreSequence
+   
     let instrumentScoreIndex = instrumentObj.instrument.scoreIndex
+    //  console.log('instruentScoreIndex', instrumentScoreIndex, instrumentObj.instrument.type)
     let scoreSequenceLength = instrumentScoreSequence.length
+    // console.log('instruentScoreSequnece length', scoreSequenceLength)
+    // WHY IS SCORE NOT ADVANCING????
     // multiple playOsc() funcs can be pushed to array
     // pad plays a chord so n slightly staggered oscs are played at once to form chord
     let playOscArray = []
     if (instrumentType == 'lead'){
         // console.log('seq', instrumentScoreIndex, instrumentScoreSequence)
+        // instrumentScoreIndex turns into NaN
         let playOsc = () => playLeadOsc(time, 'triangle', 0.1, 1, instrumentScoreIndex, instrumentScoreSequence);
         playOscArray.push(playOsc)
     } else if (instrumentType == 'pad'){
         // this could be a function
         let chordSequence = instrumentObj.instrument.workingScoreSequence
         let chordIndex = instrumentObj.instrument.scoreIndex
-        console.log('pad index', chordIndex) // returns NaN?
-        // console.log('padBug', instrumentObj.instrument.scoreSequence[chordIndex].note)
         let currentChord = instrumentObj.instrument.workingScoreSequence[chordIndex].note
-        // console.log('pad',chordSequence, currentChord)
         let currentChordNotes = chordObj[currentChord]
-        // console.log(currentChordNotes)
         let timeStagger = 0
         // loop through and play individual notes of chord
         for (let i = 0; i < currentChordNotes.length; i++){
@@ -701,7 +699,7 @@ function sequencer(time, metronomeBeat, instrumentObj){
     } else if (instrumentType === 'bass'){
         // make attack release global vars later
         // playBass(time, wave, attack, release, noteSequence, currentNoteIndex)
-        console.log('seqbass', instrumentScoreIndex)
+        // console.log('seqbass', instrumentScoreIndex)
         let playOsc = () => playBass(time, 'sine', 1.2, 2, instrumentScoreSequence, instrumentScoreIndex)
         playOscArray.push(playOsc)
     }
@@ -1278,7 +1276,7 @@ function changeNumberOfPulses (numberOfPulses, instrumentId) {
     let scoreSequenceCopy = [...instrumentObj.workingScoreSequence]
 
     // mod operator instead of if else?
-    if(numberOfPulses < pulseBooleanArrayCopy.length){
+    if(numberOfPulses < workingScoreSequence.length){
         // shorten scoreSequence (cut one off workingScoreSequence)
         scoreSequenceCopy.length = numberOfPulses
         // pulseBooleanArrayCopy.length = numberOfPulses
@@ -1362,18 +1360,18 @@ function creatCircleNotation (instrumentObj, parent){
         // DOT/ONSET SELECT CLIC
         sketch.mouseClicked = () => {
             // there should be a dot for 
-            for(let i = 0; i < instrumentObj.instrument.pulseBooleanArray.length; i++){
+            for(let i = 0; i < instrumentObj.instrument.workingScoreSequence.length; i++){
                 let currentPulse = i
                 // let currentPulseBoolean = instrumentObj.instrument.pulseBooleanArray[currentPulse]
                 // console.log(currentPulseBoolean)
-                const angle = (currentPulse / instrumentObj.instrument.pulseBooleanArray.length) * (Math.PI * 2) - Math.PI / 2;
+                const angle = (currentPulse / instrumentObj.instrument.workingScoreSequence.length) * (Math.PI * 2) - Math.PI / 2;
                 const dotX = originX + Math.cos(angle) * circleRadius;
                 const dotY = originY + Math.sin(angle) * circleRadius;
                 const dist = euclidianDistance(dotX, dotY, sketch.mouseX, sketch.mouseY);
                 // sense click on dot, ! operator reverses boolean in pulseBooleanArray
                 if (dist < dotDiameter / 2){
 
-                    instrumentObj.instrument.workingScoreSequence[i].bool = !instrumentObj.instrument.scoreSequence[i].bool
+                    instrumentObj.instrument.workingScoreSequence[i].bool = !instrumentObj.instrument.workingScoreSequence[i].bool
                     // instrumentObj.instrument.workingScoreSequence[i] = !instrumentObj.instrument.pulseBooleanArray[i]
                 };
             };
@@ -1397,11 +1395,12 @@ function creatCircleNotation (instrumentObj, parent){
 
             //DOTS FOR PULSES
             
-            
+            // one dot for leangth of workingScoreSequence
             for(let i = 0; i < instrumentObj.instrument.workingScoreSequence.length; i++){
                 let currentPulse = i
+                // IS THERE A SCORESEQUENCE CURRENTPULSE?
                 let currentPulseBoolean = instrumentObj.instrument.workingScoreSequence[currentPulse].bool
-                // console.log(currentPulseBoolean)
+                // console.log('cpb',currentPulseBoolean)
                 const angle = (currentPulse / instrumentObj.instrument.workingScoreSequence.length) * (Math.PI * 2) - Math.PI / 2
                 const dotX = originX + Math.cos(angle) * circleRadius
                 const dotY = originY + Math.sin(angle) * circleRadius
