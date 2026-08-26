@@ -197,7 +197,7 @@ function playLeadOsc(time, wave, attackTime, releaseTime, scoreIndex, scoreSeque
         leadPan.pan.value = -.3
     }
     // ADVANCE SCORE INDEX
-    
+    // score needs to advance even if note isn't played. this functionality needs to be removed from play Osc
     leadObj.instrument.scoreIndex = (scoreIndex + 1) % scoreSequence.length
     console.log('lsi', leadObj.instrument.scoreIndex)
 }
@@ -668,46 +668,61 @@ function sequencer(time, metronomeBeat, instrumentObj){
     // scoreSequence combines noteSequence and PulseArray
     let instrumentScoreSequence = instrumentObj.instrument.workingScoreSequence
    
-    let instrumentScoreIndex = instrumentObj.instrument.scoreIndex
-    //  console.log('instruentScoreIndex', instrumentScoreIndex, instrumentObj.instrument.type)
+    // REPLACED WITH METRONOME BEAT - 1 (metronome beat starts at 1, not 0)
+    // score no longer advances with each note play, but checks boolean of score sequence to determine play. 
+    let instrumentScoreIndex = metronomeBeat - 1
     let scoreSequenceLength = instrumentScoreSequence.length
-    // console.log('instruentScoreSequnece length', scoreSequenceLength)
-    // WHY IS SCORE NOT ADVANCING????
-    // multiple playOsc() funcs can be pushed to array
-    // pad plays a chord so n slightly staggered oscs are played at once to form chord
+    
+    
+
     let playOscArray = []
     if (instrumentType == 'lead'){
-        // console.log('seq', instrumentScoreIndex, instrumentScoreSequence)
-        // instrumentScoreIndex turns into NaN
-        let playOsc = () => playLeadOsc(time, 'triangle', 0.1, 1, instrumentScoreIndex, instrumentScoreSequence);
-        playOscArray.push(playOsc)
+        // if the scoreObj boolean at the current beat is true, 
+        let currentScoreBoolean = instrumentScoreSequence[instrumentScoreIndex].bool
+        if (currentScoreBoolean == true){
+            // console.log('lead info', instrumentScoreSequence[instrumentScoreIndex])
+            let playOsc = () => playLeadOsc(time, 'triangle', 0.1, 1, instrumentScoreIndex, instrumentScoreSequence);
+            playOscArray.push(playOsc)
+        }
+
     } else if (instrumentType == 'pad'){
         // this could be a function
-        let chordSequence = instrumentObj.instrument.workingScoreSequence
-        let chordIndex = instrumentObj.instrument.scoreIndex
-        let currentChord = instrumentObj.instrument.workingScoreSequence[chordIndex].note
-        let currentChordNotes = chordObj[currentChord]
-        let timeStagger = 0
-        // loop through and play individual notes of chord
-        for (let i = 0; i < currentChordNotes.length; i++){
-            let chordNote = currentChordNotes[i]
-            let playOsc = () => playAdditivePad(time + timeStagger, "sine", chordNote, chordSequence, chordIndex)
-            playOscArray.push(playOsc)
-            timeStagger += .5
+        // currently is not because it loops to play individual notes from a chord
+        let currentScoreBoolean = instrumentScoreSequence[instrumentScoreIndex].bool
+        console.log('pad chord', 
+            'bool', instrumentScoreSequence[instrumentScoreIndex].bool,
+            'chord', instrumentScoreSequence[instrumentScoreIndex].note
+        )
+        if (currentScoreBoolean == true){
+            let chordSequence = instrumentObj.instrument.workingScoreSequence
+            // let chordIndex = instrumentObj.instrument.scoreIndex
+            let currentChord = instrumentScoreSequence[instrumentScoreIndex].note
+            let currentChordNotes = chordObj[currentChord]
+            let timeStagger = 0
+            // loop through and play individual notes of chord
+            for (let i = 0; i < currentChordNotes.length; i++){
+                let chordNote = currentChordNotes[i]
+                let playOsc = () => playAdditivePad(time + timeStagger, "sine", chordNote, chordSequence, instrumentScoreIndex)
+                playOscArray.push(playOsc)
+                timeStagger += .5
+            }
         }
         
     } else if (instrumentType === 'bass'){
-        // make attack release global vars later
-        // playBass(time, wave, attack, release, noteSequence, currentNoteIndex)
-        // console.log('seqbass', instrumentScoreIndex)
-        let playOsc = () => playBass(time, 'sine', 1.2, 2, instrumentScoreSequence, instrumentScoreIndex)
-        playOscArray.push(playOsc)
+       
+        let currentScoreBoolean = instrumentScoreSequence[instrumentScoreIndex].bool
+        if (currentScoreBoolean == true){
+            let playOsc = () => playBass(time, 'sine', 1.2, 2, instrumentScoreSequence, instrumentScoreIndex)
+            playOscArray.push(playOsc)
+        }
+        
     }
     // down beat for music is 1
     // but boolean pulse array starts at 0
     let currentBeat = metronomeBeat - 1
     
     // ADVANCE SCORE
+    // don't think I need this anymore
     for (let i = 0; i < scoreSequenceLength; i++){
         let currentSequenceOnsetBoolean = instrumentObj.instrument.workingScoreSequence[i].bool
         let currentSequenceOnset = i
@@ -720,12 +735,6 @@ function sequencer(time, metronomeBeat, instrumentObj){
                 ocsPlayFunc()
             }
             if (instrumentObj.instrument.type == 'pad'){
-                // pad needs special logic to advance chord since multiple oscs are played at once
-                // NEW mod operator logic, there is a NaN bug here!!!
-                // console.log('seq pad index', padObj.instrument.scoreIndex, padObj.instrument.scoreSequence.length -1)
-                
-                // padObj.instrument.scoreIndex += 1
-                // padObj.instrument.scoreIndex = padObj.instrument.scoreSequence.length % padObj.instrument.scoreIndex 
                 
                 if (instrumentObj.instrument.workingScoreSequence < instrumentObj.instrument.workingScoreSequence.length - 1){
                     padObj.instrument.scoreIndex = padObj.instrument.scoreIndex + 1
