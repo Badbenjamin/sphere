@@ -703,7 +703,7 @@ function sequencer(time, metronomeBeat, instrumentObj){
     // check currentBeat against lastPlayedBeat
     // if metronomeBeat is ahead of last played beat, invoke all the instrumentOscPlay functions and updateLastPlayedBeat
     // add start times of instruments to animationStarTimeArrays 
-    if (instrumentObj.instrument.lastPlayedBeat !== metronomeBeatZeroIndex){
+    if (instrumentObj.instrument.lastPlayedBeat !== metronomeBeatZeroIndex && currentScoreSequenceBoolean == true){
         // play all oscilators pushed to array. lead and bass only have one, pad has 4 (currentley)
         // create oscPlayFunc and invoke it for each instrumentOscPlay of the array
         for (const ocsPlayFunc of playOscArray){
@@ -760,7 +760,6 @@ function mapV(value, inMin, inMax, outMin, outMax){
 
 function easeInOutSine(value) {
     return -(Math.cos(Math.PI * value) - 1) / 2;
-    // return -0.5 * (Math.cos(value * Math.PI) - 1)
 }
 
 // ANIMATION GLOBAL VARS
@@ -800,16 +799,10 @@ function returnPercentCompleteAnimation(elapsedTime, startTime, animationLength)
     return animationPercentageComplete
 }
 
-
-
-
 function raiseAndLowerAnimationValueTo100(percentCompleteAnimation){
     let value = 100 * (1 - Math.abs((percentCompleteAnimation / 50) - 1))
     return value
 }
-
-
-
 
 // EASING FUNC ADDED FOR INDIVIDUAL PERCENTAGES
 function sumStartTimeArrayCompletionPercentages(elapsedTime, startTimeArray, animationLength){
@@ -829,8 +822,6 @@ function sumStartTimeArrayCompletionPercentages(elapsedTime, startTimeArray, ani
         return res
     }
 }
-
-
 
 // LEAD ANIMATION FUNCTIONS
 
@@ -936,14 +927,6 @@ function changePositionParticlesWithinBandwidth(positionBetweenBoundsArray, pola
 // START ANIMATION
 
 const startStopButton = document.getElementById("start-button")
-
-
-
-// one sec elapsed time should map to dif btw start radius and radius
-function incrimentRadius(elapsedTime, startRadius, endRadius, startAnimationLengthSec){
-
-}
-
 
 let myNoise = new Noise.Noise
 
@@ -1145,7 +1128,6 @@ const tick = () =>
         let sineWaveAmplitude = innerRadius + ((Math.sin(((animationState.animationTime * speedOfWaves) + (i * newWaveLength)))) * newAmplitude)
         // how do I send a pulse down the sine wave that multiplies outer radius?
 
-
         // three value chunk for xyz or rgb values
         let i3 = i * 3
         
@@ -1153,7 +1135,6 @@ const tick = () =>
         positions[i3] = Math.sin(polarAngle) * Math.cos(azimuth) * (sineWaveAmplitude);     // x
         positions[i3 + 1] = Math.sin(polarAngle) * Math.sin(azimuth) * (sineWaveAmplitude); // y
         positions[i3 + 2] = Math.cos(polarAngle) * (sineWaveAmplitude) ; // z
-
 
         // color appears white when all rgb values are equal
         // rgb values are between 0 and 1 
