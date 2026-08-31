@@ -534,16 +534,8 @@ padGainControl.addEventListener("input", () => {
 
 // SEQUENCER
 
-function createScoreSequence(instrumentObject){
-    let emptyScoreObj = { 
-        note: null,  
-        bool: null
-    }
-    let scoreSequence = []
-
-
-
-
+function creteNewScoreSequence(instrumentObj, truePulsesLocationsArray){
+    // when a pulse is clicked on or off, the scoreSequence is modified
 }
 
 // how do I make lead Note Sequence sound good at many lengths?
@@ -1273,20 +1265,22 @@ function changeNumberOfPulses (numberOfPulses, instrumentId) {
     
     // MY ARRAY CHANGE
     // let pulseBooleanArrayCopy = [...instrumentObj.pulseBooleanArray]
-    let scoreSequenceCopy = [...instrumentObj.workingScoreSequence]
-
-    // mod operator instead of if else?
-    if(numberOfPulses < workingScoreSequence.length){
+    let currentWorkingScoreSequence = instrumentObj.workingScoreSequence
+    let scoreSequenceCopy = [...currentWorkingScoreSequence]
+    // console.log('ssc', scoreSequenceCopy)
+    // SHORTEN SCORE SEQUENCE
+    if(numberOfPulses < currentWorkingScoreSequence.length){
         // shorten scoreSequence (cut one off workingScoreSequence)
         scoreSequenceCopy.length = numberOfPulses
         // pulseBooleanArrayCopy.length = numberOfPulses
     } else {
+        // LENGTHEN SCORE SEQUENCE
+        let emptyScoreObj = {
+            "note" : null,
+            "bool" : false
+        }
         while(scoreSequenceCopy.length < numberOfPulses){
-            // push obj from masterScoreSequence at index 
-            let masterScoreSequenceObj = instrumentObj.instrument.masterScoreSequence[numberOfPulses]
-            // initialize false
-            masterScoreSequenceObj.bool = false
-            pulseBooleanArrayCopy.push(masterScoreSequenceObj)
+            scoreSequenceCopy.push(emptyScoreObj)
         }
     }
     parentObj.instrument.workingScoreSequence = scoreSequenceCopy
