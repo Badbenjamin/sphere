@@ -534,8 +534,42 @@ padGainControl.addEventListener("input", () => {
 
 // SEQUENCER
 
+function createScoreSequence(instrumentObject){
+    let emptyScoreObj = { 
+        note: null,  
+        bool: null
+    }
+    let scoreSequence = []
+
+
+
+
+}
+
 // how do I make lead Note Sequence sound good at many lengths?
 // would pulse array (rhtyhm) be better included in instrumentObj than metronomeObj? 
+
+let leadNoteObj = {
+    "D5":   587.33,
+    "D#5":  622.25,
+    "G5":   783.99,
+    "A#5":  932.35,
+    "D6":   1174.66
+}
+
+let leadSequenceObj = {
+    2 : ["G5", "D5"],
+    3 : ["G5", "D#5","D5"],
+    4 : ["G5", "D#5", "A#5", "D5"],
+    5 : ["G5", "D#5", "D5", "A#5", "D6"],
+    6 : ["G5", "D#5", "D5", "D6", "A#5", "D6"],
+    7 : ["G5", "D#5", "A#5", "D5", "D6", "A#5", "D6"],
+    8 : ["G5", "D#5", "A#5", "D5", "D6", "G5", "D#5", "D6"],
+    9 : ["G5", "D#5", "A#5", "D5", "D6", "G5", "D#5", "A#5", "D5"],
+    10 : ["G5", "D#5", "A#5", "D5", "D6", "G5", "D#5", "A#5", "D5", "D6"],
+    11 : ["G5", "D#5", "A#5", "G5", "D5", "D6", "G5", "D#5", "A#5", "D5", "D6"],
+    12 : ["G5", "D#5", "A#5", "G5", "D5", "D6", "G5", "D#5", "A#5", "D5", "G5", "D6"]
+}
 
 let leadObj = {
     'instrument' : {
@@ -570,14 +604,28 @@ let leadObj = {
 // initiate leadObj workingScoreSequence
 // replace with createScore function later
 leadObj.instrument.workingScoreSequence = [...leadObj.instrument.masterScoreSequence]
-    
-let chordObj = {
+    //["EbM7", "CM7", "EbM7inv", "CM7inv", "Bb7"]
+let padChordObj = {
     "EbM7" : [311.13, 392, 587.33,  466.16], // check to see what chord it really is
     "EbM7inv" : [466.16, 587.33, 392.00, 311.13],
     "CM7" : [261.63, 311.13, 392.00, 466.16], // C, Eb, G, Bb — Cm7
     "CM7inv" : [466.16, 392.00, 311.13, 261.63],
-    "Bb7" : [233.08, 293.66, 349.23, 466.16], // Bb, D, F, A — BbMaj7
-    "Bb7inv" : [220.00, 293.66, 349.23] // A, Bb, D, F,  — BbMaj7
+    "BbM" : [233.08, 293.66, 349.23, 466.16], // Bb, D, F, Bb — BbM
+    "BbM7" : [233.08, 293.66, 349.23, 440.00] // Bb, D, F, A 
+}
+
+let padSequenceObject = {
+    2 : ["EbM7", "BbM"], 
+    3 : ["EbM7", "CM7", "BbM"], 
+    4 : ["EbM7", "CM7", "EbM7inv", "BbM"], 
+    5 : ["EbM7", "CM7", "EbM7inv", "CM7inv", "BbM"],
+    6 : ["EbM7", "CM7", "EbM7inv", "CM7inv", "EbM7", "BbM"],
+    7 : ["EbM7", "CM7", "EbM7inv", "BbM7", "CM7inv", "EbM7", "BbM"],
+    8 : ["EbM7", "CM7", "EbM7inv", "BbM7", "CM7inv", "EbM7", "CM7", "BbM"],
+    9 : ["EbM7", "CM7", "EbM7inv", "CM7inv", "BbM7", "CM7inv", "EbM7", "CM7", "BbM"],
+    10 : ["EbM7", "CM7", "EbM7inv", "CM7inv", "BbM7", "CM7inv", "EbM7", "CM7", "EbM7inv", "BbM"],
+    11 : ["EbM7", "CM7", "EbM7inv", "CM7inv", "BbM", "BbM7", "CM7inv", "EbM7", "CM7", "EbM7inv", "BbM"],
+    12 : ["EbM7", "CM7", "EbM7inv", "CM7inv", "BbM", "BbM7", "CM7inv", "EbM7", "CM7", "EbM7inv", "BbM", "BbM7"],
 }
 
 let padObj = {
@@ -612,6 +660,27 @@ let padObj = {
 // initiate padObj workingScoreSequence
 // replace with createScore function later
 padObj.instrument.workingScoreSequence = [...padObj.instrument.masterScoreSequence]
+
+let bassNoteObj = {
+    "D#3": 155.562,
+    "D3" : 146.83, // tension? 
+    "A#2": 116.54,
+    "C3": 130.81
+}
+
+let bassSequenceObject = {
+    2 : ["D#3", "C3"],
+    3 : ["D#3", "A#2", "C3"],
+    4 : ["D#3", "A#2", "D#3", "C3"],
+    5 : ["D#3", "A#2", "C3", "D#3", "C3"],
+    6 : ["D#3", "A#2", "C3", "D#3" , "A#2", "C3"],
+    7 : ["D#3", "A#2", "C3", "D#3" , "A#2", "D#3", "C3"],
+    8 : ["D#3", "A#2", "D#3", "C3", "D#3", "A#2", "D#3", "C3"],
+    9 : ["D#3", "A#2", "C3", "D#3", "A#2", "C3", "D#3", "A#2", "C3"],
+    10 : ["D#3", "A#2", "C3", "D#3", "C3","D#3", "A#2", "C3", "D#3", "C3"],
+    11 : ["D#3", "A#2", "C3", "D#3", "A#2", "C3", "D#3", "A#2", "C3", "D#3", "C3"],
+    12 : ["D#3", "A#2", "C3", "D#3" ,"A#2", "C3", "D#3", "A#2", "C3", "D#3" , "A#2", "C3"],
+}
 
 let bassObj = {
     'instrument' : {
@@ -682,7 +751,7 @@ function sequencer(time, metronomeBeat, instrumentObj){
         if (currentScoreSequenceBoolean == true){
             let chordSequence = instrumentObj.instrument.workingScoreSequence
             let currentChord = instrumentScoreSequence[metronomeBeatZeroIndex].note
-            let currentChordNotes = chordObj[currentChord]
+            let currentChordNotes = padChordObj[currentChord]
             let timeStagger = 0
             // loop through and play individual notes of chord
             for (let i = 0; i < currentChordNotes.length; i++){
