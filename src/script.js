@@ -534,8 +534,34 @@ padGainControl.addEventListener("input", () => {
 
 // SEQUENCER
 
-function creteNewScoreSequence(instrumentObj, truePulsesLocationsArray){
+function returnIndiciesOfTrueBooleans(scoreSequence){
+    let res = []
+
+}
+
+function createNewScoreSequence(instrumentObj){
     // when a pulse is clicked on or off, the scoreSequence is modified
+    
+    let instrumentType = instrumentObj.instrument.type
+    let instrumentNoteObj = null
+    let instrumentSequenceObj = null
+
+    // console.log(instrumentType)
+    if (instrumentType == 'lead'){
+        instrumentNoteObj = leadNoteObj
+        instrumentSequenceObj = leadSequenceObj
+    } else if (instrumentType == 'pad'){
+        instrumentNoteObj = padChordObj
+        instrumentSequenceObj = padSequenceObject
+    } else if (instrumentType == 'bass'){
+        instrumentNoteObj = bassNoteObj
+        instrumentSequenceObj = bassSequenceObject
+    }
+
+
+
+
+
 }
 
 // how do I make lead Note Sequence sound good at many lengths?
@@ -569,18 +595,15 @@ let leadObj = {
         // G5 → D#5 → A#5 → D5 → D6 → G5 → D#5 → A#5 → D5
         // noteSequence: [783.99, 622.25, 932.35, 587.33, 1174.66, 783.99, 622.25, 932.35, 587.33], // remove this when done
         masterScoreSequence: [
-                { note: 783.99,  bool: true }, // 1 - G5
-                { note: 622.25,  bool: false }, // 2 - D#5 
-                { note: 932.35,  bool: false }, // 3 - A#5
-                { note: 783.99,  bool: true }, // 4 - G5
-                { note: 587.33,  bool: true }, // 5 - D5
-                { note: 1174.66, bool: false }, // 6 - D6
-                { note: 783.99,  bool: false }, // 7 - G5
-                { note: 622.25,  bool: true }, // 8 - D#5
-                { note: 932.35,  bool: false }, // 9 - A#5
-                { note: 783.99,  bool: false }, // 10 - G5
-                { note: 587.33,  bool: true}, // 11 - D5
-                { note: 1174.66, bool: false }, // 12 - D6
+                { note: leadNoteObj[leadSequenceObj[4][0]],  bool: true }, // 1 - G5
+                { note: null,  bool: false }, 
+                { note: leadNoteObj[leadSequenceObj[4][1]],  bool: true }, // 3 - "D#5"
+                { note: null,  bool: false }, 
+                { note: null,  bool: false }, 
+                { note: leadNoteObj[leadSequenceObj[4][2]], bool: true }, // 6 - "A#5"
+                { note: null,  bool: false }, 
+                { note: leadNoteObj[leadSequenceObj[4][3]],  bool: true }, // 8 - D#5
+                { note: null,  bool: false }, 
             ],
         workingScoreSequence : [],
         lastPlayedBeat: null
@@ -596,6 +619,7 @@ let leadObj = {
 // initiate leadObj workingScoreSequence
 // replace with createScore function later
 leadObj.instrument.workingScoreSequence = [...leadObj.instrument.masterScoreSequence]
+// leadObj.instrument.workingScoreSequence = createNewScoreSequence(leadObj)
     //["EbM7", "CM7", "EbM7inv", "CM7inv", "Bb7"]
 let padChordObj = {
     "EbM7" : [311.13, 392, 587.33,  466.16], // check to see what chord it really is
@@ -625,18 +649,13 @@ let padObj = {
         type : 'pad',
         // chordSequence: ["EbM7", "CM7", "EbM7inv", "CM7inv", "Bb7"],
         masterScoreSequence: [
-            {note : "EbM7" , bool : true}, 
-            {note : "CM7", bool : false}, 
-            {note : "EbM7inv", bool : false},
-            {note : "CM7inv", bool : false},
-            {note : "Bb7", bool : false},
-            {note : "EbM7" , bool : true}, 
-            {note : "CM7", bool : false}, 
-            {note : "EbM7inv", bool : false},
-            {note : "CM7inv", bool : false},
-            {note : "EbM7inv", bool : false},
-            {note : "CM7inv", bool : false},
-            {note : "Bb7inv", bool : true},
+            {note : padSequenceObject[3][0] , bool : true}, 
+            {note :  null, bool : false}, 
+            {note : null, bool : false},
+            {note : null, bool : false},
+            {note : padSequenceObject[3][1], bool : true},
+            {note : padSequenceObject[3][2] , bool : true}, 
+            {note : null, bool : false}, 
         ],
         workingScoreSequence : [],
         lastPlayedBeat: null
@@ -681,18 +700,11 @@ let bassObj = {
         // Eb3 → Bb2 → C3 → Bb2
         noteSequence: [155.562, 116.54, 130.81, 116.54],
         masterScoreSequence : [
-            {note : 155.562 , bool : true}, // Eb3
-            {note : 116.54 , bool : false}, // Bb2
-            {note : 130.81 , bool : false}, // C3
-            {note : 116.54 , bool : true}, // Bb2
-            {note : 155.562 , bool : true}, // Eb3
-            {note : 116.54 , bool : false}, // Bb2
-            {note : 130.81 , bool : false}, // C3
-            {note : 116.54 , bool : true}, // Bb2
-            {note : 155.562 , bool : true}, // Eb3
-            {note : 116.54 , bool : false}, // Bb2
-            {note : 130.81 , bool : false}, // C3
-            {note : 116.54 , bool : true}, // Bb2
+            {note : bassNoteObj[bassSequenceObject[2][0]] , bool : true}, // Eb3
+            {note : null , bool : false}, // Bb2
+            {note : null , bool : false}, // C3
+            {note : bassNoteObj[bassSequenceObject[2][1]] , bool : true}, // Bb2
+            {note : null, bool : false}, // Eb3
         ],
         workingScoreSequence : [],
         lastPlayedBeat: null
@@ -713,7 +725,7 @@ bassObj.instrument.workingScoreSequence = [...bassObj.instrument.masterScoreSequ
 // time used to trigger osc, metronome beat used to check if instrumentObj.scoreSequence[metronomeBeat].bool is t or f
 // instrumentObj's lastPlayedBeat is updated after instrumentOscPlay funcs are added to array and invoked in a loop
 function sequencer(time, metronomeBeat, instrumentObj){
-    
+
     // PART I
     // push instrumentPlayOsc functions to playOscArray if instrumentScore[currentMetronomeBeat] is true
 
@@ -746,6 +758,8 @@ function sequencer(time, metronomeBeat, instrumentObj){
             let currentChordNotes = padChordObj[currentChord]
             let timeStagger = 0
             // loop through and play individual notes of chord
+            console.log(instrumentObj)
+            console.log('pad chord notes', currentChordNotes)
             for (let i = 0; i < currentChordNotes.length; i++){
                 let chordNote = currentChordNotes[i]
                 let playOsc = () => playAdditivePad(time + timeStagger, "sine", chordNote, chordSequence, metronomeBeatZeroIndex)
