@@ -767,6 +767,7 @@ function sequencer(time, metronomeBeat, instrumentObj){
             // console.log(instrumentObj)
             // console.log('pad chord notes', currentChordNotes)
             // if PAD currentChordNotes.length is UNDEFINED when unselecting CIRCLE UI DOTS
+            console.log(padChordObj, currentChord)
             for (let i = 0; i < currentChordNotes.length; i++){
                  
                 let chordNote = currentChordNotes[i]
@@ -1434,7 +1435,13 @@ function creatCircleNotation (instrumentObj, parent){
                         if (prevScoreObj.bool == true){
                             newScoreObj.bool = true
                             // PAD BUGGGG
-                            newScoreObj.note = noteObj[matchingScoreSequence[matchingScoreSeqIndex]]
+                            if (instrumentType == 'pad'){
+                                // this is handled differently in sequencer because chord is composed of n notes
+                                console.log(matchingScoreSequence[matchingScoreSeqIndex])
+                            } else {
+                                newScoreObj.note = noteObj[matchingScoreSequence[matchingScoreSeqIndex]]
+                            }
+                            
                             matchingScoreSeqIndex += 1
                             return newScoreObj
                         } else if (prevScoreObj.bool == false){
