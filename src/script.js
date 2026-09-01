@@ -174,7 +174,7 @@ function playLeadOsc(time, wave, attackTime, releaseTime, scoreIndex, scoreSeque
     // const scoreLength = scoreSequence.length
     const sweepLength = attackTime + releaseTime
     // const scoreNote= scoreSequence
-
+    console.log(scoreSequence[scoreIndex].note)
     const leadFundamentalOsc = new OscillatorNode(audioContext, {
         frequency: scoreSequence[scoreIndex].note,
         type: wave,
@@ -576,6 +576,8 @@ let leadNoteObj = {
 }
 
 let leadSequenceObj = {
+    0 : [],
+    1 : ["G5"],
     2 : ["G5", "D5"],
     3 : ["G5", "D#5","D5"],
     4 : ["G5", "D#5", "A#5", "D5"],
@@ -631,6 +633,8 @@ let padChordObj = {
 }
 
 let padSequenceObject = {
+    0 : [],
+    1 : ["EbM7"],
     2 : ["EbM7", "BbM"], 
     3 : ["EbM7", "CM7", "BbM"], 
     4 : ["EbM7", "CM7", "EbM7inv", "BbM"], 
@@ -680,6 +684,8 @@ let bassNoteObj = {
 }
 
 let bassSequenceObject = {
+    0 : [],
+    1 : ["D#3"],
     2 : ["D#3", "C3"],
     3 : ["D#3", "A#2", "C3"],
     4 : ["D#3", "A#2", "D#3", "C3"],
@@ -758,9 +764,11 @@ function sequencer(time, metronomeBeat, instrumentObj){
             let currentChordNotes = padChordObj[currentChord]
             let timeStagger = 0
             // loop through and play individual notes of chord
-            console.log(instrumentObj)
-            console.log('pad chord notes', currentChordNotes)
+            // console.log(instrumentObj)
+            // console.log('pad chord notes', currentChordNotes)
+            // if PAD currentChordNotes.length is UNDEFINED when unselecting CIRCLE UI DOTS
             for (let i = 0; i < currentChordNotes.length; i++){
+                 
                 let chordNote = currentChordNotes[i]
                 let playOsc = () => playAdditivePad(time + timeStagger, "sine", chordNote, chordSequence, metronomeBeatZeroIndex)
                 playOscArray.push(playOsc)
@@ -1349,7 +1357,22 @@ bassPulsesInput.addEventListener('input', (e)=>{
 // 4- repeat for all instruments
 
 function creatCircleNotation (instrumentObj, parent){
-    console.log('inst', instrumentObj)
+    // console.log('inst', instrumentObj)
+
+    let instrumentType = instrumentObj.instrument.type
+    let scoreSequenceObj = null
+    let noteObj = null
+
+    if (instrumentType == 'lead'){
+        scoreSequenceObj = leadSequenceObj
+        noteObj = leadNoteObj
+    } else if (instrumentType == 'pad'){
+        scoreSequenceObj = padSequenceObject
+        noteObj = padChordObj
+    } else if (instrumentType == 'bass'){
+        scoreSequenceObj = bassSequenceObject
+        noteObj = bassNoteObj
+    }
 
     const circleNotation= (sketch) => {
 
@@ -1381,6 +1404,49 @@ function creatCircleNotation (instrumentObj, parent){
 
                     instrumentObj.instrument.workingScoreSequence[i].bool = !instrumentObj.instrument.workingScoreSequence[i].bool
                     // instrumentObj.instrument.workingScoreSequence[i] = !instrumentObj.instrument.pulseBooleanArray[i]
+                    // what note to assign?
+                    // count trues in seq and locations
+
+                    // get true pulse booleans from scoreSeqence, array of indicies
+                    // rewrite scoreSeq[index].note for each true one based on instrument
+                    let trueIndicies = []
+                    instrumentObj.instrument.workingScoreSequence.map((scoreObj, i)=>{
+                        // console.log(scoreObj, i)
+                        if (scoreObj.bool){
+                            trueIndicies.push(i)
+                        }
+                    })
+                    let matchingScoreSequence = scoreSequenceObj[trueIndicies.length]
+                    // console.log(trueIndicies, matchingScoreSequence)
+                    // go through scoreSequence object and assign correct notes to true score objects
+                    // let newScoreObj = []
+                    let matchingScoreSeqIndex = 0
+                    let newScoreSequence = instrumentObj.instrument.workingScoreSequence.map((prevScoreObj, i)=>{
+                        // console.log('prev', prevScoreObj)
+                        
+                        let newScoreObj = {
+                            note : null,
+                            bool : null
+                        }
+                        
+                        // at each prevScoreObj where bool == true, assign a note from matching score sequence
+                        // note assignment needs to match TRUE 
+                        if (prevScoreObj.bool == true){
+                            newScoreObj.bool = true
+                            // PAD BUGGGG
+                            newScoreObj.note = noteObj[matchingScoreSequence[matchingScoreSeqIndex]]
+                            matchingScoreSeqIndex += 1
+                            return newScoreObj
+                        } else if (prevScoreObj.bool == false){
+                            newScoreObj.bool = false
+                            newScoreObj.note = null
+                            return newScoreObj
+                        }
+                        
+                    })
+                    matchingScoreSeqIndex = 0
+                    instrumentObj.instrument.workingScoreSequence = newScoreSequence
+                    console.log(instrumentObj.instrument.workingScoreSequence)
                 };
             };
         };       
