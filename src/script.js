@@ -818,7 +818,7 @@ function sequencer(time, metronomeBeat, instrumentObj){
         }
         // add start times to animationStartTimeArrays
         // lead has an offset
-        let offset = .5
+        let offset = 0
         if (instrumentObj.instrument.type == 'pad'){
             padAnimationStartTimeArray.push(time)
         } else if (instrumentObj.instrument.type == 'lead'){
@@ -1255,6 +1255,7 @@ const tick = () =>
         easeInOutSine(changePositionParticlesWithinBandwidth(positionBetweenBoundsArray, polarAngle, azimuth, sineWaveAmplitude, i3, 1))
         
         // bass animation buzz? xyz randomness?
+        // apply noise to RADIUS?
         addNoiseToPosition(summedBassAnimations, i3, animationState.animationTime)
     }
 
