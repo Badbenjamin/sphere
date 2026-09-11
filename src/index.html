@@ -18,11 +18,15 @@
             <div class="circle-UI-container">
                 <div class="instrument-title">LEAD</div>
                 <div class="controls" id="lead-controls"></div>
-                <label for="number-of-pulses"></label>
-                <input id="lead-pulses-input" class="instrument-pulses-input" type="number" name="quantity" min="2"
-                    max="12" step="1" value="9">
-                <input class="gain-range" type="range" id="lead-volume" min="0" max="1" value=".4" step="0.01" />
-                <div class="label">lead vol</div>
+                <div class="parent">
+                    <input id="lead-pulses-input" class="instrument-pulses-input" type="number" name="quantity" min="2"
+                        max="12" step="1" value="9">
+                    <label for="number-of-pulses"># of beats</label>
+                </div>
+                <div class="parent">
+                    <input class="gain-range" type="range" id="lead-volume" min="0" max="1" value=".4" step="0.01" />
+                    <div class="label">lead vol</div>
+                </div>
             </div>
             <div class="circle-UI-container">
                 <div class="instrument-title">PAD</div>
@@ -47,7 +51,7 @@
                         max="12" step="1" value="5">
                     <div class="label"># of beats</div>
                 </div>
-                <div>
+                <div class="parent">
                     <input class="gain-range" type="range" id="bass-volume" min="0" max="2" value="0.5" step="0.01" />
                     <div class="label">bass vol</div>
                 </div>
