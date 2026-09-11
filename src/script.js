@@ -36,16 +36,24 @@ const fibSphereGeometry = new THREE.BufferGeometry()
 
 // find device screen size and choose n based on screen size?
 // let clientWindowWidth = screen.width
-
-let clientScreenLaptop = 789.99
-let clientScreenDesktop = 2560
-let phonePoints = 10000
-let lowPoints = 40000
-let highPoints = 80000
+// handled after renderer is initialized
 
 let points = null
+console.log("1", screen.width)
+let screenLaptop = 783.99
+let screenDesktop = 2520
+let pointsUpperLimit = 80000
+let pointsLowerLimit = 40000
 
-points = mapV(screen.width)
+if (screen.width < screenLaptop){
+    points = 20000
+} else if (screen.width >= screenLaptop && screen.width <= screenDesktop) {
+    // i want less points for a larger screen!
+    points = mapV(screen.width ,screenLaptop, screenDesktop, pointsUpperLimit, pointsLowerLimit)
+} else {
+    points = 40000
+}
+console.log('2', points)
 
 let innerRadius = 5
 const goldenRatio = (1 + Math.sqrt(5)) / 20;
@@ -144,7 +152,10 @@ const renderer = new THREE.WebGLRenderer({
 renderer.setSize(sizes.width, sizes.height)
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 
-console.log(renderer.domElement.width)
+// console.log(renderer.domElement.width)
+// // SET PARTICLE # ACCORDING TO RENDERER WIDTH
+// points = 40000
+
 // AUDIO
 
 const audioContext = new AudioContext();
