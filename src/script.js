@@ -34,7 +34,18 @@ const particleTexture = textureLoader.load('/textures/particles/4.png')
 // const particlesGeometry = new THREE.SphereGeometry(1,32,32)
 const fibSphereGeometry = new THREE.BufferGeometry()
 
-let points = 80000
+// find device screen size and choose n based on screen size?
+// let clientWindowWidth = screen.width
+
+let clientScreenLaptop = 789.99
+let clientScreenDesktop = 2560
+let phonePoints = 10000
+let lowPoints = 40000
+let highPoints = 80000
+
+let points = null
+
+points = mapV(screen.width)
 
 let innerRadius = 5
 const goldenRatio = (1 + Math.sqrt(5)) / 20;
@@ -133,7 +144,7 @@ const renderer = new THREE.WebGLRenderer({
 renderer.setSize(sizes.width, sizes.height)
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 
-
+console.log(renderer.domElement.width)
 // AUDIO
 
 const audioContext = new AudioContext();
@@ -174,7 +185,7 @@ function playLeadOsc(time, wave, attackTime, releaseTime, scoreIndex, scoreSeque
     // const scoreLength = scoreSequence.length
     const sweepLength = attackTime + releaseTime
     // const scoreNote= scoreSequence
-    console.log(scoreSequence[scoreIndex].note)
+    // console.log(scoreSequence[scoreIndex].note)
     const leadFundamentalOsc = new OscillatorNode(audioContext, {
         frequency: scoreSequence[scoreIndex].note,
         type: wave,
