@@ -176,6 +176,9 @@ function createFilterNode(type,Q){
     return filterNode
 }
 
+// AUIDO MASTER CONTROLS 
+let finalGain = new GainNode(audioContext)
+finalGain.gain.value = .5
 // LEAD
 
 const bpFilterNodeLead = createFilterNode('bandpass', '5')
@@ -206,7 +209,7 @@ function playLeadOsc(time, wave, attackTime, releaseTime, scoreIndex, scoreSeque
     const leadFundamentalOscGain = audioContext.createGain();
     
     // CHAIN
-    leadFundamentalOsc.connect(leadFundamentalOscGain).connect(bpFilterNodeLead).connect(convolutionDistortion1).connect(tremGain).connect(plateReverb1).connect(leadPan).connect(leadGain).connect(audioContext.destination);
+    leadFundamentalOsc.connect(leadFundamentalOscGain).connect(bpFilterNodeLead).connect(convolutionDistortion1).connect(tremGain).connect(plateReverb1).connect(leadPan).connect(leadGain).connect(finalGain).connect(audioContext.destination);
 
     // START STOP
     leadFundamentalOsc.start(time);
@@ -376,7 +379,7 @@ function playAdditivePad(time, oscType, fundamental, chordSequence, currentChord
     
     
     // CHAIN
-    masterGain.connect(bpFilterNodePad).connect(convolutionDistortion2).connect(judsonReverb2).connect(plateReverb2).connect(padGain).connect(audioContext.destination)
+    masterGain.connect(bpFilterNodePad).connect(convolutionDistortion2).connect(judsonReverb2).connect(plateReverb2).connect(padGain).connect(finalGain).connect(audioContext.destination)
 
     // START STOP
     fundamentalOsc.start(time + .01)
@@ -511,7 +514,7 @@ function playBass(time, wave, attack, release, scoreSequence, scoreIndex){
     bassOscFundamental.connect(sweepEnvGain)
 
     // removed bass lfo filter. seemed redundant
-    sweepEnvGain.connect(bassBandpassFilter).connect(bassPan).connect(plateReverb3).connect(bassGain).connect(audioContext.destination)
+    sweepEnvGain.connect(bassBandpassFilter).connect(bassPan).connect(plateReverb3).connect(bassGain).connect(finalGain).connect(audioContext.destination)
     bassOscFundamental.start(time)
     bassOscFundamental.stop(time + (attack + release))
 
@@ -535,7 +538,14 @@ function playBass(time, wave, attack, release, scoreSequence, scoreIndex){
     // }
 }
 
-// change drone to bass in variables
+// VOLUME (GAIN) CONTROLS 
+
+const masterGainControl = document.querySelector("#master-volume");
+
+masterGainControl.addEventListener("input", () => {
+  finalGain.gain.value = masterGainControl.value;
+});
+
 const bassGainControl = document.querySelector("#bass-volume");
 
 bassGainControl.addEventListener("input", () => {
@@ -1054,7 +1064,9 @@ let animationState = {
     timePaused: globalElapsedTime - pauseTime
 }
 
+// buttons 
 
+// document.querySelector('#open-close').textContent = 'Close Controls';
 
 startStopButton.addEventListener('click', ()=>{
     if (animationState.isPaused == true){
@@ -1062,13 +1074,13 @@ startStopButton.addEventListener('click', ()=>{
         pauseTime = null
         animationState.isPaused = false
         audioContext.resume()
-        startStopButton.innerHTML = "="
+        startStopButton.innerHTML = "PAUSE"
     } else if (animationState.isPaused == false) {
         // pause: use animation time, not global elapsed time, as the pause point
         pauseTime = animationState.animationTime
         animationState.isPaused = true
         audioContext.suspend()
-        startStopButton.innerHTML = ">"
+        startStopButton.innerHTML = "PLAY"
     }
 })
 

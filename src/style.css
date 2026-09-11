@@ -1,17 +1,14 @@
-*
-{
+* {
     margin: 0;
     padding: 0;
 }
 
 html,
-body
-{
+body {
     overflow: hidden;
 }
 
-.webgl
-{
+.webgl {
     position: absolute;
     top: 0;
     left: 0;
@@ -20,14 +17,15 @@ body
 }
 
 
-.instrument-controls{
+.instrument-controls {
     z-index: 200;
     bottom: 50px;
     left: 10px;
     position: fixed;
     display: flex;
     /* width: 100%; */
-     border: 1px solid white;
+    border: 1px solid white;
+    background: rgba(0, 0, 0, 0.75);
 }
 
 .circle-UI-container {
@@ -38,27 +36,63 @@ body
     /* border: 1px solid rgb(255, 33, 33); */
 }
 
-.instrument-title{
+.instrument-title {
     color: white;
     margin-left: auto;
     margin-right: auto;
 }
 
-.controls{
+.controls {
     border: 1px solid white;
 }
 
-.instrument-pulses-input{
-    width: 35px;
-    margin-left: auto;
+.open-close {
+    position: fixed;
+    bottom: 10px;
+    left: 20px;
+    z-index: 10;
+
+    color: white;
+    background: rgba(0, 0, 0, 0.75);
+    border-radius: 10px;
+    padding: 10px;
 }
 
-.bpm-number{
+.open-close>summary {
+    cursor: pointer;
+    user-select: none;
+    padding: 5px;
+}
+
+.instrument-pulses-input {
+    width: 35px;
+    margin-left: auto;
+    display: inline-block;
+}
+
+.bpm-number {
     color: white;
 }
-.start-button{
+
+.start-button {
     margin-top: auto;
 }
+
+.label {
+    color: white;
+    display: inline-block;
+}
+
+.vert-label {
+    color: white;
+}
+
+.parent {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
 /* .controls {
     width: 100%;
     flex: 1;
