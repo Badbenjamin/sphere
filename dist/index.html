@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fib Sphere</title>
+  <script type="module" crossorigin src="/sphere/assets/index-BJ5t_kSG.js"></script>
+  <link rel="stylesheet" crossorigin href="/sphere/assets/index-Cu8wLKUK.css">
+</head>
+
+<body>
+    <canvas class="webgl"></canvas>
+    <!-- <div class="wavelength" id="wavelength">wv</div> -->
+    <details id="open-close" class="open-close" open>
+        <summary class="label">open/close controls</summary>
+        <div class="instrument-controls" id="controls">
+            <div class="circle-UI-container">
+                <div class="instrument-title">LEAD</div>
+                <div class="controls" id="lead-controls"></div>
+                <label for="number-of-pulses"></label>
+                <div class="parent">
+                    <input id="lead-pulses-input" class="instrument-pulses-input" type="number" name="quantity" min="2"
+                        max="12" step="1" value="9">
+                    <div class="label"># of beats</div>
+                </div>
+                <div class="parent">
+                    <input class="gain-range" type="range" id="lead-volume" min="0" max="1" value=".4" step="0.01" />
+                    <div class="label">lead vol</div>
+                </div>
+            </div>
+            <div class="circle-UI-container">
+                <div class="instrument-title">PAD</div>
+                <div class="controls" id="pad-controls"></div>
+                <label for="number-of-pulses"></label>
+                <div class="parent">
+                    <input id="pad-pulses-input" class="instrument-pulses-input" type="number" name="quantity" min="2"
+                        max="12" step="1" value="7">
+                    <div class="label"># of beats</div>
+                </div>
+                <div class="parent">
+                    <input class="gain-range" type="range" id="pad-volume" min="0" max="2" value="1.5" step="0.01" />
+                    <div class="label">pad vol</div>
+                </div>
+            </div>
+            <div class="circle-UI-container">
+                <div class="instrument-title">BASS</div>
+                <div class="controls" id="bass-controls"></div>
+                <label for="number-of-pulses"></label>
+                <div class="parent">
+                    <input id="bass-pulses-input" class="instrument-pulses-input" type="number" name="quantity" min="2"
+                        max="12" step="1" value="5">
+                    <div class="label"># of beats</div>
+                </div>
+                <div>
+                    <input class="gain-range" type="range" id="bass-volume" min="0" max="2" value="0.5" step="0.01" />
+                    <div class="label">bass vol</div>
+                </div>
+            </div>
+            <div class="bpm-slider">
+                <span id="bpm-number" class="bpm-number"> BPM</span>
+                <input class="gain-range" type="number" id="bpm-slider" min="10" max="40" value="20" step="1" />
+            </div>
+            <div class="start-button-div">
+                <button id="start-button">PLAY</button>
+            </div>
+            <div class="wavelength-slider">
+                <input id="wavelength-slider" class="vert-slider" type="range" min="0" max="3.14159" value="1"
+                    step=".00001" style="writing-mode: vertical-lr; direction: rtl; width: 20px; height: 150px;">
+                <p class="vert-label" style="writing-mode: vertical-lr">wavelength</p>
+            </div>
+            <div>
+                <input class="gain-range" type="range" id="master-volume" min="0" max="1" value=".5" step="0.01"
+                    style="writing-mode: vertical-lr; direction: rtl; width: 20px; height: 150px;" />
+                <div class="vert-label" style="writing-mode: vertical-lr">vol</div>
+            </div>
+        </div>
+    </details>
+</body>
+
+</html>

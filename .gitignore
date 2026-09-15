@@ -2,7 +2,7 @@
 *.exe 
 
 # Ignore dist & converage folders
-dist/
+# dist/
 converage/
 
 # Nested location
