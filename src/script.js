@@ -25,7 +25,7 @@ const scene = new THREE.Scene()
  */
 const textureLoader = new THREE.TextureLoader()
 // 1, 4, 
-const particleTexture = textureLoader.load('/textures/particles/4.png')
+const particleTexture = textureLoader.load('./4.png')
 
 
 /**
@@ -39,23 +39,28 @@ const fibSphereGeometry = new THREE.BufferGeometry()
 // handled after renderer is initialized
 
 let points = null
-console.log("1", screen.width)
-let screenLaptop = 783.99
+// console.log("1", screen.width)
+let screenLaptop = 750
 let screenDesktop = 2520
 let pointsUpperLimit = 80000
 let pointsLowerLimit = 40000
 
+let innerRadius = null
+
 if (screen.width < screenLaptop){
     points = 20000
+    innerRadius = 3
 } else if (screen.width >= screenLaptop && screen.width <= screenDesktop) {
     // i want less points for a larger screen!
-    points = mapV(screen.width ,screenLaptop, screenDesktop, pointsUpperLimit, pointsLowerLimit)
+    points = Math.floor(mapV(screen.width ,screenLaptop, screenDesktop, pointsUpperLimit, pointsLowerLimit))
+    innerRadius = mapV(screen.width, screenLaptop, screenDesktop, 5, 3)
 } else {
-    points = 40000
+    points = pointsLowerLimit
+    innerRadius = 3
 }
 console.log('2', points)
 
-let innerRadius = 5
+
 const goldenRatio = (1 + Math.sqrt(5)) / 20;
 const goldenAngleRadians = Math.PI * 2 * goldenRatio;
 // WHAT PARTS OF SPHERE EQUATION CAN I REMOVE FROM GAME LOOP?
