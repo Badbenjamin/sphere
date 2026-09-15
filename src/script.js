@@ -25,7 +25,9 @@ const scene = new THREE.Scene()
  */
 const textureLoader = new THREE.TextureLoader()
 // 1, 4, 
-const particleTexture = textureLoader.load('./4.png')
+import pngImport from './4.png'
+// console.log(pngImport)
+const particleTexture = textureLoader.load(pngImport)
 
 
 /**
@@ -38,27 +40,32 @@ const fibSphereGeometry = new THREE.BufferGeometry()
 // let clientWindowWidth = screen.width
 // handled after renderer is initialized
 
-let points = null
-// console.log("1", screen.width)
-let screenLaptop = 750
-let screenDesktop = 2520
-let pointsUpperLimit = 80000
-let pointsLowerLimit = 40000
+// let points = null
+// // console.log("1", screen.width)
+// let screenLaptop = 750
+// let screenDesktop = 2520
+// let pointsUpperLimit = 60000
+// let pointsLowerLimit = 40000
 
-let innerRadius = null
+// let innerRadius = null
 
-if (screen.width < screenLaptop){
-    points = 20000
-    innerRadius = 3
-} else if (screen.width >= screenLaptop && screen.width <= screenDesktop) {
-    // i want less points for a larger screen!
-    points = Math.floor(mapV(screen.width ,screenLaptop, screenDesktop, pointsUpperLimit, pointsLowerLimit))
-    innerRadius = mapV(screen.width, screenLaptop, screenDesktop, 5, 3)
-} else {
-    points = pointsLowerLimit
-    innerRadius = 3
-}
-console.log('2', points)
+// if (screen.width < screenLaptop){
+//     points = 20000
+//     innerRadius = 2
+// } else if (screen.width >= screenLaptop && screen.width <= screenDesktop) {
+//     // i want less points for a larger screen!
+//     points = Math.floor(mapV(screen.width ,screenLaptop, screenDesktop, pointsUpperLimit, pointsLowerLimit))
+//     innerRadius = mapV(screen.width, screenLaptop, screenDesktop, 4, 3)
+// } else {
+//     points = pointsLowerLimit
+//     innerRadius = 3
+// }
+// console.log('screen width at open', screen.width )
+// console.log('sphere radius', innerRadius)
+// console.log('# of points', points)
+
+let points = 40000
+let innerRadius = 3
 
 
 const goldenRatio = (1 + Math.sqrt(5)) / 20;
@@ -413,11 +420,13 @@ function playAdditivePad(time, oscType, fundamental, chordSequence, currentChord
 
 // REVERBS
 
+import judsonPath from './judsonMemorialChurch.wav';
+// console.log(impulseResponsePath)
 async function createJudsonReverb() {
   let convolver = audioContext.createConvolver();
 
   // load impulse response from file
-  let response = await fetch("./judsonMemorialChurch.wav");
+  let response = await fetch(marshallPath);
   let arraybuffer = await response.arrayBuffer();
   convolver.buffer = await audioContext.decodeAudioData(arraybuffer);
 
@@ -425,11 +434,13 @@ async function createJudsonReverb() {
 }
 let judsonReverb2 = await createJudsonReverb();
 
+import plateReverbPath from "./plate IR.wav"
+
 async function createPlateReverb() {
   let convolver = audioContext.createConvolver();
 
   // load impulse response from file
-  let response = await fetch("./plate IR.wav");
+  let response = await fetch(plateReverbPath);
   let arraybuffer = await response.arrayBuffer();
   convolver.buffer = await audioContext.decodeAudioData(arraybuffer);
 
@@ -439,11 +450,13 @@ let plateReverb1 = await createPlateReverb();
 let plateReverb2 = await createPlateReverb();
 let plateReverb3 = await createPlateReverb();
 
+import marshallPath from './Marshall1960A-G12Ms-SM57-Cone-12in.wav';
+
 async function createConvolutionDistortion() {
   let convolver = audioContext.createConvolver();
 
   // load impulse response from file
-  let response = await fetch("./Marshall1960A-G12Ms-SM57-Cone-12in.wav");
+  let response = await fetch(marshallPath);
   let arraybuffer = await response.arrayBuffer();
   convolver.buffer = await audioContext.decodeAudioData(arraybuffer);
 

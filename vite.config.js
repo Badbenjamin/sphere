@@ -1,8 +1,15 @@
 import restart from 'vite-plugin-restart'
+// import { defineConfig } from 'vite'
+
+// export default defineConfig({
+//     build: {
+//         target: 'es2022'
+//     }
+// })
 
 export default {
     root: 'src/', // Sources files (typically where index.html is)
-    // base: '/sphere/',
+    base: '/sphere/',
     publicDir: '../static/', // Path from "root" to static assets (files that are served as they are)
     server:
     {
@@ -13,7 +20,8 @@ export default {
     {
         outDir: '../dist', // Output in the dist/ folder
         emptyOutDir: true, // Empty the folder first
-        sourcemap: true // Add sourcemap
+        sourcemap: true, // Add sourcemap
+        target: 'es2022'
     },
     plugins:
         [

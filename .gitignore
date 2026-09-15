@@ -10,3 +10,5 @@ some-folder/another-folder/*.txt
 
 # Complex name pattern
 build-config.*.yml
+
+node_modules/
